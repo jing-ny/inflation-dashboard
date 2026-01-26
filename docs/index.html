@@ -4,688 +4,135 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inflation Monitor</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f8f9fa;
-            color: #1a1a1a;
-            line-height: 1.6;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        
-        header {
-            background: #fff;
-            border-bottom: 1px solid #e5e7eb;
-            padding: 1.5rem 2rem;
-            margin-bottom: 2rem;
-        }
-        
-        header .container {
-            padding: 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #111;
-        }
-        
-        .header-meta {
-            color: #6b7280;
-            font-size: 0.875rem;
-        }
-        
-        .section {
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            overflow: hidden;
-        }
-        
-        .section-header {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #e5e7eb;
-            background: #fafafa;
-        }
-        
-        .section-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #111;
-        }
-        
-        .section-subtitle {
-            font-size: 0.8rem;
-            color: #6b7280;
-            margin-top: 0.25rem;
-        }
-        
-        /* Tables */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        th, td {
-            padding: 0.875rem 1.5rem;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        th {
-            background: #fafafa;
-            font-weight: 600;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #6b7280;
-        }
-        
-        tr:last-child td {
-            border-bottom: none;
-        }
-        
-        tr:hover {
-            background: #f9fafb;
-        }
-        
-        .country-cell {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        
-        .flag {
-            font-size: 1.25rem;
-        }
-        
-        .country-name {
-            font-weight: 500;
-        }
-        
-        .value {
-            font-variant-numeric: tabular-nums;
-            font-weight: 600;
-        }
-        
-        .value.high {
-            color: #dc2626;
-        }
-        
-        .value.medium {
-            color: #d97706;
-        }
-        
-        .value.low {
-            color: #059669;
-        }
-        
-        .value.neutral {
-            color: #111;
-        }
-        
-        .date-cell {
-            color: #6b7280;
-            font-size: 0.875rem;
-        }
-        
-        .change {
-            font-size: 0.8rem;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-        }
-        
-        .change.up {
-            background: #fef2f2;
-            color: #dc2626;
-        }
-        
-        .change.down {
-            background: #f0fdf4;
-            color: #059669;
-        }
-        
-        .change.flat {
-            background: #f3f4f6;
-            color: #6b7280;
-        }
-        
-        /* Charts */
-        .chart-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 1.5rem;
-            padding: 1.5rem;
-        }
-        
-        .chart-card {
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 1.5rem;
-        }
-        
-        .chart-title {
-            font-size: 0.95rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .chart-container {
-            position: relative;
-            height: 250px;
-        }
-        
-        /* Forecast Tables */
-        .forecast-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            padding: 1.5rem;
-        }
-        
-        .forecast-card {
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        
-        .forecast-card-header {
-            padding: 1rem;
-            background: #fafafa;
-            border-bottom: 1px solid #e5e7eb;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .forecast-card-title {
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-        
-        .forecast-card table {
-            font-size: 0.875rem;
-        }
-        
-        .forecast-card th, .forecast-card td {
-            padding: 0.625rem 1rem;
-        }
-        
-        .target-row {
-            background: #f0fdf4;
-        }
-        
-        .source-note {
-            padding: 0.75rem 1rem;
-            background: #fafafa;
-            border-top: 1px solid #e5e7eb;
-            font-size: 0.75rem;
-            color: #6b7280;
-        }
-        
-        /* Footer */
-        footer {
-            margin-top: 2rem;
-            padding: 1.5rem;
-            text-align: center;
-            color: #6b7280;
-            font-size: 0.8rem;
-            border-top: 1px solid #e5e7eb;
-        }
-        
-        footer a {
-            color: #4b5563;
-            text-decoration: none;
-        }
-        
-        footer a:hover {
-            text-decoration: underline;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container {
-                padding: 1rem;
-            }
-            
-            .chart-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            th, td {
-                padding: 0.75rem 1rem;
-            }
-            
-            .forecast-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>📊 Inflation Monitor</h1>
-            <div class="header-meta">
-                Updated: <span id="updateDate">January 2026</span>
-            </div>
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-brand">📊 Inflation Monitor</a>
+            <span class="nav-update">Updated: January 2026</span>
         </div>
-    </header>
+    </nav>
 
-    <div class="container">
-        <!-- Overview Table -->
-        <div class="section">
-            <div class="section-header">
-                <div class="section-title">Current Inflation by Country</div>
-                <div class="section-subtitle">Year-over-year CPI change, latest available data</div>
-            </div>
-            <table id="overviewTable">
+    <main class="container">
+        <header class="page-header">
+            <h1>Global Inflation Overview</h1>
+            <p class="page-subtitle">Latest official CPI data from major economies</p>
+        </header>
+
+        <section class="section">
+            <table class="data-table">
                 <thead>
                     <tr>
                         <th>Country</th>
-                        <th>Current Rate</th>
+                        <th>Current Inflation</th>
                         <th>Previous</th>
                         <th>Change</th>
-                        <th>Target</th>
+                        <th>Central Bank Target</th>
+                        <th>Status</th>
                         <th>As Of</th>
                     </tr>
                 </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-
-        <!-- Historical Charts -->
-        <div class="section">
-            <div class="section-header">
-                <div class="section-title">10-Year Historical Trends</div>
-                <div class="section-subtitle">Monthly/quarterly CPI year-over-year changes</div>
-            </div>
-            <div class="chart-grid" id="chartGrid"></div>
-        </div>
-
-        <!-- Central Bank Forecasts -->
-        <div class="section">
-            <div class="section-header">
-                <div class="section-title">Central Bank Inflation Forecasts</div>
-                <div class="section-subtitle">Official projections from monetary policy authorities</div>
-            </div>
-            <div class="forecast-grid" id="forecastGrid"></div>
-        </div>
-    </div>
-
-    <footer>
-        <p>Data sources: BLS, FRED (OECD), ECB Data Portal, Central Bank publications</p>
-        <p style="margin-top: 0.5rem;">
-            <a href="https://github.com/jing-ny/inflation-dashboard" target="_blank">GitHub</a> · 
-            Research tool for informational purposes only
-        </p>
-    </footer>
-
-    <script>
-        // ============================================
-        // DATA
-        // ============================================
-        
-        const countries = [
-            { 
-                code: 'US', name: 'United States', flag: '🇺🇸', 
-                current: 2.9, previous: 2.7, target: 2.0, date: 'Dec 2025',
-                history: generateHistory(2.1, 1.5, 8.0, 2.9) // 10yr simulated
-            },
-            { 
-                code: 'EA', name: 'Euro Area', flag: '🇪🇺', 
-                current: 1.9, previous: 2.1, target: 2.0, date: 'Dec 2025',
-                history: generateHistory(1.5, -0.5, 10.6, 1.9)
-            },
-            { 
-                code: 'UK', name: 'United Kingdom', flag: '🇬🇧', 
-                current: 3.4, previous: 3.6, target: 2.0, date: 'Dec 2025',
-                history: generateHistory(2.0, 0.2, 11.1, 3.4)
-            },
-            { 
-                code: 'DE', name: 'Germany', flag: '🇩🇪', 
-                current: 2.8, previous: 2.4, target: 2.0, date: 'Nov 2025',
-                history: generateHistory(1.5, -0.5, 8.8, 2.8)
-            },
-            { 
-                code: 'AU', name: 'Australia', flag: '🇦🇺', 
-                current: 3.5, previous: 3.8, target: 2.5, date: 'Q3 2025',
-                history: generateHistory(2.5, 0.9, 7.8, 3.5)
-            },
-            { 
-                code: 'NZ', name: 'New Zealand', flag: '🇳🇿', 
-                current: 2.2, previous: 3.3, target: 2.0, date: 'Q3 2025',
-                history: generateHistory(1.8, 0.3, 7.3, 2.2)
-            },
-            { 
-                code: 'ZA', name: 'South Africa', flag: '🇿🇦', 
-                current: 3.0, previous: 2.9, target: 4.5, date: 'Dec 2025',
-                history: generateHistory(5.0, 2.8, 7.8, 3.0)
-            },
-        ];
-        
-        const forecasts = [
-            {
-                name: 'US Federal Reserve (FOMC)',
-                flag: '🇺🇸',
-                metric: 'PCE Inflation',
-                data: [
-                    { year: '2025', value: 2.9 },
-                    { year: '2026', value: 2.4 },
-                    { year: '2027', value: 2.1 },
-                    { year: '2028', value: 2.0 },
-                ],
-                target: 2.0,
-                source: 'Summary of Economic Projections, Dec 2025'
-            },
-            {
-                name: 'Cleveland Fed',
-                flag: '🇺🇸',
-                metric: '1-Year Expected CPI',
-                data: [
-                    { year: '1Y Ahead', value: 2.60 },
-                ],
-                target: null,
-                source: 'Inflation Expectations Model, Jan 2026'
-            },
-            {
-                name: 'European Central Bank',
-                flag: '🇪🇺',
-                metric: 'HICP Inflation',
-                data: [
-                    { year: '2025', value: 2.1 },
-                    { year: '2026', value: 1.9 },
-                    { year: '2027', value: 1.8 },
-                    { year: '2028', value: 2.0 },
-                ],
-                target: 2.0,
-                source: 'Staff Projections, Dec 2025'
-            },
-            {
-                name: 'ECB Survey of Professional Forecasters',
-                flag: '🇪🇺',
-                metric: 'HICP Expectations',
-                data: [
-                    { year: '12M Ahead', value: 1.80 },
-                    { year: '24M Ahead', value: 1.95 },
-                    { year: 'Long-term', value: 2.02 },
-                ],
-                target: null,
-                source: 'SPF Q4 2025'
-            },
-            {
-                name: 'Bank of England',
-                flag: '🇬🇧',
-                metric: 'CPI Inflation',
-                data: [
-                    { year: '2025 Q4', value: 3.7 },
-                    { year: '2026 Q4', value: 2.5 },
-                    { year: '2027 Q2', value: 2.0 },
-                ],
-                target: 2.0,
-                source: 'Monetary Policy Report, Feb 2025'
-            },
-            {
-                name: 'Reserve Bank of Australia',
-                flag: '🇦🇺',
-                metric: 'Trimmed Mean CPI',
-                data: [
-                    { year: '2025', value: 3.0 },
-                    { year: '2026', value: 2.7 },
-                    { year: '2027', value: 2.5 },
-                ],
-                target: 2.5,
-                source: 'Statement on Monetary Policy, Nov 2025'
-            },
-        ];
-        
-        // Generate simulated 10-year history
-        function generateHistory(baseline, min, max, current) {
-            const data = [];
-            const years = 10;
-            const pointsPerYear = 12;
-            
-            // Create realistic inflation path
-            for (let i = 0; i < years * pointsPerYear; i++) {
-                const year = 2015 + Math.floor(i / 12);
-                const month = (i % 12) + 1;
-                
-                let value;
-                if (year < 2020) {
-                    // Pre-COVID: stable around baseline
-                    value = baseline + (Math.random() - 0.5) * 1.5;
-                } else if (year === 2020) {
-                    // COVID dip
-                    value = baseline - 1 + (Math.random() - 0.5) * 2;
-                } else if (year >= 2021 && year <= 2022) {
-                    // Inflation spike
-                    const peak = (year === 2022 && month >= 6 && month <= 9) ? max : max * 0.7;
-                    value = peak * (0.8 + Math.random() * 0.4);
-                } else if (year === 2023) {
-                    // Declining
-                    value = max * 0.5 + (Math.random() - 0.5) * 2;
-                } else if (year === 2024) {
-                    value = 3 + (Math.random() - 0.5) * 1.5;
-                } else {
-                    // 2025 - approaching current
-                    const progress = month / 12;
-                    value = 3 * (1 - progress) + current * progress + (Math.random() - 0.5) * 0.5;
-                }
-                
-                value = Math.max(min, Math.min(max, value));
-                
-                data.push({
-                    date: `${year}-${String(month).padStart(2, '0')}`,
-                    value: Math.round(value * 10) / 10
-                });
-            }
-            
-            return data;
-        }
-        
-        // ============================================
-        // RENDER FUNCTIONS
-        // ============================================
-        
-        function getValueClass(current, target) {
-            const diff = current - target;
-            if (diff > 2) return 'high';
-            if (diff > 0.5) return 'medium';
-            if (diff < -0.5) return 'low';
-            return 'neutral';
-        }
-        
-        function getChangeClass(current, previous) {
-            const diff = current - previous;
-            if (diff > 0.1) return 'up';
-            if (diff < -0.1) return 'down';
-            return 'flat';
-        }
-        
-        function renderOverviewTable() {
-            const tbody = document.querySelector('#overviewTable tbody');
-            
-            tbody.innerHTML = countries.map(c => {
-                const valueClass = getValueClass(c.current, c.target);
-                const changeClass = getChangeClass(c.current, c.previous);
-                const changeDiff = (c.current - c.previous).toFixed(1);
-                const changeText = changeDiff > 0 ? `+${changeDiff}` : changeDiff;
-                
-                return `
-                    <tr>
-                        <td>
-                            <div class="country-cell">
-                                <span class="flag">${c.flag}</span>
-                                <span class="country-name">${c.name}</span>
-                            </div>
+                <tbody>
+                    <tr onclick="window.location='us.html'" class="clickable-row">
+                        <td class="country-cell">
+                            <span class="flag">🇺🇸</span>
+                            <span class="country-name">United States</span>
                         </td>
-                        <td><span class="value ${valueClass}">${c.current.toFixed(1)}%</span></td>
-                        <td class="date-cell">${c.previous.toFixed(1)}%</td>
-                        <td><span class="change ${changeClass}">${changeText}pp</span></td>
-                        <td class="date-cell">${c.target.toFixed(1)}%</td>
-                        <td class="date-cell">${c.date}</td>
+                        <td class="value-cell">2.9%</td>
+                        <td class="muted">2.7%</td>
+                        <td><span class="change up">+0.2pp</span></td>
+                        <td class="muted">2.0%</td>
+                        <td><span class="status above">Above Target</span></td>
+                        <td class="muted">Dec 2025</td>
                     </tr>
-                `;
-            }).join('');
-        }
-        
-        function renderCharts() {
-            const grid = document.getElementById('chartGrid');
-            
-            grid.innerHTML = countries.map(c => `
-                <div class="chart-card">
-                    <div class="chart-title">
-                        <span>${c.flag}</span>
-                        <span>${c.name}</span>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="chart-${c.code}"></canvas>
-                    </div>
-                </div>
-            `).join('');
-            
-            // Create charts
-            countries.forEach(c => {
-                const ctx = document.getElementById(`chart-${c.code}`).getContext('2d');
-                
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: c.history.map(h => h.date),
-                        datasets: [
-                            {
-                                label: 'CPI YoY %',
-                                data: c.history.map(h => h.value),
-                                borderColor: '#2563eb',
-                                backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                                fill: true,
-                                tension: 0.3,
-                                pointRadius: 0,
-                                borderWidth: 2,
-                            },
-                            {
-                                label: 'Target',
-                                data: c.history.map(() => c.target),
-                                borderColor: '#dc2626',
-                                borderDash: [5, 5],
-                                borderWidth: 1,
-                                pointRadius: 0,
-                                fill: false,
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: {
-                            intersect: false,
-                            mode: 'index',
-                        },
-                        plugins: {
-                            legend: {
-                                display: false,
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}%`
-                                }
-                            }
-                        },
-                        scales: {
-                            x: {
-                                display: true,
-                                ticks: {
-                                    maxTicksLimit: 6,
-                                    font: { size: 10 },
-                                    color: '#6b7280',
-                                },
-                                grid: {
-                                    display: false,
-                                }
-                            },
-                            y: {
-                                display: true,
-                                ticks: {
-                                    callback: (v) => v + '%',
-                                    font: { size: 10 },
-                                    color: '#6b7280',
-                                },
-                                grid: {
-                                    color: '#e5e7eb',
-                                }
-                            }
-                        }
-                    }
-                });
-            });
-        }
-        
-        function renderForecasts() {
-            const grid = document.getElementById('forecastGrid');
-            
-            grid.innerHTML = forecasts.map(f => {
-                const rows = f.data.map(d => `
-                    <tr>
-                        <td>${d.year}</td>
-                        <td class="value">${d.value.toFixed(1)}%</td>
+                    <tr onclick="window.location='ea.html'" class="clickable-row">
+                        <td class="country-cell">
+                            <span class="flag">🇪🇺</span>
+                            <span class="country-name">Euro Area</span>
+                        </td>
+                        <td class="value-cell">1.9%</td>
+                        <td class="muted">2.1%</td>
+                        <td><span class="change down">-0.2pp</span></td>
+                        <td class="muted">2.0%</td>
+                        <td><span class="status on-target">On Target</span></td>
+                        <td class="muted">Dec 2025</td>
                     </tr>
-                `).join('');
-                
-                const targetRow = f.target ? `
-                    <tr class="target-row">
-                        <td>Target</td>
-                        <td class="value">${f.target.toFixed(1)}%</td>
+                    <tr onclick="window.location='uk.html'" class="clickable-row">
+                        <td class="country-cell">
+                            <span class="flag">🇬🇧</span>
+                            <span class="country-name">United Kingdom</span>
+                        </td>
+                        <td class="value-cell">3.4%</td>
+                        <td class="muted">3.6%</td>
+                        <td><span class="change down">-0.2pp</span></td>
+                        <td class="muted">2.0%</td>
+                        <td><span class="status above">Above Target</span></td>
+                        <td class="muted">Dec 2025</td>
                     </tr>
-                ` : '';
-                
-                return `
-                    <div class="forecast-card">
-                        <div class="forecast-card-header">
-                            <span class="flag">${f.flag}</span>
-                            <span class="forecast-card-title">${f.name}</span>
-                        </div>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Period</th>
-                                    <th>${f.metric}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${rows}
-                                ${targetRow}
-                            </tbody>
-                        </table>
-                        <div class="source-note">${f.source}</div>
-                    </div>
-                `;
-            }).join('');
-        }
-        
-        // Initialize
-        renderOverviewTable();
-        renderCharts();
-        renderForecasts();
-    </script>
+                    <tr onclick="window.location='de.html'" class="clickable-row">
+                        <td class="country-cell">
+                            <span class="flag">🇩🇪</span>
+                            <span class="country-name">Germany</span>
+                        </td>
+                        <td class="value-cell">2.8%</td>
+                        <td class="muted">2.4%</td>
+                        <td><span class="change up">+0.4pp</span></td>
+                        <td class="muted">2.0%</td>
+                        <td><span class="status above">Above Target</span></td>
+                        <td class="muted">Nov 2025</td>
+                    </tr>
+                    <tr onclick="window.location='au.html'" class="clickable-row">
+                        <td class="country-cell">
+                            <span class="flag">🇦🇺</span>
+                            <span class="country-name">Australia</span>
+                        </td>
+                        <td class="value-cell">3.5%</td>
+                        <td class="muted">3.8%</td>
+                        <td><span class="change down">-0.3pp</span></td>
+                        <td class="muted">2.0–3.0%</td>
+                        <td><span class="status above">Above Target</span></td>
+                        <td class="muted">Q3 2025</td>
+                    </tr>
+                    <tr onclick="window.location='nz.html'" class="clickable-row">
+                        <td class="country-cell">
+                            <span class="flag">🇳🇿</span>
+                            <span class="country-name">New Zealand</span>
+                        </td>
+                        <td class="value-cell">2.2%</td>
+                        <td class="muted">3.3%</td>
+                        <td><span class="change down">-1.1pp</span></td>
+                        <td class="muted">1.0–3.0%</td>
+                        <td><span class="status on-target">On Target</span></td>
+                        <td class="muted">Q3 2025</td>
+                    </tr>
+                    <tr onclick="window.location='za.html'" class="clickable-row">
+                        <td class="country-cell">
+                            <span class="flag">🇿🇦</span>
+                            <span class="country-name">South Africa</span>
+                        </td>
+                        <td class="value-cell">3.0%</td>
+                        <td class="muted">2.9%</td>
+                        <td><span class="change up">+0.1pp</span></td>
+                        <td class="muted">3.0–6.0%</td>
+                        <td><span class="status on-target">On Target</span></td>
+                        <td class="muted">Dec 2025</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="table-note">Click any row to view detailed country page with historical data and forecasts.</p>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">About This Dashboard</h2>
+            <p>This dashboard tracks official consumer price index (CPI) data and central bank inflation forecasts. Data is sourced directly from government statistical agencies and central bank publications.</p>
+            <p style="margin-top: 0.5rem;">For methodology and data sources, see <a href="https://github.com/jing-ny/inflation-dashboard/blob/main/METHODOLOGY.md">METHODOLOGY.md</a>.</p>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>Data sources: BLS, FRED, ECB, ONS, Destatis, ABS, Stats NZ, Stats SA</p>
+        <p><a href="https://github.com/jing-ny/inflation-dashboard">GitHub</a> · Research tool for informational purposes only</p>
+    </footer>
 </body>
 </html>
