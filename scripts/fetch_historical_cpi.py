@@ -148,8 +148,9 @@ COUNTRIES = {
         "name": "Japan",
         "flag": "🇯🇵",
         "api": "FRED",
-        "series_id": "JPNCPIALLMINMEI",
+        "series_id": "JPNCPALTT01GYM659N",  # COICOP 2018: Growth rate YoY, Monthly (active series)
         "frequency": "monthly",
+        "data_type": "yoy",  # This series is already YoY percent change, not index
         "target": 2.0,
         "source": "Statistics Bureau via OECD/FRED"
     }
@@ -391,7 +392,14 @@ def fetch_country_data(country_code: str) -> Dict:
     try:
         if config["api"] == "FRED":
             raw_data = fetch_fred_series(config["series_id"])
-            yoy_data = calculate_yoy_from_index(raw_data, config["frequency"])
+            # Check if this series is already YoY data (not an index)
+            if config.get("data_type") == "yoy":
+                # Data is already YoY percent change, just format it
+                yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)} 
+                           for obs in raw_data]
+            else:
+                # Data is an index, calculate YoY
+                yoy_data = calculate_yoy_from_index(raw_data, config["frequency"])
             
         elif config["api"] == "BLS":
             raw_data = fetch_bls_series(config["series_id"])

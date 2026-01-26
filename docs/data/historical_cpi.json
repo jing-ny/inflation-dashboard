@@ -6,9 +6,449 @@
     "target": 2.0,
     "frequency": "monthly",
     "source": "Bureau of Labor Statistics",
-    "last_updated": "2026-01-26",
-    "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
-    "history": []
+    "last_updated": "2026-01-25",
+    "latest": {
+      "date": "2024-12",
+      "value": 2.87
+    },
+    "previous": {
+      "date": "2024-11",
+      "value": 2.71
+    },
+    "history": [
+      {
+        "date": "2016-01",
+        "value": 1.24
+      },
+      {
+        "date": "2016-02",
+        "value": 0.85
+      },
+      {
+        "date": "2016-03",
+        "value": 0.89
+      },
+      {
+        "date": "2016-04",
+        "value": 1.17
+      },
+      {
+        "date": "2016-05",
+        "value": 1.08
+      },
+      {
+        "date": "2016-06",
+        "value": 1.08
+      },
+      {
+        "date": "2016-07",
+        "value": 0.87
+      },
+      {
+        "date": "2016-08",
+        "value": 1.06
+      },
+      {
+        "date": "2016-09",
+        "value": 1.55
+      },
+      {
+        "date": "2016-10",
+        "value": 1.69
+      },
+      {
+        "date": "2016-11",
+        "value": 1.68
+      },
+      {
+        "date": "2016-12",
+        "value": 2.05
+      },
+      {
+        "date": "2017-01",
+        "value": 2.51
+      },
+      {
+        "date": "2017-02",
+        "value": 2.81
+      },
+      {
+        "date": "2017-03",
+        "value": 2.44
+      },
+      {
+        "date": "2017-04",
+        "value": 2.18
+      },
+      {
+        "date": "2017-05",
+        "value": 1.86
+      },
+      {
+        "date": "2017-06",
+        "value": 1.64
+      },
+      {
+        "date": "2017-07",
+        "value": 1.73
+      },
+      {
+        "date": "2017-08",
+        "value": 1.93
+      },
+      {
+        "date": "2017-09",
+        "value": 2.18
+      },
+      {
+        "date": "2017-10",
+        "value": 2.02
+      },
+      {
+        "date": "2017-11",
+        "value": 2.17
+      },
+      {
+        "date": "2017-12",
+        "value": 2.13
+      },
+      {
+        "date": "2018-01",
+        "value": 2.15
+      },
+      {
+        "date": "2018-02",
+        "value": 2.26
+      },
+      {
+        "date": "2018-03",
+        "value": 2.33
+      },
+      {
+        "date": "2018-04",
+        "value": 2.47
+      },
+      {
+        "date": "2018-05",
+        "value": 2.78
+      },
+      {
+        "date": "2018-06",
+        "value": 2.81
+      },
+      {
+        "date": "2018-07",
+        "value": 2.85
+      },
+      {
+        "date": "2018-08",
+        "value": 2.64
+      },
+      {
+        "date": "2018-09",
+        "value": 2.33
+      },
+      {
+        "date": "2018-10",
+        "value": 2.49
+      },
+      {
+        "date": "2018-11",
+        "value": 2.15
+      },
+      {
+        "date": "2018-12",
+        "value": 2.0
+      },
+      {
+        "date": "2019-01",
+        "value": 1.49
+      },
+      {
+        "date": "2019-02",
+        "value": 1.52
+      },
+      {
+        "date": "2019-03",
+        "value": 1.88
+      },
+      {
+        "date": "2019-04",
+        "value": 2.0
+      },
+      {
+        "date": "2019-05",
+        "value": 1.8
+      },
+      {
+        "date": "2019-06",
+        "value": 1.67
+      },
+      {
+        "date": "2019-07",
+        "value": 1.83
+      },
+      {
+        "date": "2019-08",
+        "value": 1.74
+      },
+      {
+        "date": "2019-09",
+        "value": 1.68
+      },
+      {
+        "date": "2019-10",
+        "value": 1.73
+      },
+      {
+        "date": "2019-11",
+        "value": 2.09
+      },
+      {
+        "date": "2019-12",
+        "value": 2.32
+      },
+      {
+        "date": "2020-01",
+        "value": 2.6
+      },
+      {
+        "date": "2020-02",
+        "value": 2.34
+      },
+      {
+        "date": "2020-03",
+        "value": 1.49
+      },
+      {
+        "date": "2020-04",
+        "value": 0.31
+      },
+      {
+        "date": "2020-05",
+        "value": 0.2
+      },
+      {
+        "date": "2020-06",
+        "value": 0.72
+      },
+      {
+        "date": "2020-07",
+        "value": 1.0
+      },
+      {
+        "date": "2020-08",
+        "value": 1.28
+      },
+      {
+        "date": "2020-09",
+        "value": 1.39
+      },
+      {
+        "date": "2020-10",
+        "value": 1.23
+      },
+      {
+        "date": "2020-11",
+        "value": 1.18
+      },
+      {
+        "date": "2020-12",
+        "value": 1.32
+      },
+      {
+        "date": "2021-01",
+        "value": 1.36
+      },
+      {
+        "date": "2021-02",
+        "value": 1.67
+      },
+      {
+        "date": "2021-03",
+        "value": 2.62
+      },
+      {
+        "date": "2021-04",
+        "value": 4.14
+      },
+      {
+        "date": "2021-05",
+        "value": 4.93
+      },
+      {
+        "date": "2021-06",
+        "value": 5.32
+      },
+      {
+        "date": "2021-07",
+        "value": 5.27
+      },
+      {
+        "date": "2021-08",
+        "value": 5.18
+      },
+      {
+        "date": "2021-09",
+        "value": 5.36
+      },
+      {
+        "date": "2021-10",
+        "value": 6.23
+      },
+      {
+        "date": "2021-11",
+        "value": 6.87
+      },
+      {
+        "date": "2021-12",
+        "value": 7.16
+      },
+      {
+        "date": "2022-01",
+        "value": 7.58
+      },
+      {
+        "date": "2022-02",
+        "value": 7.95
+      },
+      {
+        "date": "2022-03",
+        "value": 8.54
+      },
+      {
+        "date": "2022-04",
+        "value": 8.24
+      },
+      {
+        "date": "2022-05",
+        "value": 8.53
+      },
+      {
+        "date": "2022-06",
+        "value": 9.0
+      },
+      {
+        "date": "2022-07",
+        "value": 8.45
+      },
+      {
+        "date": "2022-08",
+        "value": 8.22
+      },
+      {
+        "date": "2022-09",
+        "value": 8.21
+      },
+      {
+        "date": "2022-10",
+        "value": 7.76
+      },
+      {
+        "date": "2022-11",
+        "value": 7.13
+      },
+      {
+        "date": "2022-12",
+        "value": 6.41
+      },
+      {
+        "date": "2023-01",
+        "value": 6.34
+      },
+      {
+        "date": "2023-02",
+        "value": 5.96
+      },
+      {
+        "date": "2023-03",
+        "value": 4.93
+      },
+      {
+        "date": "2023-04",
+        "value": 4.95
+      },
+      {
+        "date": "2023-05",
+        "value": 4.13
+      },
+      {
+        "date": "2023-06",
+        "value": 3.06
+      },
+      {
+        "date": "2023-07",
+        "value": 3.28
+      },
+      {
+        "date": "2023-08",
+        "value": 3.72
+      },
+      {
+        "date": "2023-09",
+        "value": 3.7
+      },
+      {
+        "date": "2023-10",
+        "value": 3.25
+      },
+      {
+        "date": "2023-11",
+        "value": 3.14
+      },
+      {
+        "date": "2023-12",
+        "value": 3.32
+      },
+      {
+        "date": "2024-01",
+        "value": 3.11
+      },
+      {
+        "date": "2024-02",
+        "value": 3.17
+      },
+      {
+        "date": "2024-03",
+        "value": 3.47
+      },
+      {
+        "date": "2024-04",
+        "value": 3.35
+      },
+      {
+        "date": "2024-05",
+        "value": 3.24
+      },
+      {
+        "date": "2024-06",
+        "value": 2.97
+      },
+      {
+        "date": "2024-07",
+        "value": 2.94
+      },
+      {
+        "date": "2024-08",
+        "value": 2.61
+      },
+      {
+        "date": "2024-09",
+        "value": 2.43
+      },
+      {
+        "date": "2024-10",
+        "value": 2.57
+      },
+      {
+        "date": "2024-11",
+        "value": 2.71
+      },
+      {
+        "date": "2024-12",
+        "value": 2.87
+      }
+    ]
   },
   "CA": {
     "code": "CA",
@@ -17,7 +457,7 @@
     "target": 2.0,
     "frequency": "monthly",
     "source": "Statistics Canada via OECD/FRED",
-    "last_updated": "2026-01-26",
+    "last_updated": "2026-01-25",
     "latest": {
       "date": "2025-03",
       "value": 2.32
@@ -480,7 +920,7 @@
     "target": 2.0,
     "frequency": "monthly",
     "source": "ONS via OECD/FRED",
-    "last_updated": "2026-01-26",
+    "last_updated": "2026-01-25",
     "latest": {
       "date": "2025-03",
       "value": 3.42
@@ -943,7 +1383,7 @@
     "target": 1.0,
     "frequency": "monthly",
     "source": "FSO via OECD/FRED",
-    "last_updated": "2026-01-26",
+    "last_updated": "2026-01-25",
     "latest": {
       "date": "2025-04",
       "value": 0.03
@@ -1410,7 +1850,7 @@
     "target": 2.0,
     "frequency": "monthly",
     "source": "Destatis via OECD/FRED",
-    "last_updated": "2026-01-26",
+    "last_updated": "2026-01-25",
     "latest": {
       "date": "2025-03",
       "value": 2.19
@@ -1873,7 +2313,7 @@
     "target": 2.0,
     "frequency": "monthly",
     "source": "Eurostat via ECB",
-    "last_updated": "2026-01-26",
+    "last_updated": "2026-01-25",
     "latest": {
       "date": "2025-12",
       "value": 1.9
@@ -2420,7 +2860,7 @@
     "target": 2.5,
     "frequency": "quarterly",
     "source": "ABS via OECD/FRED",
-    "last_updated": "2026-01-26",
+    "last_updated": "2026-01-25",
     "latest": {
       "date": "2025-01",
       "value": 2.4
@@ -2587,7 +3027,7 @@
     "target": 2.0,
     "frequency": "quarterly",
     "source": "Stats NZ via OECD/FRED",
-    "last_updated": "2026-01-26",
+    "last_updated": "2026-01-25",
     "latest": {
       "date": "2025-01",
       "value": 2.53
@@ -2754,7 +3194,7 @@
     "target": 4.5,
     "frequency": "monthly",
     "source": "Stats SA via OECD/FRED",
-    "last_updated": "2026-01-26",
+    "last_updated": "2026-01-25",
     "latest": {
       "date": "2025-01",
       "value": 3.08
@@ -3209,7 +3649,7 @@
     "target": 3.0,
     "frequency": "monthly",
     "source": "NBS via OECD/FRED",
-    "last_updated": "2026-01-26",
+    "last_updated": "2026-01-25",
     "latest": {
       "date": "2025-04",
       "value": -0.07
@@ -3676,7 +4116,7 @@
     "target": 2.0,
     "frequency": "monthly",
     "source": "Statistics Bureau via OECD/FRED",
-    "last_updated": "2026-01-26",
+    "last_updated": "2026-01-25",
     "latest": {
       "date": "2021-06",
       "value": -0.4
