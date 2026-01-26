@@ -10,7 +10,7 @@
     <nav class="nav">
         <div class="nav-container">
             <a href="index.html" class="nav-brand">📊 Inflation Monitor</a>
-            <span class="nav-update">Updated: January 2026</span>
+            <span class="nav-update" id="lastUpdate">Loading...</span>
         </div>
     </nav>
 
@@ -28,135 +28,147 @@
                         <th>Current Inflation</th>
                         <th>Previous</th>
                         <th>Change</th>
-                        <th>Central Bank Target</th>
-                        <th>Status</th>
+                        <th>Target</th>
+                        <th>vs Target</th>
                         <th>As Of</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr onclick="window.location='us.html'" class="clickable-row">
-                        <td class="country-cell">
-                            <span class="flag">🇺🇸</span>
-                            <span class="country-name">United States</span>
-                        </td>
-                        <td class="value-cell">2.9%</td>
-                        <td class="muted">2.7%</td>
-                        <td><span class="change up">+0.2pp</span></td>
-                        <td class="muted">2.0%</td>
-                        <td><span class="status above">Above Target</span></td>
-                        <td class="muted">Dec 2025</td>
-                    </tr>
-                    <tr onclick="window.location='ea.html'" class="clickable-row">
-                        <td class="country-cell">
-                            <span class="flag">🇪🇺</span>
-                            <span class="country-name">Euro Area</span>
-                        </td>
-                        <td class="value-cell">1.9%</td>
-                        <td class="muted">2.1%</td>
-                        <td><span class="change down">-0.2pp</span></td>
-                        <td class="muted">2.0%</td>
-                        <td><span class="status on-target">On Target</span></td>
-                        <td class="muted">Dec 2025</td>
-                    </tr>
-                    <tr onclick="window.location='cn.html'" class="clickable-row">
-                        <td class="country-cell">
-                            <span class="flag">🇨🇳</span>
-                            <span class="country-name">China</span>
-                        </td>
-                        <td class="value-cell">0.1%</td>
-                        <td class="muted">0.2%</td>
-                        <td><span class="change down">-0.1pp</span></td>
-                        <td class="muted">~3.0%</td>
-                        <td><span class="status below">Below Target</span></td>
-                        <td class="muted">Dec 2025</td>
-                    </tr>
-                    <tr onclick="window.location='jp.html'" class="clickable-row">
-                        <td class="country-cell">
-                            <span class="flag">🇯🇵</span>
-                            <span class="country-name">Japan</span>
-                        </td>
-                        <td class="value-cell">3.6%</td>
-                        <td class="muted">2.9%</td>
-                        <td><span class="change up">+0.7pp</span></td>
-                        <td class="muted">2.0%</td>
-                        <td><span class="status above">Above Target</span></td>
-                        <td class="muted">Dec 2025</td>
-                    </tr>
-                    <tr onclick="window.location='uk.html'" class="clickable-row">
-                        <td class="country-cell">
-                            <span class="flag">🇬🇧</span>
-                            <span class="country-name">United Kingdom</span>
-                        </td>
-                        <td class="value-cell">3.4%</td>
-                        <td class="muted">3.6%</td>
-                        <td><span class="change down">-0.2pp</span></td>
-                        <td class="muted">2.0%</td>
-                        <td><span class="status above">Above Target</span></td>
-                        <td class="muted">Dec 2025</td>
-                    </tr>
-                    <tr onclick="window.location='de.html'" class="clickable-row">
-                        <td class="country-cell">
-                            <span class="flag">🇩🇪</span>
-                            <span class="country-name">Germany</span>
-                        </td>
-                        <td class="value-cell">2.8%</td>
-                        <td class="muted">2.4%</td>
-                        <td><span class="change up">+0.4pp</span></td>
-                        <td class="muted">2.0%</td>
-                        <td><span class="status above">Above Target</span></td>
-                        <td class="muted">Nov 2025</td>
-                    </tr>
-                    <tr onclick="window.location='au.html'" class="clickable-row">
-                        <td class="country-cell">
-                            <span class="flag">🇦🇺</span>
-                            <span class="country-name">Australia</span>
-                        </td>
-                        <td class="value-cell">3.5%</td>
-                        <td class="muted">3.8%</td>
-                        <td><span class="change down">-0.3pp</span></td>
-                        <td class="muted">2.0–3.0%</td>
-                        <td><span class="status above">Above Target</span></td>
-                        <td class="muted">Q3 2025</td>
-                    </tr>
-                    <tr onclick="window.location='nz.html'" class="clickable-row">
-                        <td class="country-cell">
-                            <span class="flag">🇳🇿</span>
-                            <span class="country-name">New Zealand</span>
-                        </td>
-                        <td class="value-cell">2.2%</td>
-                        <td class="muted">3.3%</td>
-                        <td><span class="change down">-1.1pp</span></td>
-                        <td class="muted">1.0–3.0%</td>
-                        <td><span class="status on-target">On Target</span></td>
-                        <td class="muted">Q3 2025</td>
-                    </tr>
-                    <tr onclick="window.location='za.html'" class="clickable-row">
-                        <td class="country-cell">
-                            <span class="flag">🇿🇦</span>
-                            <span class="country-name">South Africa</span>
-                        </td>
-                        <td class="value-cell">3.0%</td>
-                        <td class="muted">2.9%</td>
-                        <td><span class="change up">+0.1pp</span></td>
-                        <td class="muted">3.0–6.0%</td>
-                        <td><span class="status on-target">On Target</span></td>
-                        <td class="muted">Dec 2025</td>
-                    </tr>
+                <tbody id="tableBody">
+                    <tr><td colspan="7" class="loading">Loading data...</td></tr>
                 </tbody>
             </table>
-            <p class="table-note">Click any row to view detailed country page with historical data and forecasts.</p>
         </section>
 
         <section class="section">
             <h2 class="section-title">About This Dashboard</h2>
-            <p>This dashboard tracks official consumer price index (CPI) data and central bank inflation forecasts. Data is sourced directly from government statistical agencies and central bank publications.</p>
-            <p style="margin-top: 0.5rem;">For methodology and data sources, see <a href="https://github.com/jing-ny/inflation-dashboard/blob/main/METHODOLOGY.md">METHODOLOGY.md</a>.</p>
+            <p>This dashboard tracks official inflation statistics from central banks and national statistics offices. Data is updated weekly from official API sources.</p>
+            <p style="margin-top: 0.5rem;">
+                <strong>Data Sources:</strong> Bureau of Labor Statistics (US), ONS (UK), Destatis (Germany), Eurostat (Euro Area), ABS (Australia), Stats NZ, Stats SA, NBS China, Statistics Bureau of Japan.
+            </p>
+            <p style="margin-top: 0.5rem; color: #6b7280; font-size: 0.875rem;">
+                Click any row for detailed country data including historical charts, forecasts, and target information.
+            </p>
         </section>
     </main>
 
     <footer class="footer">
-        <p>Data sources: BLS, FRED, ECB, ONS, Destatis, NBS China, Statistics Japan, ABS, Stats NZ, Stats SA</p>
-        <p><a href="https://github.com/jing-ny/inflation-dashboard">GitHub</a> · Research tool for informational purposes only</p>
+        <p>Data from official government statistics and central bank publications</p>
+        <p><a href="https://github.com/jing-ny/inflation-dashboard" target="_blank">GitHub</a> · Research tool for informational purposes only</p>
     </footer>
+
+    <script>
+        // Country page mapping
+        const COUNTRY_PAGES = {
+            'US': 'us.html',
+            'UK': 'uk.html',
+            'DE': 'de.html',
+            'EA': 'ea.html',
+            'AU': 'au.html',
+            'NZ': 'nz.html',
+            'ZA': 'za.html',
+            'CN': 'cn.html',
+            'JP': 'jp.html'
+        };
+
+        // Display order
+        const DISPLAY_ORDER = ['US', 'CN', 'JP', 'EA', 'UK', 'DE', 'AU', 'NZ', 'ZA'];
+
+        // Load and display data
+        async function loadData() {
+            try {
+                const response = await fetch('data/historical_cpi.json');
+                const data = await response.json();
+                renderTable(data);
+                updateLastUpdated(data);
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('tableBody').innerHTML = 
+                    '<tr><td colspan="7" class="error">Error loading data. Please refresh.</td></tr>';
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            let html = '';
+
+            for (const code of DISPLAY_ORDER) {
+                const country = data[code];
+                if (!country || !country.latest) continue;
+
+                const current = country.latest.value;
+                const previous = country.previous ? country.previous.value : null;
+                const change = previous !== null ? (current - previous) : null;
+                const target = country.target;
+                const vsTarget = current - target;
+
+                // Determine status colors
+                const changeClass = change === null ? '' : (change > 0.05 ? 'up' : (change < -0.05 ? 'down' : 'flat'));
+                const changeIcon = change === null ? '' : (change > 0.05 ? '↑' : (change < -0.05 ? '↓' : '→'));
+                
+                let statusClass, statusText;
+                if (vsTarget > 2) {
+                    statusClass = 'high';
+                    statusText = 'High';
+                } else if (vsTarget > 0.5) {
+                    statusClass = 'elevated';
+                    statusText = 'Elevated';
+                } else if (vsTarget < -0.5) {
+                    statusClass = 'low';
+                    statusText = 'Low';
+                } else {
+                    statusClass = 'on-target';
+                    statusText = 'On Target';
+                }
+
+                const page = COUNTRY_PAGES[code] || '#';
+
+                html += `
+                    <tr onclick="window.location='${page}'" class="clickable-row">
+                        <td class="country-cell">
+                            <span class="flag">${country.flag}</span>
+                            <span class="country-name">${country.name}</span>
+                        </td>
+                        <td class="value-cell"><strong>${current.toFixed(1)}%</strong></td>
+                        <td class="value-cell">${previous !== null ? previous.toFixed(1) + '%' : '—'}</td>
+                        <td class="value-cell ${changeClass}">
+                            ${change !== null ? changeIcon + ' ' + (change >= 0 ? '+' : '') + change.toFixed(1) + 'pp' : '—'}
+                        </td>
+                        <td class="value-cell">${target.toFixed(1)}%</td>
+                        <td class="value-cell">
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                        </td>
+                        <td class="date-cell">${formatDate(country.latest.date)}</td>
+                    </tr>
+                `;
+            }
+
+            tbody.innerHTML = html;
+        }
+
+        function updateLastUpdated(data) {
+            // Find most recent update date
+            let latestDate = null;
+            for (const code in data) {
+                if (data[code].last_updated) {
+                    const d = new Date(data[code].last_updated);
+                    if (!latestDate || d > latestDate) latestDate = d;
+                }
+            }
+            if (latestDate) {
+                document.getElementById('lastUpdate').textContent = 
+                    'Updated: ' + latestDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            }
+        }
+
+        function formatDate(dateStr) {
+            // dateStr is "YYYY-MM"
+            const [year, month] = dateStr.split('-');
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return months[parseInt(month) - 1] + ' ' + year;
+        }
+
+        // Load on page ready
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
 </body>
 </html>

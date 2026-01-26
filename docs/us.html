@@ -18,30 +18,30 @@
     <main class="container">
         <header class="page-header">
             <h1><span class="flag">🇺🇸</span> United States</h1>
-            <p class="page-subtitle">Consumer Price Index (CPI-U) · All Urban Consumers · All Items</p>
+            <p class="page-subtitle">Consumer Price Index (CPI) · All Urban Consumers · All Items · Monthly</p>
         </header>
 
         <!-- Key Metrics -->
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-label">Current Inflation</div>
-                <div class="metric-value high">2.9%</div>
-                <div class="metric-detail">Year-over-year, Dec 2025</div>
+                <div class="metric-value" id="currentValue">—</div>
+                <div class="metric-detail" id="currentDate">Loading...</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label">Previous Reading</div>
-                <div class="metric-value neutral">2.7%</div>
-                <div class="metric-detail">Nov 2025</div>
+                <div class="metric-value neutral" id="previousValue">—</div>
+                <div class="metric-detail" id="previousDate">—</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label">Federal Reserve Target</div>
-                <div class="metric-value on-target">2.0%</div>
-                <div class="metric-detail">PCE inflation, symmetric</div>
+                <div class="metric-value on-target" id="targetValue">2.0%</div>
+                <div class="metric-detail">PCE inflation</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label">Status</div>
-                <div class="metric-value high">+0.9pp</div>
-                <div class="metric-detail">Above target</div>
+                <div class="metric-label">vs Target</div>
+                <div class="metric-value" id="statusValue">—</div>
+                <div class="metric-detail" id="statusDetail">—</div>
             </div>
         </div>
 
@@ -53,227 +53,32 @@
             </div>
         </section>
 
-        <!-- Central Bank Forecasts -->
+        <!-- Forecasts -->
         <section class="section">
             <h2 class="section-title">Federal Reserve Inflation Forecasts</h2>
-            
-            <h3 style="font-size: 0.9rem; color: #374151; margin: 1rem 0 0.75rem;">FOMC Summary of Economic Projections (PCE Inflation)</h3>
-            <table class="forecast-table">
-                <thead>
-                    <tr>
-                        <th>Year</th>
-                        <th>Median Projection</th>
-                        <th>Central Tendency</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>2025</td>
-                        <td class="value">2.9%</td>
-                        <td class="muted">2.8% – 3.0%</td>
-                    </tr>
-                    <tr>
-                        <td>2026</td>
-                        <td class="value">2.4%</td>
-                        <td class="muted">2.2% – 2.6%</td>
-                    </tr>
-                    <tr>
-                        <td>2027</td>
-                        <td class="value">2.1%</td>
-                        <td class="muted">2.0% – 2.2%</td>
-                    </tr>
-                    <tr>
-                        <td>2028</td>
-                        <td class="value">2.0%</td>
-                        <td class="muted">2.0% – 2.0%</td>
-                    </tr>
-                    <tr>
-                        <td>Longer Run</td>
-                        <td class="value">2.0%</td>
-                        <td class="muted">2.0%</td>
-                    </tr>
-                </tbody>
-            </table>
-            <p class="table-note">Source: FOMC Summary of Economic Projections, December 2025</p>
-
-            <h3 style="font-size: 0.9rem; color: #374151; margin: 1.5rem 0 0.75rem;">Cleveland Fed Inflation Expectations</h3>
-            <table class="forecast-table">
-                <thead>
-                    <tr>
-                        <th>Horizon</th>
-                        <th>Expected Inflation</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>1-Year Ahead</td>
-                        <td class="value">2.60%</td>
-                    </tr>
-                    <tr>
-                        <td>2-Year Ahead</td>
-                        <td class="value">2.45%</td>
-                    </tr>
-                    <tr>
-                        <td>10-Year Ahead</td>
-                        <td class="value">2.23%</td>
-                    </tr>
-                </tbody>
-            </table>
-            <p class="table-note">Source: Federal Reserve Bank of Cleveland, Inflation Expectations Model, January 2026</p>
+            <div id="forecastTable">Loading...</div>
         </section>
 
-        <!-- Inflation Target Details -->
+        <!-- Inflation Target -->
         <section class="section">
-            <h2 class="section-title">Federal Reserve Inflation Target</h2>
-            <p>The Federal Open Market Committee (FOMC) judges that inflation of <strong>2 percent</strong> over the longer run, as measured by the annual change in the price index for personal consumption expenditures (PCE), is most consistent with the Federal Reserve's mandate for maximum employment and price stability.</p>
-            <p style="margin-top: 0.75rem;">The Committee seeks to achieve inflation that averages 2 percent over time. When inflation has been running persistently below or above 2 percent, the FOMC will aim to achieve inflation moderately above or below 2 percent for some time.</p>
-            <p class="table-note" style="margin-top: 1rem;">Source: Federal Reserve, Statement on Longer-Run Goals and Monetary Policy Strategy (amended January 2024)</p>
+            <h2 class="section-title">Inflation Target</h2>
+            <div id="targetInfo">Loading...</div>
         </section>
 
         <!-- Data Sources -->
-        <div class="sources">
-            <h3>Data Sources</h3>
-            <div class="source-item">
-                <span class="source-label">CPI Data:</span>
-                <span class="source-value"><a href="https://www.bls.gov/cpi/" target="_blank">Bureau of Labor Statistics</a> · Series CUSR0000SA0</span>
-            </div>
-            <div class="source-item">
-                <span class="source-label">FOMC Projections:</span>
-                <span class="source-value"><a href="https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" target="_blank">Federal Reserve Board</a> · Summary of Economic Projections</span>
-            </div>
-            <div class="source-item">
-                <span class="source-label">Cleveland Fed:</span>
-                <span class="source-value"><a href="https://www.clevelandfed.org/indicators-and-data/inflation-expectations" target="_blank">Federal Reserve Bank of Cleveland</a> · Inflation Expectations</span>
-            </div>
-            <div class="source-item">
-                <span class="source-label">Inflation Target:</span>
-                <span class="source-value"><a href="https://www.federalreserve.gov/monetarypolicy/review-of-monetary-policy-strategy-tools-and-communications-statement-on-longer-run-goals-monetary-policy-strategy.htm" target="_blank">FOMC Statement on Longer-Run Goals</a></span>
-            </div>
+        <div class="sources" id="dataSources">
+            Loading...
         </div>
     </main>
 
     <footer class="footer">
-        <p>Data updated weekly · Research tool for informational purposes only</p>
-        <p><a href="https://github.com/jing-ny/inflation-dashboard">GitHub</a></p>
+        <p>Data from official government statistics and central bank publications</p>
+        <p><a href="https://github.com/jing-ny/inflation-dashboard" target="_blank">GitHub</a> · Research tool for informational purposes only</p>
     </footer>
 
+    <script src="country.js"></script>
     <script>
-        // Historical CPI Data (simulated - replace with real data)
-        const historyData = generateUSHistory();
-        
-        function generateUSHistory() {
-            const data = [];
-            const startYear = 2015;
-            const endYear = 2025;
-            
-            for (let year = startYear; year <= endYear; year++) {
-                for (let month = 1; month <= 12; month++) {
-                    if (year === 2025 && month > 12) break;
-                    
-                    let value;
-                    if (year < 2020) {
-                        value = 1.8 + Math.random() * 1.2;
-                    } else if (year === 2020) {
-                        value = month < 4 ? 2.3 : (month < 6 ? 0.3 : 1.2 + Math.random() * 0.6);
-                    } else if (year === 2021) {
-                        value = 1.4 + (month * 0.5) + Math.random() * 0.5;
-                    } else if (year === 2022) {
-                        if (month <= 6) value = 7.5 + Math.random() * 1.5;
-                        else value = 8.5 - (month - 6) * 0.3 + Math.random() * 0.5;
-                    } else if (year === 2023) {
-                        value = 6.5 - (month * 0.3) + Math.random() * 0.4;
-                    } else if (year === 2024) {
-                        value = 3.4 - (month * 0.05) + Math.random() * 0.3;
-                    } else {
-                        value = 2.7 + Math.random() * 0.4;
-                    }
-                    
-                    data.push({
-                        date: `${year}-${String(month).padStart(2, '0')}`,
-                        value: Math.round(Math.max(0, value) * 10) / 10
-                    });
-                }
-            }
-            return data;
-        }
-        
-        // Create Chart
-        const ctx = document.getElementById('historyChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: historyData.map(d => d.date),
-                datasets: [
-                    {
-                        label: 'CPI YoY %',
-                        data: historyData.map(d => d.value),
-                        borderColor: '#2563eb',
-                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                        fill: true,
-                        tension: 0.3,
-                        pointRadius: 0,
-                        pointHoverRadius: 5,
-                        borderWidth: 2,
-                    },
-                    {
-                        label: 'Fed Target (2%)',
-                        data: historyData.map(() => 2.0),
-                        borderColor: '#dc2626',
-                        borderDash: [6, 4],
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        fill: false,
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    intersect: false,
-                    mode: 'index',
-                },
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            usePointStyle: true,
-                            padding: 20,
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}%`
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        display: true,
-                        ticks: {
-                            maxTicksLimit: 12,
-                            font: { size: 11 },
-                            color: '#6b7280',
-                        },
-                        grid: {
-                            display: false,
-                        }
-                    },
-                    y: {
-                        display: true,
-                        min: 0,
-                        ticks: {
-                            callback: (v) => v + '%',
-                            font: { size: 11 },
-                            color: '#6b7280',
-                        },
-                        grid: {
-                            color: '#e5e7eb',
-                        }
-                    }
-                }
-            }
-        });
+        document.addEventListener('DOMContentLoaded', () => initCountryPage('US'));
     </script>
 </body>
 </html>

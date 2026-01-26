@@ -25,23 +25,23 @@
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-label">Current Inflation</div>
-                <div class="metric-value on-target">3.0%</div>
-                <div class="metric-detail">Year-over-year, Dec 2025</div>
+                <div class="metric-value" id="currentValue">—</div>
+                <div class="metric-detail" id="currentDate">Loading...</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label">Previous Reading</div>
-                <div class="metric-value neutral">2.9%</div>
-                <div class="metric-detail">Nov 2025</div>
+                <div class="metric-value neutral" id="previousValue">—</div>
+                <div class="metric-detail" id="previousDate">—</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label">SARB Target</div>
-                <div class="metric-value on-target">3–6%</div>
-                <div class="metric-detail">Midpoint: 4.5%</div>
+                <div class="metric-value on-target" id="targetValue">3-6%</div>
+                <div class="metric-detail">Preference for 4.5%</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label">Status</div>
-                <div class="metric-value on-target">-1.5pp</div>
-                <div class="metric-detail">Within target band</div>
+                <div class="metric-label">vs Target</div>
+                <div class="metric-value" id="statusValue">—</div>
+                <div class="metric-detail" id="statusDetail">—</div>
             </div>
         </div>
 
@@ -53,114 +53,32 @@
             </div>
         </section>
 
-        <!-- Central Bank Forecasts -->
+        <!-- Forecasts -->
         <section class="section">
-            <h2 class="section-title">South African Reserve Bank Forecasts</h2>
-            
-            <h3 style="font-size: 0.9rem; color: #374151; margin: 1rem 0 0.75rem;">Monetary Policy Committee Projections</h3>
-            <table class="forecast-table">
-                <thead>
-                    <tr>
-                        <th>Year</th>
-                        <th>Headline CPI</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>2025</td>
-                        <td class="value">3.3%</td>
-                    </tr>
-                    <tr>
-                        <td>2026</td>
-                        <td class="value">4.5%</td>
-                    </tr>
-                    <tr>
-                        <td>2027</td>
-                        <td class="value">3.0%</td>
-                    </tr>
-                </tbody>
-            </table>
-            <p class="table-note">Source: SARB Monetary Policy Committee Statement, July 2025</p>
-            
-            <h3 style="font-size: 0.9rem; color: #374151; margin: 1.5rem 0 0.75rem;">New Inflation Target</h3>
-            <p>In July 2025, the SARB announced a preference for inflation to settle at <strong>3%</strong>, aiming for the bottom of the current 3-6% target range. This represents a shift toward permanently lower inflation.</p>
+            <h2 class="section-title">SARB Inflation Forecasts</h2>
+            <div id="forecastTable">Loading...</div>
         </section>
 
-        <!-- Inflation Target Details -->
+        <!-- Inflation Target -->
         <section class="section">
-            <h2 class="section-title">SARB Inflation Target</h2>
-            <p>The South African Reserve Bank's inflation target range is <strong>3 to 6 percent</strong>, with a midpoint objective of 4.5%. The target is set in consultation with the National Treasury.</p>
-            <p style="margin-top: 0.75rem;">In July 2025, the MPC announced a new preference for inflation to stabilize at <strong>3%</strong> (the bottom of the target band) to create more monetary policy space and lock in sustainably lower interest rates.</p>
-            <p class="table-note" style="margin-top: 1rem;">Source: SARB Monetary Policy Committee Statement, July 2025</p>
+            <h2 class="section-title">Inflation Target</h2>
+            <div id="targetInfo">Loading...</div>
         </section>
 
         <!-- Data Sources -->
-        <div class="sources">
-            <h3>Data Sources</h3>
-            <div class="source-item">
-                <span class="source-label">CPI Data:</span>
-                <span class="source-value"><a href="https://www.statssa.gov.za/?page_id=1854&PPN=P0141" target="_blank">Statistics South Africa</a></span>
-            </div>
-            <div class="source-item">
-                <span class="source-label">FRED Series:</span>
-                <span class="source-value"><a href="https://fred.stlouisfed.org/series/ZAFCPIALLMINMEI" target="_blank">ZAFCPIALLMINMEI</a> (via OECD)</span>
-            </div>
-            <div class="source-item">
-                <span class="source-label">SARB Forecasts:</span>
-                <span class="source-value"><a href="https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements" target="_blank">MPC Statements</a></span>
-            </div>
-            <div class="source-item">
-                <span class="source-label">Inflation Target:</span>
-                <span class="source-value"><a href="https://www.resbank.co.za/en/home/what-we-do/monetary-policy" target="_blank">SARB Monetary Policy</a></span>
-            </div>
+        <div class="sources" id="dataSources">
+            Loading...
         </div>
     </main>
 
     <footer class="footer">
-        <p>Data updated weekly · Research tool for informational purposes only</p>
-        <p><a href="https://github.com/jing-ny/inflation-dashboard">GitHub</a></p>
+        <p>Data from official government statistics and central bank publications</p>
+        <p><a href="https://github.com/jing-ny/inflation-dashboard" target="_blank">GitHub</a> · Research tool for informational purposes only</p>
     </footer>
 
+    <script src="country.js"></script>
     <script>
-        const historyData = generateHistory();
-        
-        function generateHistory() {
-            const data = [];
-            for (let year = 2015; year <= 2025; year++) {
-                for (let month = 1; month <= 12; month++) {
-                    if (year === 2025 && month > 12) break;
-                    let value;
-                    if (year < 2020) value = 4.5 + Math.random() * 2.0 - 1.0;
-                    else if (year === 2020) value = month < 5 ? 4.5 : 3.0 + Math.random() * 1.0;
-                    else if (year === 2021) value = 3.0 + (month * 0.2) + Math.random() * 0.5;
-                    else if (year === 2022) value = 5.5 + (month * 0.15) + Math.random() * 0.5;
-                    else if (year === 2023) value = 7.0 - (month * 0.2) + Math.random() * 0.4;
-                    else if (year === 2024) value = 5.3 - (month * 0.15) + Math.random() * 0.4;
-                    else value = 3.2 - (month * 0.02) + Math.random() * 0.3;
-                    data.push({ date: `${year}-${String(month).padStart(2, '0')}`, value: Math.round(Math.max(2.5, value) * 10) / 10 });
-                }
-            }
-            return data;
-        }
-        
-        const ctx = document.getElementById('historyChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: historyData.map(d => d.date),
-                datasets: [
-                    { label: 'CPI YoY %', data: historyData.map(d => d.value), borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2 },
-                    { label: 'Target Midpoint (4.5%)', data: historyData.map(() => 4.5), borderColor: '#059669', borderDash: [6, 4], borderWidth: 2, pointRadius: 0, fill: false },
-                    { label: 'New Target (3%)', data: historyData.map(() => 3.0), borderColor: '#dc2626', borderDash: [6, 4], borderWidth: 2, pointRadius: 0, fill: false }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                interaction: { intersect: false, mode: 'index' },
-                plugins: { legend: { position: 'top', labels: { usePointStyle: true, padding: 20 } }, tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}%` } } },
-                scales: { x: { ticks: { maxTicksLimit: 12, font: { size: 11 }, color: '#6b7280' }, grid: { display: false } }, y: { min: 0, ticks: { callback: (v) => v + '%', font: { size: 11 }, color: '#6b7280' }, grid: { color: '#e5e7eb' } } }
-            }
-        });
+        document.addEventListener('DOMContentLoaded', () => initCountryPage('ZA'));
     </script>
 </body>
 </html>

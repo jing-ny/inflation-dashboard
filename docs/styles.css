@@ -1,6 +1,4 @@
-/* ============================================
-   INFLATION MONITOR - SHARED STYLES
-   ============================================ */
+/* Inflation Monitor - Shared Styles */
 
 * {
     margin: 0;
@@ -9,27 +7,17 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background: #f8f9fa;
     color: #1a1a1a;
     line-height: 1.6;
     min-height: 100vh;
 }
 
-a {
-    color: #2563eb;
-    text-decoration: none;
-}
-
-a:hover {
-    text-decoration: underline;
-}
-
 /* Navigation */
 .nav {
     background: #fff;
     border-bottom: 1px solid #e5e7eb;
-    padding: 1rem 0;
     position: sticky;
     top: 0;
     z-index: 100;
@@ -38,7 +26,7 @@ a:hover {
 .nav-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 2rem;
+    padding: 1rem 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -52,20 +40,22 @@ a:hover {
 }
 
 .nav-brand:hover {
-    text-decoration: none;
+    color: #2563eb;
 }
 
 .nav-update {
-    color: #6b7280;
     font-size: 0.875rem;
+    color: #6b7280;
 }
 
 .nav-back {
-    color: #6b7280;
     font-size: 0.875rem;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
+    color: #6b7280;
+    text-decoration: none;
+}
+
+.nav-back:hover {
+    color: #2563eb;
 }
 
 /* Container */
@@ -84,39 +74,35 @@ a:hover {
     font-size: 1.75rem;
     font-weight: 600;
     color: #111;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+    margin-bottom: 0.5rem;
 }
 
 .page-header .flag {
-    font-size: 2rem;
+    margin-right: 0.5rem;
 }
 
 .page-subtitle {
     color: #6b7280;
-    margin-top: 0.5rem;
+    font-size: 1rem;
 }
 
-/* Sections */
+/* Section */
 .section {
     background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
-    margin-bottom: 1.5rem;
     padding: 1.5rem;
+    margin-bottom: 1.5rem;
 }
 
 .section-title {
-    font-size: 1rem;
+    font-size: 1.125rem;
     font-weight: 600;
     color: #111;
     margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #e5e7eb;
 }
 
-/* Data Tables */
+/* Data Table */
 .data-table {
     width: 100%;
     border-collapse: collapse;
@@ -124,31 +110,30 @@ a:hover {
 
 .data-table th,
 .data-table td {
-    padding: 1rem 1.25rem;
+    padding: 0.875rem 1rem;
     text-align: left;
     border-bottom: 1px solid #e5e7eb;
 }
 
 .data-table th {
-    background: #fafafa;
+    background: #f9fafb;
     font-weight: 600;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-size: 0.8125rem;
     color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
 }
 
-.data-table tr:last-child td {
-    border-bottom: none;
+.data-table tbody tr:hover {
+    background: #f9fafb;
 }
 
-.data-table tr.clickable-row {
+.clickable-row {
     cursor: pointer;
-    transition: background 0.15s;
 }
 
-.data-table tr.clickable-row:hover {
-    background: #f3f4f6;
+.clickable-row:hover {
+    background: #f0f9ff !important;
 }
 
 .country-cell {
@@ -157,8 +142,8 @@ a:hover {
     gap: 0.75rem;
 }
 
-.flag {
-    font-size: 1.5rem;
+.country-cell .flag {
+    font-size: 1.25rem;
 }
 
 .country-name {
@@ -166,72 +151,56 @@ a:hover {
 }
 
 .value-cell {
-    font-size: 1.125rem;
-    font-weight: 600;
     font-variant-numeric: tabular-nums;
 }
 
-.muted {
-    color: #6b7280;
-}
-
-/* Change Indicators */
-.change {
-    display: inline-block;
-    font-size: 0.8rem;
-    font-weight: 500;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-}
-
-.change.up {
-    background: #fef2f2;
+.value-cell.up {
     color: #dc2626;
 }
 
-.change.down {
-    background: #f0fdf4;
-    color: #059669;
+.value-cell.down {
+    color: #16a34a;
 }
 
-.change.flat {
-    background: #f3f4f6;
+.value-cell.flat {
     color: #6b7280;
+}
+
+.date-cell {
+    color: #6b7280;
+    font-size: 0.875rem;
 }
 
 /* Status Badges */
-.status {
+.status-badge {
     display: inline-block;
-    font-size: 0.75rem;
-    font-weight: 500;
     padding: 0.25rem 0.625rem;
     border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
 }
 
-.status.above {
+.status-badge.high {
     background: #fef2f2;
     color: #dc2626;
 }
 
-.status.below {
+.status-badge.elevated {
+    background: #fffbeb;
+    color: #d97706;
+}
+
+.status-badge.on-target {
+    background: #f0fdf4;
+    color: #16a34a;
+}
+
+.status-badge.low {
     background: #eff6ff;
     color: #2563eb;
 }
 
-.status.on-target {
-    background: #f0fdf4;
-    color: #059669;
-}
-
-/* Table Notes */
-.table-note {
-    margin-top: 1rem;
-    font-size: 0.8rem;
-    color: #6b7280;
-    font-style: italic;
-}
-
-/* Key Metrics Grid */
+/* Metrics Grid */
 .metrics-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -240,23 +209,22 @@ a:hover {
 }
 
 .metric-card {
-    background: #fafafa;
+    background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     padding: 1.25rem;
 }
 
 .metric-label {
-    font-size: 0.8rem;
+    font-size: 0.8125rem;
     color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
     margin-bottom: 0.5rem;
 }
 
 .metric-value {
-    font-size: 2rem;
+    font-size: 1.75rem;
     font-weight: 600;
+    color: #111;
     font-variant-numeric: tabular-nums;
 }
 
@@ -264,8 +232,16 @@ a:hover {
     color: #dc2626;
 }
 
+.metric-value.elevated {
+    color: #d97706;
+}
+
 .metric-value.on-target {
-    color: #059669;
+    color: #16a34a;
+}
+
+.metric-value.low {
+    color: #2563eb;
 }
 
 .metric-value.neutral {
@@ -273,8 +249,8 @@ a:hover {
 }
 
 .metric-detail {
-    font-size: 0.8rem;
-    color: #6b7280;
+    font-size: 0.8125rem;
+    color: #9ca3af;
     margin-top: 0.25rem;
 }
 
@@ -282,14 +258,14 @@ a:hover {
 .chart-container {
     position: relative;
     height: 350px;
-    margin: 1rem 0;
+    width: 100%;
 }
 
-/* Forecast Table */
+/* Forecast Tables */
 .forecast-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.9rem;
+    margin-top: 1rem;
 }
 
 .forecast-table th,
@@ -300,77 +276,103 @@ a:hover {
 }
 
 .forecast-table th {
-    background: #fafafa;
+    background: #f9fafb;
     font-weight: 600;
-    font-size: 0.75rem;
-    text-transform: uppercase;
+    font-size: 0.8125rem;
     color: #6b7280;
 }
 
-.forecast-table tr:last-child td {
-    border-bottom: none;
-}
-
-.forecast-table .value {
-    font-weight: 600;
+.forecast-table td {
     font-variant-numeric: tabular-nums;
 }
 
-/* Sources */
+/* Target Quote */
+.target-quote {
+    background: #f9fafb;
+    border-left: 4px solid #2563eb;
+    padding: 1rem 1.5rem;
+    margin: 1rem 0;
+    font-style: italic;
+    color: #374151;
+}
+
+.target-quote-source {
+    font-size: 0.8125rem;
+    color: #6b7280;
+    margin-top: 0.5rem;
+    font-style: normal;
+}
+
+/* Data Sources */
 .sources {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 1.5rem;
     margin-top: 2rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid #e5e7eb;
 }
 
 .sources h3 {
-    font-size: 0.875rem;
+    font-size: 1rem;
     font-weight: 600;
-    color: #374151;
     margin-bottom: 1rem;
+    color: #111;
 }
 
 .source-item {
     display: flex;
-    margin-bottom: 0.75rem;
-    font-size: 0.85rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
 }
 
 .source-label {
-    width: 140px;
-    flex-shrink: 0;
     color: #6b7280;
+    min-width: 140px;
 }
 
 .source-value {
-    color: #374151;
+    color: #111;
 }
 
 .source-value a {
     color: #2563eb;
+    text-decoration: none;
+}
+
+.source-value a:hover {
+    text-decoration: underline;
 }
 
 /* Footer */
 .footer {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1.5rem 2rem;
+    background: #fff;
+    border-top: 1px solid #e5e7eb;
+    padding: 2rem;
     text-align: center;
     color: #6b7280;
-    font-size: 0.8rem;
-    border-top: 1px solid #e5e7eb;
-}
-
-.footer p {
-    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+    margin-top: 2rem;
 }
 
 .footer a {
-    color: #6b7280;
+    color: #2563eb;
+    text-decoration: none;
 }
 
 .footer a:hover {
-    color: #374151;
+    text-decoration: underline;
+}
+
+/* Loading & Error States */
+.loading, .error {
+    text-align: center;
+    padding: 2rem;
+    color: #6b7280;
+}
+
+.error {
+    color: #dc2626;
 }
 
 /* Responsive */
@@ -378,34 +380,27 @@ a:hover {
     .container {
         padding: 1rem;
     }
-    
+
     .nav-container {
-        padding: 0 1rem;
+        padding: 1rem;
     }
-    
-    .data-table th,
-    .data-table td {
-        padding: 0.75rem 0.5rem;
-        font-size: 0.875rem;
+
+    .data-table {
+        display: block;
+        overflow-x: auto;
     }
-    
+
     .metrics-grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(2, 1fr);
     }
-    
-    .metric-value {
+
+    .page-header h1 {
         font-size: 1.5rem;
     }
-    
-    .chart-container {
-        height: 280px;
-    }
-    
-    /* Hide some columns on mobile */
-    .data-table th:nth-child(3),
-    .data-table td:nth-child(3),
-    .data-table th:nth-child(6),
-    .data-table td:nth-child(6) {
-        display: none;
+}
+
+@media (max-width: 480px) {
+    .metrics-grid {
+        grid-template-columns: 1fr;
     }
 }

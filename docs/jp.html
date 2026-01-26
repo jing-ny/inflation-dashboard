@@ -25,23 +25,23 @@
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-label">Current Inflation</div>
-                <div class="metric-value high">3.6%</div>
-                <div class="metric-detail">Year-over-year, Dec 2025</div>
+                <div class="metric-value" id="currentValue">—</div>
+                <div class="metric-detail" id="currentDate">Loading...</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label">Previous Reading</div>
-                <div class="metric-value neutral">2.9%</div>
-                <div class="metric-detail">Nov 2025</div>
+                <div class="metric-value neutral" id="previousValue">—</div>
+                <div class="metric-detail" id="previousDate">—</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label">BoJ Target</div>
-                <div class="metric-value on-target">2.0%</div>
+                <div class="metric-value on-target" id="targetValue">2.0%</div>
                 <div class="metric-detail">Price stability target</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label">Status</div>
-                <div class="metric-value high">+1.6pp</div>
-                <div class="metric-detail">Above target</div>
+                <div class="metric-label">vs Target</div>
+                <div class="metric-value" id="statusValue">—</div>
+                <div class="metric-detail" id="statusDetail">—</div>
             </div>
         </div>
 
@@ -55,141 +55,36 @@
 
         <!-- Context -->
         <section class="section">
-            <h2 class="section-title">Inflation Context</h2>
-            <p>After decades of deflation and ultra-low inflation, Japan has experienced a significant shift since 2022. Inflation has exceeded the Bank of Japan's 2% target consistently for the first time in years, driven by yen depreciation, rising import costs, and increasing domestic wage pressures.</p>
-            <p style="margin-top: 0.75rem;">In March 2024, the BoJ ended its negative interest rate policy and yield curve control framework, marking a historic shift in Japanese monetary policy. The BoJ has since continued gradual policy normalization as inflation remains above target.</p>
+            <h2 class="section-title">Economic Context</h2>
+            <p>Japan experienced decades of low inflation and deflation, struggling to reach its 2% target despite aggressive monetary easing. The Bank of Japan maintained negative interest rates from 2016 until March 2024, when global inflation pressures finally pushed Japanese inflation above target. In 2024, the BoJ ended its negative interest rate policy for the first time in 17 years, marking a historic shift in Japanese monetary policy.</p>
         </section>
 
-        <!-- Central Bank Forecasts -->
+        <!-- Forecasts -->
         <section class="section">
-            <h2 class="section-title">Bank of Japan Forecasts</h2>
-            
-            <h3 style="font-size: 0.9rem; color: #374151; margin: 1rem 0 0.75rem;">Outlook for Economic Activity and Prices (CPI ex. Fresh Food)</h3>
-            <table class="forecast-table">
-                <thead>
-                    <tr>
-                        <th>Fiscal Year</th>
-                        <th>Core CPI Forecast</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>FY2024 (ends Mar 2025)</td>
-                        <td class="value">2.8%</td>
-                    </tr>
-                    <tr>
-                        <td>FY2025</td>
-                        <td class="value">2.4%</td>
-                    </tr>
-                    <tr>
-                        <td>FY2026</td>
-                        <td class="value">2.0%</td>
-                    </tr>
-                </tbody>
-            </table>
-            <p class="table-note">Source: Bank of Japan Outlook Report, January 2026</p>
-
-            <h3 style="font-size: 0.9rem; color: #374151; margin: 1.5rem 0 0.75rem;">Policy Board Members' Forecasts (Median)</h3>
-            <table class="forecast-table">
-                <thead>
-                    <tr>
-                        <th>Fiscal Year</th>
-                        <th>CPI ex. Fresh Food</th>
-                        <th>CPI ex. Fresh Food & Energy</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>FY2025</td>
-                        <td class="value">2.4%</td>
-                        <td class="muted">2.1%</td>
-                    </tr>
-                    <tr>
-                        <td>FY2026</td>
-                        <td class="value">2.0%</td>
-                        <td class="muted">2.1%</td>
-                    </tr>
-                </tbody>
-            </table>
-            <p class="table-note">Source: Bank of Japan Outlook Report, January 2026</p>
+            <h2 class="section-title">Bank of Japan Inflation Forecasts</h2>
+            <div id="forecastTable">Loading...</div>
         </section>
 
-        <!-- Inflation Target Details -->
+        <!-- Inflation Target -->
         <section class="section">
-            <h2 class="section-title">Bank of Japan Inflation Target</h2>
-            <p>The Bank of Japan set a <strong>price stability target of 2 percent</strong> in terms of the year-on-year rate of change in the consumer price index (CPI) in January 2013.</p>
-            <p style="margin-top: 0.75rem;">The BoJ aims to achieve this target in a sustainable and stable manner, accompanied by wage increases. The Bank considers that achieving the target requires not just a temporary rise in inflation but a virtuous cycle of rising wages and prices.</p>
-            <p style="margin-top: 0.75rem;">After ending negative interest rates in March 2024, the BoJ has indicated it will continue to adjust monetary policy as needed to sustainably achieve the 2% target.</p>
-            <p class="table-note" style="margin-top: 1rem;">Source: Bank of Japan, "The Price Stability Target" and Monetary Policy Statements</p>
+            <h2 class="section-title">Inflation Target</h2>
+            <div id="targetInfo">Loading...</div>
         </section>
 
         <!-- Data Sources -->
-        <div class="sources">
-            <h3>Data Sources</h3>
-            <div class="source-item">
-                <span class="source-label">CPI Data:</span>
-                <span class="source-value"><a href="https://www.stat.go.jp/english/data/cpi/" target="_blank">Statistics Bureau of Japan</a></span>
-            </div>
-            <div class="source-item">
-                <span class="source-label">FRED Series:</span>
-                <span class="source-value"><a href="https://fred.stlouisfed.org/series/JPNCPIALLMINMEI" target="_blank">JPNCPIALLMINMEI</a> (via OECD)</span>
-            </div>
-            <div class="source-item">
-                <span class="source-label">BoJ Forecasts:</span>
-                <span class="source-value"><a href="https://www.boj.or.jp/en/mopo/outlook/" target="_blank">Outlook for Economic Activity and Prices</a></span>
-            </div>
-            <div class="source-item">
-                <span class="source-label">Inflation Target:</span>
-                <span class="source-value"><a href="https://www.boj.or.jp/en/mopo/outline/qqe.htm" target="_blank">BoJ Price Stability Target</a></span>
-            </div>
+        <div class="sources" id="dataSources">
+            Loading...
         </div>
     </main>
 
     <footer class="footer">
-        <p>Data updated weekly · Research tool for informational purposes only</p>
-        <p><a href="https://github.com/jing-ny/inflation-dashboard">GitHub</a></p>
+        <p>Data from official government statistics and central bank publications</p>
+        <p><a href="https://github.com/jing-ny/inflation-dashboard" target="_blank">GitHub</a> · Research tool for informational purposes only</p>
     </footer>
 
+    <script src="country.js"></script>
     <script>
-        const historyData = generateHistory();
-        
-        function generateHistory() {
-            const data = [];
-            for (let year = 2015; year <= 2025; year++) {
-                for (let month = 1; month <= 12; month++) {
-                    if (year === 2025 && month > 12) break;
-                    let value;
-                    if (year < 2020) value = 0.5 + Math.random() * 1.0;
-                    else if (year === 2020) value = month < 4 ? 0.6 : -0.5 + Math.random() * 0.8;
-                    else if (year === 2021) value = -0.5 + (month * 0.1) + Math.random() * 0.4;
-                    else if (year === 2022) value = month < 5 ? 1.5 + Math.random() * 0.8 : 2.5 + (month - 5) * 0.15 + Math.random() * 0.4;
-                    else if (year === 2023) value = 3.0 + Math.random() * 0.8;
-                    else if (year === 2024) value = 2.5 + Math.random() * 0.6;
-                    else value = 2.8 + (month * 0.05) + Math.random() * 0.5;
-                    data.push({ date: `${year}-${String(month).padStart(2, '0')}`, value: Math.round(Math.max(-1, value) * 10) / 10 });
-                }
-            }
-            return data;
-        }
-        
-        const ctx = document.getElementById('historyChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: historyData.map(d => d.date),
-                datasets: [
-                    { label: 'CPI YoY %', data: historyData.map(d => d.value), borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2 },
-                    { label: 'BoJ Target (2%)', data: historyData.map(() => 2.0), borderColor: '#dc2626', borderDash: [6, 4], borderWidth: 2, pointRadius: 0, fill: false },
-                    { label: '0% (Deflation Line)', data: historyData.map(() => 0), borderColor: '#6b7280', borderDash: [2, 2], borderWidth: 1, pointRadius: 0, fill: false }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                interaction: { intersect: false, mode: 'index' },
-                plugins: { legend: { position: 'top', labels: { usePointStyle: true, padding: 20 } }, tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}%` } } },
-                scales: { x: { ticks: { maxTicksLimit: 12, font: { size: 11 }, color: '#6b7280' }, grid: { display: false } }, y: { ticks: { callback: (v) => v + '%', font: { size: 11 }, color: '#6b7280' }, grid: { color: '#e5e7eb' } } }
-            }
-        });
+        document.addEventListener('DOMContentLoaded', () => initCountryPage('JP'));
     </script>
 </body>
 </html>
