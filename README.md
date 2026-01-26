@@ -53,6 +53,30 @@ This dashboard tracks headline consumer price inflation (year-over-year) across 
 
 ---
 
+## Known Issues & High Priority Items
+
+### 🔴 High Priority
+
+| Issue | Description | Status |
+|-------|-------------|--------|
+| **US data lag** | FRED OECD series shows April 2025 data (significant lag vs BLS direct) | To fix: Consider switching back to BLS API or alternative source |
+| **AU/NZ data lag** | Quarterly data shows Jan 2025; may be inherent to quarterly release schedule | To verify: Check if this is expected quarterly lag |
+| **Japan excluded** | FRED COICOP 1999 series discontinued June 2021; COICOP 2018 not available via FRED | To fix: Direct integration with Japan Statistics Bureau e-Stat API |
+| **Central bank forecasts** | Currently hardcoded in `country.js`, updated manually | To fix: Automate scraping or schedule monthly manual updates |
+| **Historical forecasts** | No historical tracking of forecast changes over time | To fix: Implement Supabase backend to store forecast snapshots |
+
+### 📋 Future Improvements
+
+| Feature | Description |
+|---------|-------------|
+| Supabase integration | Store historical snapshots, forecast history, enable time-series analysis |
+| Singapore | Add MAS / Department of Statistics data |
+| India, Brazil, Mexico | Expand coverage to major emerging markets |
+| Forecast automation | Scrape central bank forecasts on schedule (monthly) |
+| Data freshness alerts | Warn when data is older than expected |
+
+---
+
 ## Future Additions
 
 The following economies are planned for future inclusion:
