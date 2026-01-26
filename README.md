@@ -4,6 +4,8 @@
 
 A lightweight, source-first monitor of inflation trends and central bank expectations across major economies.
 
+**[→ View Live Dashboard](https://jing-ny.github.io/inflation-dashboard/)**
+
 ---
 
 ## Why This Exists
