@@ -1,0 +1,124 @@
+name: Auto-Scrape CB Forecasts
+
+on:
+  schedule:
+    # Run every Monday and Thursday at 10:00 UTC
+    # (after most central bank publications have settled)
+    - cron: '0 10 * * 1,4'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force update (ignore publication cache)'
+        type: boolean
+        default: false
+      country:
+        description: 'Specific country to check (AU, EA, UK, CA, NZ, ZA, or leave blank for all)'
+        type: string
+        required: false
+      dry_run:
+        description: 'Dry run (check only, no updates)'
+        type: boolean
+        default: false
+
+jobs:
+  scrape-forecasts:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Run auto-scraper
+        id: scrape
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: |
+          echo "=== Starting Central Bank Forecast Scraper ==="
+          
+          # Build command
+          CMD="python scripts/auto_scrape_cb_forecasts.py"
+          
+          if [ "${{ inputs.force }}" = "true" ]; then
+            CMD="$CMD --force"
+          fi
+          
+          if [ -n "${{ inputs.country }}" ]; then
+            CMD="$CMD --country ${{ inputs.country }}"
+          fi
+          
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            CMD="$CMD --dry-run"
+          fi
+          
+          echo "Running: $CMD"
+          $CMD | tee scraper_output.txt
+          
+          # Check if any updates were made
+          if grep -q "Updates found: [1-9]" scraper_output.txt; then
+            echo "has_updates=true" >> $GITHUB_OUTPUT
+            echo "✅ Updates detected"
+          else
+            echo "has_updates=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No updates detected"
+          fi
+
+      - name: Check for changes
+        id: changes
+        if: inputs.dry_run != true
+        run: |
+          if git diff --quiet docs/data/cb_forecasts.json 2>/dev/null; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No file changes"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "File changes detected:"
+            git diff --stat docs/data/cb_forecasts.json
+          fi
+
+      - name: Commit and push if changed
+        if: steps.changes.outputs.changed == 'true' && inputs.dry_run != true
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          git add data/cb_forecasts.json docs/data/cb_forecasts.json data/scraper_state.json
+          
+          # Create descriptive commit message
+          UPDATED=$(grep "Updated:" scraper_output.txt | head -1 || echo "Updated: auto")
+          git commit -m "Auto-update CB forecasts $(date +'%Y-%m-%d')
+          
+          $UPDATED
+          
+          Automated scrape of central bank forecast publications."
+          
+          git push
+
+      - name: Summary
+        run: |
+          echo "## Central Bank Forecast Scraper Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Run time:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "**Mode:** ${{ inputs.dry_run == true && 'Dry Run' || 'Live' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.changes.outputs.changed }}" = "true" ]; then
+            echo "✅ **Updates committed and pushed**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ **No updates needed**" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Scraper Output" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -30 scraper_output.txt >> $GITHUB_STEP_SUMMARY || echo "No output captured" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
