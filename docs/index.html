@@ -16,8 +16,8 @@
 
     <main class="container">
         <header class="page-header">
-            <h1>Inflation, Officially</h1>
-            <p class="page-subtitle">Official Data & Central Bank Expectations</p>
+            <h1>Official Data & Central Bank Expectations</h1>
+            <p class="page-subtitle">Headline CPI inflation across major economies</p>
         </header>
 
         <section class="section">
@@ -69,6 +69,19 @@
             'JP': 'jp.html'
         };
 
+        // Target display strings (for range targets)
+        const TARGET_DISPLAY = {
+            'US': '2.0%',
+            'CN': '~3.0%',
+            'JP': '2.0%',
+            'EA': '2.0%',
+            'UK': '2.0%',
+            'DE': '2.0%',
+            'AU': '2–3%',
+            'NZ': '1–3%',
+            'ZA': '3–6%'
+        };
+
         // Display order
         const DISPLAY_ORDER = ['US', 'CN', 'JP', 'EA', 'UK', 'DE', 'AU', 'NZ', 'ZA'];
 
@@ -98,6 +111,7 @@
                 const previous = country.previous ? country.previous.value : null;
                 const change = previous !== null ? (current - previous) : null;
                 const target = country.target;
+                const targetDisplay = TARGET_DISPLAY[code] || target.toFixed(1) + '%';
                 const vsTarget = current - target;
 
                 // Determine status colors
@@ -132,7 +146,7 @@
                         <td class="value-cell ${changeClass}">
                             ${change !== null ? changeIcon + ' ' + (change >= 0 ? '+' : '') + change.toFixed(1) + 'pp' : '—'}
                         </td>
-                        <td class="value-cell">${target.toFixed(1)}%</td>
+                        <td class="value-cell">${targetDisplay}</td>
                         <td class="value-cell">
                             <span class="status-badge ${statusClass}">${statusText}</span>
                         </td>

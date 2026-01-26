@@ -4,6 +4,8 @@
 
 A lightweight, source-first monitor of inflation trends and central bank expectations across major economies.
 
+**🔗 [View Dashboard](https://jing-ny.github.io/inflation-dashboard/)**
+
 ---
 
 ## Why This Exists
@@ -38,14 +40,14 @@ This dashboard tracks headline consumer price inflation (year-over-year) across 
 | Economy | Inflation Measure | Source |
 |-------|------------------|--------|
 | United States | CPI (YoY) | U.S. Bureau of Labor Statistics (BLS) |
+| China | CPI (YoY) | National Bureau of Statistics (NBS) |
+| Japan | CPI (YoY) | Statistics Bureau of Japan |
+| Euro Area | HICP (YoY) | Eurostat (via ECB) |
 | United Kingdom | CPI (YoY) | FRED (OECD / ONS) |
-| Euro Area (Germany) | CPI (YoY) | Eurostat |
+| Germany | CPI (YoY) | FRED (OECD / Destatis) |
 | Australia | CPI (YoY) | Australian Bureau of Statistics |
 | New Zealand | CPI (YoY) | Stats NZ |
-| South Africa | CPI (YoY) | Statistics South Africa |
-| Japan | CPI (YoY) | Statistics Bureau of Japan |
-| Canada | CPI (YoY) | Statistics Canada |
-| Switzerland | CPI (YoY) | Federal Statistical Office (FSO) |
+| South Africa | CPI (YoY) | FRED (OECD / Stats SA) |
 
 ---
 
@@ -58,6 +60,8 @@ Instead, each economy uses the most stable and authoritative official source ava
 This approach prioritizes **stability and reproducibility** over uniformity.
 
 Every figure displayed can be traced back to its original source.
+
+For full technical details including API endpoints, series IDs, and calculation methods, see [METHODOLOGY.md](METHODOLOGY.md).
 
 ---
 
