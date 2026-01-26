@@ -1,0 +1,25 @@
+{
+  "_comment": "Manual data supplements for countries where FRED data significantly lags official releases",
+  "_last_updated": "2026-01-26",
+  "_note": "These values are added to historical_cpi.json after FRED fetch to fill data gaps",
+  
+  "ZA": {
+    "_source": "Statistics South Africa (Stats SA)",
+    "_source_url": "https://www.statssa.gov.za/?cat=33",
+    "_release_schedule": "Monthly, around 3rd week of following month",
+    "_fred_lag_note": "FRED OECD series (ZAFCPIALLMINMEI) typically lags by 6-12 months",
+    "supplements": [
+      {"date": "2025-02", "value": 3.2},
+      {"date": "2025-03", "value": 2.7},
+      {"date": "2025-04", "value": 2.8},
+      {"date": "2025-05", "value": 2.8},
+      {"date": "2025-06", "value": 3.0},
+      {"date": "2025-07", "value": 3.2},
+      {"date": "2025-08", "value": 3.4},
+      {"date": "2025-09", "value": 3.4},
+      {"date": "2025-10", "value": 3.6},
+      {"date": "2025-11", "value": 3.5},
+      {"date": "2025-12", "value": 3.6}
+    ]
+  }
+}
