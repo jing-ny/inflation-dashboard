@@ -33,15 +33,17 @@ jobs:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: |
           python scripts/fetch_historical_cpi.py
+          python scripts/fetch_imf_forecasts.py
 
       - name: Copy data to docs folder
         run: |
           cp data/historical_cpi.json docs/data/
+          cp data/imf_forecasts.json docs/data/ 2>/dev/null || echo "IMF forecasts not generated"
 
       - name: Check for changes
         id: changes
         run: |
-          if git diff --quiet docs/data/historical_cpi.json; then
+          if git diff --quiet docs/data/; then
             echo "changed=false" >> $GITHUB_OUTPUT
             echo "No data changes detected"
           else
@@ -54,7 +56,7 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add docs/data/historical_cpi.json
+          git add docs/data/
           git commit -m "Update inflation data $(date +'%Y-%m-%d')"
           git push
 

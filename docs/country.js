@@ -300,8 +300,8 @@ async function initCountryPage(countryCode) {
         // Render historical chart
         renderHistoricalChart(countryCode, countryData);
 
-        // Render forecast table
-        renderForecastTable(countryCode);
+        // Render forecast table (async - loads IMF data)
+        await renderForecastTable(countryCode);
 
         // Render target information
         renderTargetInfo(countryCode);
@@ -459,42 +459,142 @@ function renderHistoricalChart(countryCode, data) {
     });
 }
 
-function renderForecastTable(countryCode) {
+async function renderForecastTable(countryCode) {
     const container = document.getElementById('forecastTable');
     if (!container) return;
 
-    const forecast = FORECASTS[countryCode];
-    if (!forecast) {
+    const cbForecast = FORECASTS[countryCode];
+    
+    // Try to load IMF forecasts
+    let imfData = null;
+    try {
+        const response = await fetch('data/imf_forecasts.json');
+        if (response.ok) {
+            imfData = await response.json();
+        }
+    } catch (e) {
+        console.log('IMF forecasts not available');
+    }
+    
+    const imfForecast = imfData?.countries?.[countryCode];
+    
+    if (!cbForecast && !imfForecast) {
         container.innerHTML = '<p>No forecast data available for this country.</p>';
         return;
     }
 
-    let html = `
-        <p style="margin-bottom: 1rem;">${forecast.type} from <a href="${forecast.sourceUrl}" target="_blank">${forecast.source}</a></p>
-        <table class="forecast-table">
-            <thead>
-                <tr>
-                    <th>Period</th>
-                    <th>Forecast</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-
-    for (const row of forecast.data) {
+    let html = '';
+    
+    // If we have both, show comparison table
+    if (cbForecast && imfForecast) {
+        // Get all years from both sources
+        const cbYears = cbForecast.data.map(d => d.period);
+        const imfYears = Object.keys(imfForecast.forecasts).sort();
+        
+        html = `
+            <p style="margin-bottom: 1rem;">Comparison of inflation projections from official sources.</p>
+            <table class="forecast-table">
+                <thead>
+                    <tr>
+                        <th>Source</th>
+                        <th>Type</th>
+                        ${imfYears.map(y => `<th>${y}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><a href="${cbForecast.sourceUrl}" target="_blank">${cbForecast.source}</a></td>
+                        <td>${cbForecast.type}</td>
+        `;
+        
+        // Add CB forecast values aligned to IMF years where possible
+        for (const year of imfYears) {
+            const cbMatch = cbForecast.data.find(d => d.period === year || d.period.includes(year));
+            html += `<td>${cbMatch ? cbMatch.value.toFixed(1) + '%' : '—'}</td>`;
+        }
+        
         html += `
-            <tr>
-                <td>${row.period}</td>
-                <td>${row.value.toFixed(1)}%</td>
-            </tr>
+                    </tr>
+                    <tr>
+                        <td><a href="${imfData.url}" target="_blank">IMF</a></td>
+                        <td>WEO ${imfData.version}</td>
+        `;
+        
+        for (const year of imfYears) {
+            const value = imfForecast.forecasts[year];
+            html += `<td>${value !== undefined ? value.toFixed(1) + '%' : '—'}</td>`;
+        }
+        
+        html += `
+                    </tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 0.75rem; font-size: 0.8125rem; color: #6b7280;">
+                <strong>Central Bank:</strong> ${cbForecast.note}<br>
+                <strong>IMF:</strong> World Economic Outlook (${imfData.version}), retrieved ${imfData.retrieved}
+            </p>
+        `;
+    } else if (cbForecast) {
+        // Only central bank forecast available
+        html = `
+            <p style="margin-bottom: 1rem;">${cbForecast.type} from <a href="${cbForecast.sourceUrl}" target="_blank">${cbForecast.source}</a></p>
+            <table class="forecast-table">
+                <thead>
+                    <tr>
+                        <th>Period</th>
+                        <th>Forecast</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        for (const row of cbForecast.data) {
+            html += `
+                <tr>
+                    <td>${row.period}</td>
+                    <td>${row.value.toFixed(1)}%</td>
+                </tr>
+            `;
+        }
+
+        html += `
+                </tbody>
+            </table>
+            <p style="margin-top: 0.75rem; font-size: 0.8125rem; color: #6b7280;">${cbForecast.note}</p>
+        `;
+    } else if (imfForecast) {
+        // Only IMF forecast available
+        const years = Object.keys(imfForecast.forecasts).sort();
+        
+        html = `
+            <p style="margin-bottom: 1rem;">IMF World Economic Outlook (${imfData.version}) from <a href="${imfData.url}" target="_blank">IMF DataMapper</a></p>
+            <table class="forecast-table">
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Forecast</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        for (const year of years) {
+            html += `
+                <tr>
+                    <td>${year}</td>
+                    <td>${imfForecast.forecasts[year].toFixed(1)}%</td>
+                </tr>
+            `;
+        }
+
+        html += `
+                </tbody>
+            </table>
+            <p style="margin-top: 0.75rem; font-size: 0.8125rem; color: #6b7280;">
+                ${imfData.indicator_label}. Retrieved ${imfData.retrieved}.
+            </p>
         `;
     }
-
-    html += `
-            </tbody>
-        </table>
-        <p style="margin-top: 0.75rem; font-size: 0.8125rem; color: #6b7280;">${forecast.note}</p>
-    `;
 
     container.innerHTML = html;
 }
