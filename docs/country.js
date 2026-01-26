@@ -9,7 +9,7 @@
 const FORECASTS = {
     US: {
         source: 'Federal Reserve',
-        sourceUrl: 'https://www.federalreserve.gov/monetarypolicy/fomcprojtabl20241218.htm',
+        sourceUrl: 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm',
         type: 'FOMC PCE Projections',
         data: [
             { period: '2025', value: 2.5 },
@@ -31,7 +31,7 @@ const FORECASTS = {
     },
     UK: {
         source: 'Bank of England',
-        sourceUrl: 'https://www.bankofengland.co.uk/monetary-policy-report/2024/november-2024',
+        sourceUrl: 'https://www.bankofengland.co.uk/monetary-policy-report',
         type: 'MPC Projections',
         data: [
             { period: 'Q4 2025', value: 2.7 },
@@ -97,7 +97,7 @@ const FORECASTS = {
     },
     ZA: {
         source: 'South African Reserve Bank',
-        sourceUrl: 'https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements/2024',
+        sourceUrl: 'https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements',
         type: 'MPC Projections',
         data: [
             { period: '2025', value: 4.0 },
@@ -115,16 +115,6 @@ const FORECASTS = {
             { period: '2027', value: 1.8 }
         ],
         note: 'China does not publish official multi-year inflation forecasts'
-    },
-    JP: {
-        source: 'Bank of Japan',
-        sourceUrl: 'https://www.boj.or.jp/en/mopo/outlook/',
-        type: 'Outlook Report',
-        data: [
-            { period: 'FY2025', value: 1.9 },
-            { period: 'FY2026', value: 1.9 }
-        ],
-        note: 'CPI ex fresh food, median of Policy Board forecasts'
     }
 };
 
@@ -194,12 +184,6 @@ const TARGET_INFO = {
         description: 'China sets an annual CPI target, typically around 3%, as part of its government work report. The target is more of a ceiling than a strict objective.',
         quote: 'We will keep the consumer price index increase at around 3 percent.',
         quoteSource: 'Government Work Report, March 2024'
-    },
-    JP: {
-        target: 2.0,
-        description: 'The Bank of Japan targets 2% CPI inflation, a goal it struggled to achieve for decades until recent global inflation pressures.',
-        quote: 'The Bank of Japan conducts monetary policy based on the principle that the policy shall be aimed at achieving price stability, thereby contributing to the sound development of the national economy.',
-        quoteSource: 'Bank of Japan Monetary Policy Framework'
     }
 };
 
@@ -207,9 +191,9 @@ const TARGET_INFO = {
 const DATA_SOURCES = {
     US: [
         { label: 'CPI Data', value: 'Bureau of Labor Statistics', url: 'https://www.bls.gov/cpi/' },
-        { label: 'Series ID', value: 'CUSR0000SA0 (All Urban Consumers, All Items)', url: 'https://data.bls.gov/timeseries/CUSR0000SA0' },
-        { label: 'Forecasts', value: 'FOMC Summary of Economic Projections', url: 'https://www.federalreserve.gov/monetarypolicy/fomcprojtable20241218.htm' },
-        { label: 'Target', value: 'FOMC Statement on Longer-Run Goals', url: 'https://www.federalreserve.gov/monetarypolicy/files/FOMC_LongerRunGoals.pdf' }
+        { label: 'Series ID', value: 'CPIAUCNS (CPI-U All Items)', url: 'https://fred.stlouisfed.org/series/CPIAUCNS' },
+        { label: 'Forecasts', value: 'FOMC Summary of Economic Projections', url: 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm' },
+        { label: 'Target', value: 'FOMC Statement on Longer-Run Goals', url: 'https://www.federalreserve.gov/monetarypolicy/review-of-monetary-policy-strategy-tools-and-communications-statement-on-longer-run-goals-monetary-policy-strategy.htm' }
     ],
     CA: [
         { label: 'CPI Data', value: 'Statistics Canada via FRED', url: 'https://fred.stlouisfed.org/series/CANCPIALLMINMEI' },
@@ -228,12 +212,6 @@ const DATA_SOURCES = {
         { label: 'Series ID', value: 'CHECPIALLMINMEI (OECD)', url: 'https://fred.stlouisfed.org/series/CHECPIALLMINMEI' },
         { label: 'Forecasts', value: 'SNB Conditional Inflation Forecast', url: 'https://www.snb.ch/en/the-snb/mandates-goals/monetary-policy/decisions' },
         { label: 'Target', value: 'SNB Monetary Policy Strategy', url: 'https://www.snb.ch/en/the-snb/mandates-goals/monetary-policy/strategy' }
-    ],
-    EA: [
-        { label: 'CPI Data', value: 'Office for National Statistics via FRED', url: 'https://fred.stlouisfed.org/series/GBRCPIALLMINMEI' },
-        { label: 'Series ID', value: 'GBRCPIALLMINMEI (OECD)', url: 'https://fred.stlouisfed.org/series/GBRCPIALLMINMEI' },
-        { label: 'Forecasts', value: 'Bank of England Monetary Policy Report', url: 'https://www.bankofengland.co.uk/monetary-policy-report' },
-        { label: 'Target', value: 'BoE Monetary Policy Framework', url: 'https://www.bankofengland.co.uk/monetary-policy' }
     ],
     EA: [
         { label: 'HICP Data', value: 'Eurostat via ECB Data Portal', url: 'https://data.ecb.europa.eu/data/datasets/ICP' },
@@ -270,12 +248,6 @@ const DATA_SOURCES = {
         { label: 'Series ID', value: 'CHNCPIALLMINMEI (OECD)', url: 'https://fred.stlouisfed.org/series/CHNCPIALLMINMEI' },
         { label: 'Forecasts', value: 'IMF World Economic Outlook', url: 'https://www.imf.org/en/Publications/WEO' },
         { label: 'Target', value: 'Government Work Report', url: 'http://english.www.gov.cn/' }
-    ],
-    JP: [
-        { label: 'CPI Data', value: 'Statistics Bureau of Japan via FRED', url: 'https://fred.stlouisfed.org/series/JPNCPIALLMINMEI' },
-        { label: 'Series ID', value: 'JPNCPIALLMINMEI (OECD)', url: 'https://fred.stlouisfed.org/series/JPNCPIALLMINMEI' },
-        { label: 'Forecasts', value: 'Bank of Japan Outlook Report', url: 'https://www.boj.or.jp/en/mopo/outlook/' },
-        { label: 'Target', value: 'BoJ Price Stability Target', url: 'https://www.boj.or.jp/en/mopo/outline/qqe.htm' }
     ]
 };
 
