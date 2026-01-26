@@ -1,187 +1,120 @@
-# Inflation, Officially
+# Inflation Monitor
 
-**Official Data & Central Bank Expectations**
+A simple dashboard tracking official inflation data and central bank forecasts across major economies.
 
-A lightweight, source-first monitor of inflation trends and central bank expectations across major economies.
-
-**🔗 [View Dashboard](https://jing-ny.github.io/inflation-dashboard/)**
+**🔗 [View Live Dashboard](https://jing-ny.github.io/inflation-dashboard/)**
 
 ---
 
-## Why This Exists
+## What This Shows
 
-Inflation data is everywhere, but it is often difficult to interpret in a consistent way.  
-Figures are reported using different definitions, released on different schedules, and frequently mixed with commentary or opinion.
+### Current Inflation Rates
+Year-over-year consumer price index (CPI) changes for 8 major economies:
+- 🇺🇸 United States
+- 🇪🇺 Euro Area
+- 🇬🇧 United Kingdom
+- 🇨🇦 Canada
+- 🇦🇺 Australia
+- 🇳🇿 New Zealand
+- 🇿🇦 South Africa
+- 🇨🇳 China
 
-This project exists to cut through that noise.
+### 10-Year Historical Trends
+Interactive charts showing how inflation evolved through:
+- Pre-pandemic stability (2015-2019)
+- COVID-19 disruption (2020)
+- Post-pandemic inflation surge (2021-2022)
+- Current normalization period (2023-present)
 
-It aggregates official inflation statistics and central bank projections in one place, with clear source attribution for every number, making cross-country comparison easier and more transparent.
-
----
-
-## What This Project Does (and Does Not Do)
-
-**What this project does:**
-- Collects headline CPI inflation data from official government statistics agencies
-- Displays central bank inflation expectations and projections where available
-- Shows IMF World Economic Outlook inflation forecasts for comparison
-- Provides direct source links for every data point
-
-**What this project does not do:**
-- Provide analysis or commentary
-- Make predictions
-- Offer investment advice or policy recommendations
-
----
-
-## Coverage
-
-This dashboard tracks headline consumer price inflation (year-over-year) across 10 major economies:
-
-| Economy | Inflation Measure | Primary Source | Frequency |
-|---------|------------------|----------------|-----------|
-| 🇺🇸 United States | CPI-U (All Urban Consumers) | Bureau of Labor Statistics via OECD/FRED | Monthly |
-| 🇪🇺 Euro Area | HICP (Harmonised Index) | Eurostat via ECB | Monthly |
-| 🇦🇺 Australia | CPI (All Groups) | Australian Bureau of Statistics | Quarterly |
-| 🇨🇦 Canada | CPI (All Items) | Statistics Canada via OECD/FRED | Monthly |
-| 🇨🇭 Switzerland | CPI (National Index) | FSO via OECD/FRED | Monthly |
-| 🇨🇳 China | CPI (All Items) | National Bureau of Statistics via OECD/FRED | Monthly |
-| 🇩🇪 Germany | CPI (All Items) | Destatis via OECD/FRED | Monthly |
-| 🇳🇿 New Zealand | CPI (All Groups) | Stats NZ | Quarterly |
-| 🇬🇧 United Kingdom | CPI (All Items) | ONS via OECD/FRED | Monthly |
-| 🇿🇦 South Africa | CPI (All Items) | Stats SA via OECD/FRED | Monthly |
+### Central Bank Forecasts
+Official inflation projections from major central banks including the Federal Reserve, ECB, Bank of England, and others.
 
 ---
 
-## Known Issues & High Priority Items
+## Data Sources & Freshness
 
-### 🔴 P0 — Critical (Data Accuracy)
+All data comes from official government statistics and central bank publications. However, **data freshness varies significantly by source**:
 
-| Issue | Description | Status |
-|-------|-------------|--------|
-| **US data lag** | FRED OECD series shows April 2025 data (significant lag vs BLS direct) | To fix: Switch back to BLS API or find fresher source |
-| **AU/NZ data lag** | Quarterly data shows Jan 2025; may be inherent to quarterly release schedule | To verify: Check if this is expected quarterly lag |
-| **Japan excluded** | FRED COICOP 1999 series discontinued June 2021; COICOP 2018 not available via FRED | To fix: Direct integration with Japan Statistics Bureau e-Stat API |
-| **Broken source links** | Some central bank PDF links return 404 (PDFs moved/renamed) | To fix: Link to directory pages instead of specific PDFs |
-| **Central bank forecasts stale** | Currently hardcoded in `country.js`, updated manually | To fix: Schedule monthly manual updates or automate |
+### Current Status (as of Jan 2026)
 
-### 🟡 P1 — Important (Infrastructure)
+| Country | Latest Data | Lag | Source | API |
+|---------|-------------|-----|--------|-----|
+| 🇺🇸 US | Dec 2025 | ✅ Current | Bureau of Labor Statistics | FRED direct |
+| 🇪🇺 Euro Area | Dec 2025 | ✅ Current | Eurostat | ECB SDMX |
+| 🇬🇧 UK | Mar 2025 | ⚠️ ~9 months | ONS via OECD | FRED OECD |
+| 🇨🇦 Canada | Mar 2025 | ⚠️ ~9 months | StatCan via OECD | FRED OECD |
+| 🇨🇳 China | Apr 2025 | ⚠️ ~8 months | NBS via OECD | FRED OECD |
+| 🇦🇺 Australia | Q1 2025 | ⚠️ ~3 quarters | ABS via OECD | FRED OECD |
+| 🇳🇿 New Zealand | Q1 2025 | ⚠️ ~3 quarters | Stats NZ via OECD | FRED OECD |
+| 🇿🇦 South Africa | Jan 2025 | ⚠️ ~12 months | Stats SA via OECD | FRED OECD |
 
-| Issue | Description | Status |
-|-------|-------------|--------|
-| **No forecast history** | No historical tracking of forecast changes over time | To fix: Implement Supabase backend |
-| **No subscription system** | Users cannot subscribe to alerts | To fix: Build email subscription with Supabase + Resend |
-| **No data freshness check** | No warning when data is older than expected | To fix: Add staleness detection and display |
-| **No error monitoring** | GitHub Actions failures not reported | To fix: Add Slack/email notification on workflow failure |
-| **Manual forecast updates** | Central bank forecasts require manual code changes | To fix: Move to database, build admin interface or scraper |
+### Why the Lag?
 
-### 🟢 P2 — Enhancements
-
-| Feature | Description |
-|---------|-------------|
-| Singapore | Add MAS / Department of Statistics data |
-| India, Brazil, Mexico | Expand coverage to major emerging markets |
-| Mobile optimization | Improve responsive design |
-| Historical chart improvements | Add target band visualization, event markers |
-| RSS feed | Alternative to email for updates |
+FRED's OECD series are convenient but have significant publication delays (OECD aggregates data from national sources with 1-9 month lag). Direct national APIs provide current data but require more complex integration.
 
 ---
 
-## ⚠️ Important Notice
+## Improvement Priorities
 
-**Source links**: Some links to central bank publications may become outdated as institutions update their websites. Links point to general publication pages where possible, but specific PDF URLs may change.
+### P0: Data Freshness (Critical)
+Switching to direct national APIs would provide current data:
 
-**Users should always verify data against original sources before using for any official, research, or investment purposes.**
+| Country | Target API | Status | Notes |
+|---------|------------|--------|-------|
+| 🇬🇧 UK | [ONS API](https://developer.ons.gov.uk/) | 🔄 To do | Series D7G7 = CPI Annual Rate |
+| 🇨🇦 Canada | [StatCan API](https://www.statcan.gc.ca/en/developers/wds) | 🔄 To do | Table 18-10-004-01 |
+| 🇦🇺 Australia | [ABS API](https://www.abs.gov.au/about/data-services/application-programming-interfaces-apis) | 🔄 To do | New CPI_M dataflow (Nov 2025) |
+| 🇿🇦 South Africa | [Stats SA](http://www.statssa.gov.za/) | 🔄 To do | No public API, may need scraping |
+| 🇨🇳 China | [NBS](https://www.stats.gov.cn/) | 🔄 To do | No public API, may need scraping |
+| 🇯🇵 Japan | [e-Stat API](https://www.e-stat.go.jp/en/api/) | 🔄 To do | Complex auth, would re-add Japan |
 
----
+### P1: Central Bank Forecasts
+- Forecasts currently require manual updates
+- Could automate with PDF parsing or official APIs where available
+- Priority: Fed, ECB, BoE, RBA
 
-## Future Additions
-
-The following economies are planned for future inclusion:
-
-| Economy | Status | Notes |
-|---------|--------|-------|
-| 🇯🇵 Japan | Data source issue | FRED's OECD COICOP 1999 series discontinued June 2021; awaiting COICOP 2018 series availability or alternative API integration |
-| 🇸🇬 Singapore | Planned | MAS (Monetary Authority of Singapore) / Department of Statistics |
-| 🇮🇳 India | Planned | Ministry of Statistics and Programme Implementation |
-| 🇧🇷 Brazil | Planned | IBGE (Brazilian Institute of Geography and Statistics) |
-| 🇲🇽 Mexico | Planned | INEGI / Banco de México |
-
----
-
-## Forecasts
-
-The dashboard displays inflation forecasts from two types of sources:
-
-**Central Bank Projections**
-- Federal Reserve (FOMC SEP) — PCE inflation projections
-- European Central Bank — Staff macroeconomic projections
-- Bank of England — Monetary Policy Report
-- Reserve Bank of Australia — Statement on Monetary Policy
-- Reserve Bank of New Zealand — Monetary Policy Statement
-- Bank of Canada — Monetary Policy Report
-- Swiss National Bank — Conditional inflation forecast
-- South African Reserve Bank — Monetary Policy Review
-
-**IMF World Economic Outlook**
-- Published twice yearly (April and October)
-- Provides comparable cross-country forecasts
-- Indicator: PCPIPCH (Inflation rate, average consumer prices)
-
-Where both sources are available, the dashboard displays them side-by-side for comparison.
+### P2: Infrastructure
+- Supabase backend for forecast history tracking
+- Email subscription for material changes (≥0.3pp moves)
+- Data freshness warnings in UI
+- Error monitoring and alerts
 
 ---
 
-## Data Sources and Methodology
+## Technical Details
 
-All data comes directly from official government statistics agencies or central bank publications.
+For detailed methodology including calculation methods, data transformations, and source citations, see [METHODOLOGY.md](METHODOLOGY.md).
 
-Data sources are not forced into a single uniform pipeline.  
-Instead, each economy uses the most stable and authoritative official source available.  
-This approach prioritizes **stability and reproducibility** over uniformity.
+### Running the Data Fetch
 
-Every figure displayed can be traced back to its original source.
+```bash
+# Requires Python 3.8+ and requests library
+pip install requests
 
-For full technical details including API endpoints, series IDs, and calculation methods, see [METHODOLOGY.md](METHODOLOGY.md).
+# Set FRED API key (get free key at https://fred.stlouisfed.org/docs/api/api_key.html)
+export FRED_API_KEY=your_key_here
 
----
+# Fetch latest data
+python3 scripts/fetch_historical_cpi.py
 
-## Update Frequency
-
-- **Historical CPI data**: Updated weekly (Mondays 7:00 AM EST) via GitHub Actions
-- **Weekly alerts**: Sent Mondays 8:00 AM EST if material changes detected
-- **IMF forecasts**: Updated when new WEO releases are published (April and October)
-- **Central bank forecasts**: Updated manually following major monetary policy publications
-
-Values may be revised by the original statistical agencies after publication.
+# Copy to docs for GitHub Pages
+cp data/historical_cpi.json docs/data/
+```
 
 ---
 
-## Weekly Alert
+## Updates
 
-An optional email alert that notifies subscribers of material inflation changes.
-
-**What triggers an alert:**
-- YoY inflation change ≥ 0.3 percentage points, OR
-- Direction reversal (rising → falling or falling → rising)
-
-**What the alert contains:**
-- Which economies had material changes
-- Current YoY rate and change from previous week
-- Link to the full dashboard
-
-**What it does NOT contain:**
-- Analysis or interpretation
-- Predictions or forecasts
-- Investment recommendations
-
-*No analysis. No predictions. Just the data.*
+Data is updated weekly. The dashboard reflects the latest available official releases, subject to the source lag noted above.
 
 ---
 
 ## Disclaimer
 
-This project is provided for informational purposes only.
+This is a personal research tool for informational purposes only. It is not financial advice. Always verify data with primary sources before making any decisions.
 
-It does not offer analysis, predictions, investment advice, or policy recommendations.  
-Users should refer to the original sources for official data and methodological details.
+---
+
+## Contact
+
+Questions or suggestions? [Open an issue](https://github.com/jing-ny/inflation-dashboard/issues) on GitHub.
