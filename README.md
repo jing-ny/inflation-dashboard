@@ -24,6 +24,7 @@ It aggregates official inflation statistics and central bank projections in one 
 **What this project does:**
 - Collects headline CPI inflation data from official government statistics agencies
 - Displays central bank inflation expectations and projections where available
+- Shows IMF World Economic Outlook inflation forecasts for comparison
 - Provides direct source links for every data point
 
 **What this project does not do:**
@@ -35,19 +36,45 @@ It aggregates official inflation statistics and central bank projections in one 
 
 ## Coverage
 
-This dashboard tracks headline consumer price inflation (year-over-year) across a set of major economies:
+This dashboard tracks headline consumer price inflation (year-over-year) across 11 major economies:
 
-| Economy | Inflation Measure | Source |
-|-------|------------------|--------|
-| United States | CPI (YoY) | U.S. Bureau of Labor Statistics (BLS) |
-| China | CPI (YoY) | National Bureau of Statistics (NBS) |
-| Japan | CPI (YoY) | Statistics Bureau of Japan |
-| Euro Area | HICP (YoY) | Eurostat (via ECB) |
-| United Kingdom | CPI (YoY) | FRED (OECD / ONS) |
-| Germany | CPI (YoY) | FRED (OECD / Destatis) |
-| Australia | CPI (YoY) | Australian Bureau of Statistics |
-| New Zealand | CPI (YoY) | Stats NZ |
-| South Africa | CPI (YoY) | FRED (OECD / Stats SA) |
+| Economy | Inflation Measure | Primary Source | Frequency |
+|---------|------------------|----------------|-----------|
+| 🇺🇸 United States | CPI-U (All Urban Consumers) | Bureau of Labor Statistics | Monthly |
+| 🇪🇺 Euro Area | HICP (Harmonised Index) | Eurostat via ECB | Monthly |
+| 🇦🇺 Australia | CPI (All Groups) | Australian Bureau of Statistics | Quarterly |
+| 🇨🇦 Canada | CPI (All Items) | Statistics Canada via OECD/FRED | Monthly |
+| 🇨🇭 Switzerland | CPI (National Index) | FSO via OECD/FRED | Monthly |
+| 🇨🇳 China | CPI (All Items) | National Bureau of Statistics via OECD/FRED | Monthly |
+| 🇩🇪 Germany | CPI (All Items) | Destatis via OECD/FRED | Monthly |
+| 🇯🇵 Japan | CPI (All Items) | Statistics Bureau of Japan via OECD/FRED | Monthly |
+| 🇳🇿 New Zealand | CPI (All Groups) | Stats NZ | Quarterly |
+| 🇬🇧 United Kingdom | CPI (All Items) | ONS via OECD/FRED | Monthly |
+| 🇿🇦 South Africa | CPI (All Items) | Stats SA via OECD/FRED | Monthly |
+
+---
+
+## Forecasts
+
+The dashboard displays inflation forecasts from two types of sources:
+
+**Central Bank Projections**
+- Federal Reserve (FOMC SEP) — PCE inflation projections
+- European Central Bank — Staff macroeconomic projections
+- Bank of England — Monetary Policy Report
+- Bank of Japan — Outlook for Economic Activity and Prices
+- Reserve Bank of Australia — Statement on Monetary Policy
+- Reserve Bank of New Zealand — Monetary Policy Statement
+- Bank of Canada — Monetary Policy Report
+- Swiss National Bank — Conditional inflation forecast
+- South African Reserve Bank — Monetary Policy Review
+
+**IMF World Economic Outlook**
+- Published twice yearly (April and October)
+- Provides comparable cross-country forecasts
+- Indicator: PCPIPCH (Inflation rate, average consumer prices)
+
+Where both sources are available, the dashboard displays them side-by-side for comparison.
 
 ---
 
@@ -67,7 +94,9 @@ For full technical details including API endpoints, series IDs, and calculation 
 
 ## Update Frequency
 
-Data is updated weekly, reflecting the most recent official releases available at the time of update.
+- **Historical CPI data**: Updated weekly (Mondays 7:00 AM EST) via GitHub Actions
+- **IMF forecasts**: Updated when new WEO releases are published (April and October)
+- **Central bank forecasts**: Updated manually following major monetary policy publications
 
 Values may be revised by the original statistical agencies after publication.
 
