@@ -5,6 +5,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inflation, Officially</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Target change badge */
+        .target-new-badge {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1d4ed8;
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 0.1rem 0.35rem;
+            border-radius: 3px;
+            margin-left: 0.25rem;
+            vertical-align: middle;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+        
+        /* Newsletter signup in footer */
+        .newsletter-signup {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 1.5rem;
+            max-width: 480px;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: center;
+        }
+        
+        .newsletter-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #1e293b;
+            margin: 0 0 0.5rem 0;
+        }
+        
+        .newsletter-desc {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin: 0 0 1rem 0;
+        }
+        
+        .footer-links {
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+        }
+    </style>
 </head>
 <body>
     <nav class="nav">
@@ -84,8 +131,28 @@
     </main>
 
     <footer class="footer">
-        <p>All data from official government statistics and central bank publications</p>
-        <p><a href="https://github.com/jing-ny/inflation-dashboard" target="_blank">GitHub</a> · For informational purposes only · Not investment advice</p>
+        <!-- Newsletter Signup -->
+        <div class="newsletter-signup">
+            <p class="newsletter-title">📬 Get Quarterly Updates</p>
+            <p class="newsletter-desc">Inflation summaries and policy change alerts delivered to your inbox. No spam, ~6 emails/year.</p>
+            <iframe src="https://inflationofficially.substack.com/embed" 
+                    width="100%" 
+                    height="80" 
+                    style="border:none; background:transparent;" 
+                    frameborder="0" 
+                    scrolling="no">
+            </iframe>
+        </div>
+        
+        <!-- Footer Links -->
+        <div class="footer-links">
+            <p>All data from official government statistics and central bank publications</p>
+            <p>
+                <a href="https://github.com/jing-ny/inflation-dashboard" target="_blank">GitHub</a> · 
+                <a href="https://inflationofficially.substack.com" target="_blank">Newsletter</a> · 
+                For informational purposes only · Not investment advice
+            </p>
+        </div>
     </footer>
 
     <script>
@@ -108,7 +175,7 @@
         AU: { value: 2.5, display: '2-3%', range: [2, 3] },
         CA: { value: 2.0, display: '1-3%', range: [1, 3] },
         NZ: { value: 2.0, display: '1-3%', range: [1, 3] },
-        ZA: { value: 4.5, display: '3-6%', range: [3, 6] },
+        ZA: { value: 3.0, display: '2-4%', range: [2, 4], recentChange: true },
         JP: { value: 2.0, display: '2.0%', range: null },
         CN: { value: 3.0, display: '~3%', range: null }
     };
@@ -176,13 +243,18 @@
                     statusText = 'Deflationary';
                 }
 
+                // Target display with optional "NEW" badge for recent changes
+                const targetDisplay = target.recentChange 
+                    ? `${target.display} <span class="target-new-badge" title="Target changed Nov 2025">NEW</span>`
+                    : target.display;
+
                 html += `
                     <tr onclick="window.location='${page}'" class="clickable-row">
                         <td class="country-cell">${data.flag || ''} ${data.name || code}</td>
                         <td class="value-cell"><strong>${current.toFixed(1)}%</strong></td>
                         <td>${previous !== null ? previous.toFixed(1) + '%' : '—'}</td>
                         <td class="${changeClass}">${changeStr}</td>
-                        <td>${target.display}</td>
+                        <td>${targetDisplay}</td>
                         <td><span class="${statusClass}">${statusText}</span></td>
                         <td>${formatDate(currentDate)}</td>
                     </tr>
