@@ -4,7 +4,7 @@
 
 A lightweight, source-first monitor of inflation trends and central bank expectations across major economies.
 
-**[→ View Live Dashboard](https://jing-ny.github.io/inflation-dashboard/)**
+🔗 **Live Dashboard:** https://jing-ny.github.io/inflation-dashboard/
 
 ---
 
@@ -42,14 +42,14 @@ This dashboard tracks headline consumer price inflation (year-over-year) across 
 
 | Economy | Inflation Measure | Source | Central Bank |
 |---------|-------------------|--------|--------------|
-| United States | CPI (YoY) | Bureau of Labor Statistics | Federal Reserve |
-| Euro Area | HICP (YoY) | Eurostat | ECB |
-| United Kingdom | CPI (YoY) | ONS | Bank of England |
-| Australia | CPI (YoY) | ABS | RBA |
-| Canada | CPI (YoY) | Statistics Canada | Bank of Canada |
-| New Zealand | CPI (YoY) | Stats NZ | RBNZ |
-| South Africa | CPI (YoY) | Stats SA | SARB |
-| China | CPI (YoY) | NBS | PBOC |
+| 🇺🇸 United States | CPI (YoY) | Bureau of Labor Statistics | Federal Reserve |
+| 🇪🇺 Euro Area | HICP (YoY) | Eurostat | ECB |
+| 🇬🇧 United Kingdom | CPI (YoY) | ONS | Bank of England |
+| 🇨🇦 Canada | CPI (YoY) | Statistics Canada | Bank of Canada |
+| 🇦🇺 Australia | CPI (YoY) | ABS | RBA |
+| 🇳🇿 New Zealand | CPI (YoY) | Stats NZ | RBNZ |
+| 🇿🇦 South Africa | CPI (YoY) | Stats SA | SARB |
+| 🇨🇳 China | CPI (YoY) | NBS | PBOC |
 
 ---
 
@@ -77,6 +77,62 @@ Values may be revised by the original statistical agencies after publication.
 
 ---
 
+## Tech Stack
+
+- **Frontend:** Static HTML/CSS/JavaScript (vanilla, no framework)
+- **Hosting:** GitHub Pages
+- **Data Fetching:** Python scripts using FRED API, IMF API
+- **Automation:** GitHub Actions (weekly updates)
+- **Data Storage:** JSON files
+
+---
+
+## Local Development
+
+```bash
+# Clone the repository
+git clone https://github.com/jing-ny/inflation-dashboard.git
+cd inflation-dashboard
+
+# Set up environment
+cp .env.example .env.local
+# Add your FRED API key to .env.local
+
+# Fetch latest data
+python scripts/fetch_historical_cpi.py
+python scripts/fetch_imf_forecasts.py
+python scripts/fetch_cb_forecasts.py
+
+# Copy data to docs
+cp data/*.json docs/data/
+
+# Serve locally
+cd docs && python -m http.server 8000
+# Open http://localhost:8000
+```
+
+Get a free FRED API key at: https://fred.stlouisfed.org/docs/api/api_key.html
+
+---
+
+## Project Structure
+
+```
+inflation-dashboard/
+├── docs/                    # GitHub Pages site
+│   ├── index.html           # Overview dashboard
+│   ├── us.html, uk.html...  # Country pages
+│   ├── styles.css           # Styles
+│   ├── country.js           # Shared JavaScript
+│   └── data/                # JSON data files
+├── scripts/                 # Python data fetchers
+├── data/                    # Raw data output
+├── METHODOLOGY.md           # Technical documentation
+└── PROJECT_PLAN.md          # Architecture reference
+```
+
+---
+
 ## Disclaimer
 
 This project is provided for informational purposes only.
@@ -89,3 +145,9 @@ Users should refer to the original sources for official data and methodological 
 ## License
 
 MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+## Contact
+
+Questions or suggestions? [Open an issue](https://github.com/jing-ny/inflation-dashboard/issues) on GitHub.

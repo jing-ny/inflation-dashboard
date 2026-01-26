@@ -1,368 +1,266 @@
 # Methodology
 
-Technical documentation for the Inflation Dashboard data pipeline.
+Technical documentation for the Inflation Monitor dashboard.
+
+**Last Updated:** January 26, 2026
 
 ---
 
 ## Overview
 
-This dashboard aggregates official inflation statistics from government agencies and central banks across 10 economies. Data is fetched via APIs, processed into a consistent format, and displayed with full source attribution.
+This project fetches official inflation statistics and central bank forecasts from public APIs and official sources, stores them in JSON files, and displays them on a static dashboard hosted via GitHub Pages.
 
 ---
 
-## Data Series
+## Data Collection
 
-### Historical CPI Data
+### Actual Inflation (CPI)
 
-| Economy | Series ID | Source | API | Frequency | Notes |
-|---------|-----------|--------|-----|-----------|-------|
-| 🇺🇸 United States | `USACPIALLMINMEI` | BLS via OECD | FRED API | Monthly | CPI, All Urban Consumers |
-| 🇪🇺 Euro Area | `ICP.M.U2.N.000000.4.ANR` | European Central Bank | ECB SDMX | Monthly | HICP, Annual rate of change |
-| 🇦🇺 Australia | `AUSCPIALLQINMEI` | ABS via OECD | FRED API | Quarterly | CPI, All Groups |
-| 🇨🇦 Canada | `CANCPIALLMINMEI` | Statistics Canada via OECD | FRED API | Monthly | CPI, All Items |
-| 🇨🇭 Switzerland | `CHECPIALLMINMEI` | FSO via OECD | FRED API | Monthly | CPI, National Index |
-| 🇨🇳 China | `CHNCPIALLMINMEI` | NBS via OECD | FRED API | Monthly | CPI, All Items |
-| 🇩🇪 Germany | `DEUCPIALLMINMEI` | Destatis via OECD | FRED API | Monthly | CPI, All Items |
-| 🇳🇿 New Zealand | `NZLCPIALLQINMEI` | Stats NZ via OECD | FRED API | Quarterly | CPI, All Groups |
-| 🇬🇧 United Kingdom | `GBRCPIALLMINMEI` | ONS via OECD | FRED API | Monthly | CPI, All Items |
-| 🇿🇦 South Africa | `ZAFCPIALLMINMEI` | Stats SA via OECD | FRED API | Monthly | CPI, All Items |
+| Country | Series ID | Frequency | Original Source | API Used |
+|---------|-----------|-----------|-----------------|----------|
+| 🇺🇸 United States | CPIAUCSL | Monthly | Bureau of Labor Statistics | FRED API |
+| 🇪🇺 Euro Area | CP0000EZ19M086NEST | Monthly | Eurostat | FRED API |
+| 🇬🇧 United Kingdom | GBRCPIALLMINMEI | Monthly | ONS via OECD | FRED API |
+| 🇨🇦 Canada | CANCPIALLMINMEI | Monthly | Statistics Canada via OECD | FRED API |
+| 🇦🇺 Australia | AUSCPIALLQINMEI | Quarterly* | ABS via OECD | FRED API |
+| 🇳🇿 New Zealand | NZLCPIALLQINMEI | Quarterly | Stats NZ via OECD | FRED API |
+| 🇿🇦 South Africa | ZAFCPIALLMINMEI | Monthly | Stats SA via OECD | FRED API |
+| 🇨🇳 China | CHNCPIALLMINMEI | Monthly | NBS via OECD | FRED API |
 
-**Note on Japan**: Japan is temporarily excluded. The original FRED series `JPNCPIALLMINMEI` (COICOP 1999 classification) was discontinued in June 2021, and the replacement COICOP 2018 series is not yet available via FRED. Will be re-added when a reliable data source is identified.
+*Australia transitioned to monthly CPI in October 2025. Historical data is quarterly.
 
-### IMF World Economic Outlook Forecasts
+**Notes:**
+- All series measure **headline CPI (All Items)** year-over-year percentage change
+- FRED OECD series use base year 2015=100
+- US BLS series uses base year 1982-84=100
 
-| Field | Value |
-|-------|-------|
-| API Endpoint | `https://www.imf.org/external/datamapper/api/v1/PCPIPCH` |
-| Indicator | `PCPIPCH` — Inflation rate, average consumer prices (% change) |
-| Release Schedule | April and October |
-| Forecast Horizon | Current year + 5 years |
+### FRED Data Lag Issue
 
-**Country Codes (ISO 3166-1 alpha-3)**:
-- USA, CAN, GBR, CHE, DEU, EMU (Euro Area), AUS, NZL, ZAF, CHN
+FRED's OECD series for international countries often lag official releases by 1-12 months:
 
----
+| Country | Typical Lag | Workaround |
+|---------|-------------|------------|
+| South Africa | 6-12 months | Manual supplement from Stats SA |
+| UK, Canada | 1-2 months | Manual supplement from ONS/StatCan |
+| Australia | 1-2 quarters | ABS now publishes monthly |
+| New Zealand | 1-2 quarters | Quarterly release schedule |
 
-## API Endpoints
-
-### FRED API
-```
-Base URL: https://api.stlouisfed.org/fred/series/observations
-Parameters:
-  - series_id: {SERIES_ID}
-  - api_key: {FRED_API_KEY}
-  - file_type: json
-  - observation_start: {START_DATE}
-```
-
-### BLS API v2
-```
-Base URL: https://api.bls.gov/publicAPI/v2/timeseries/data/
-Body (POST):
-  - seriesid: ["CUSR0000SA0"]
-  - startyear: {START_YEAR}
-  - endyear: {END_YEAR}
-  - registrationkey: {BLS_API_KEY} (optional)
-```
-
-### ECB SDMX
-```
-Base URL: https://data-api.ecb.europa.eu/service/data
-Path: /ICP/M.U2.N.000000.4.ANR
-Parameters:
-  - format: csvdata
-  - startPeriod: {YYYY-MM}
-```
-
-### IMF DataMapper
-```
-Base URL: https://www.imf.org/external/datamapper/api/v1
-Path: /PCPIPCH/{COUNTRY_CODES}
-Parameters:
-  - periods: {YEAR1},{YEAR2},...
-```
+When FRED data is stale, we supplement with official data from:
+- **Stats SA:** https://www.statssa.gov.za/?cat=33
+- **ONS:** https://www.ons.gov.uk/economy/inflationandpriceindices
+- **Statistics Canada:** https://www150.statcan.gc.ca/n1/daily-quotidien/
+- **ABS:** https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/
 
 ---
 
-## Calculations
+## Central Bank Forecasts
 
-### Year-over-Year Inflation Rate
+| Institution | Data Source | Metric | Update Frequency |
+|-------------|-------------|--------|------------------|
+| US Federal Reserve | FRED API (PCECTPIMD) | PCE Inflation | 4x/year (FOMC SEP) |
+| Cleveland Fed | FRED API (EXPINF1YR) | 1-Year CPI Expectations | Monthly |
+| European Central Bank | ECB Website | HICP Inflation | 4x/year (Staff Projections) |
+| Bank of England | BoE Website | CPI Inflation | 4x/year (MPR) |
+| Reserve Bank of Australia | RBA Website | CPI Inflation | 4x/year (SoMP) |
+| Bank of Canada | BoC Website | CPI Inflation | 4x/year (MPR) |
+| Reserve Bank of New Zealand | RBNZ Website | CPI Inflation | 7x/year (MPS) |
+| South African Reserve Bank | SARB Website | CPI Inflation | 6x/year (MPC) |
+| China (PBOC) | IMF WEO | CPI Inflation | 2x/year |
 
-For series that provide index values (not already in YoY format):
+**Note:** China's PBOC does not publish multi-year inflation forecasts. We use IMF projections instead.
 
-```
-YoY % = ((CPI_current / CPI_year_ago) - 1) × 100
-```
+### Forecast Data Sources
 
-Where:
-- `CPI_current` = Index value for current period
-- `CPI_year_ago` = Index value for same period one year prior
+**Automated (via FRED API):**
+- US FOMC median PCE projections
+- Cleveland Fed inflation expectations model
 
-For monthly data: Compare to same month previous year  
-For quarterly data: Compare to same quarter previous year
-
-### Status vs Target
-
-The dashboard displays status relative to central bank target:
-
-```
-Status (pp) = Current Inflation - Target Midpoint
-```
-
-Color coding:
-- 🟢 **On target**: Within ±0.5pp of target
-- 🟡 **Above target**: 0.5–2.0pp above target
-- 🔴 **Well above target**: >2.0pp above target
-- 🔵 **Below target**: >0.5pp below target
-
----
-
-## Central Bank Targets
-
-| Economy | Target | Type | Source |
-|---------|--------|------|--------|
-| 🇺🇸 United States | 2.0% | Point target (PCE) | Federal Reserve |
-| 🇪🇺 Euro Area | 2.0% | Point target (HICP) | European Central Bank |
-| 🇦🇺 Australia | 2–3% | Range | Reserve Bank of Australia |
-| 🇨🇦 Canada | 1–3% | Range (midpoint 2%) | Bank of Canada |
-| 🇨🇭 Switzerland | 0–2% | Price stability definition | Swiss National Bank |
-| 🇨🇳 China | ~3% | Annual government target | State Council |
-| 🇩🇪 Germany | 2.0% | ECB target (Euro member) | European Central Bank |
-| 🇯🇵 Japan | 2.0% | Point target | Bank of Japan |
-| 🇳🇿 New Zealand | 1–3% | Range (midpoint 2%) | Reserve Bank of New Zealand |
-| 🇬🇧 United Kingdom | 2.0% | Point target | Bank of England |
-| 🇿🇦 South Africa | 3–6% | Range (midpoint 4.5%) | South African Reserve Bank |
+**Manual (from official publications):**
+- ECB Staff Macroeconomic Projections
+- BoE Monetary Policy Report
+- RBA Statement on Monetary Policy
+- BoC Monetary Policy Report
+- RBNZ Monetary Policy Statement
+- SARB MPC Statement
 
 ---
 
-## Data Pipeline
+## IMF Forecasts
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Data Collection                          │
-├─────────────────────────────────────────────────────────────┤
-│  fetch_historical_cpi.py                                    │
-│  ├── BLS API (US)                                          │
-│  ├── ECB SDMX (Euro Area)                                  │
-│  └── FRED API (UK, DE, AU, NZ, ZA, CN, JP, CA, CH)        │
-│                                                             │
-│  fetch_imf_forecasts.py                                     │
-│  └── IMF DataMapper API                                    │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    Processing                               │
-├─────────────────────────────────────────────────────────────┤
-│  • Calculate YoY % change (for index series)               │
-│  • Format dates (YYYY-MM)                                  │
-│  • Round values to 1 decimal place                         │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    Output                                   │
-├─────────────────────────────────────────────────────────────┤
-│  data/historical_cpi.json                                  │
-│  data/imf_forecasts.json                                   │
-│           │                                                 │
-│           ▼                                                 │
-│  docs/data/ (copied for GitHub Pages)                      │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    Frontend                                 │
-├─────────────────────────────────────────────────────────────┤
-│  • Static HTML pages (index.html, country pages)           │
-│  • Chart.js for historical visualizations                  │
-│  • Vanilla JavaScript (country.js)                         │
-│  • GitHub Pages hosting                                    │
-└─────────────────────────────────────────────────────────────┘
-```
+| Source | Dataset | Update Frequency |
+|--------|---------|------------------|
+| IMF World Economic Outlook | WEO Database API | 2x/year (April, October) |
+
+The IMF publishes comprehensive inflation forecasts for all countries in our coverage as part of the World Economic Outlook. We fetch:
+- Current year projection
+- Next year projection
+- 2-year ahead projection (where available)
 
 ---
 
-## Automation
+## Data Processing
+
+### Year-over-Year Calculation
+
+For CPI index values, YoY inflation is calculated as:
+
+```
+YoY% = ((Current Month Index / Same Month Last Year Index) - 1) × 100
+```
+
+Most FRED series already provide YoY percentage change directly.
+
+### Data Validation
+
+Before displaying data:
+1. Check that values are within reasonable bounds (-5% to +20% for most countries)
+2. Verify dates are sequential with no gaps
+3. Cross-reference latest values with official sources
+
+---
+
+## Update Schedule
+
+| Data Type | Automated | Frequency |
+|-----------|-----------|-----------|
+| Historical CPI | Yes (GitHub Actions) | Weekly |
+| IMF Forecasts | Yes (GitHub Actions) | Weekly (changes 2x/year) |
+| CB Forecasts (Fed) | Yes (GitHub Actions) | Weekly |
+| CB Forecasts (Others) | No | After policy meetings |
+| CPI Supplements | No | As needed when FRED lags |
 
 ### GitHub Actions Workflow
 
-**Schedule**: Every Monday at 7:00 AM EST (12:00 UTC)
-
-**File**: `.github/workflows/update-data.yml`
-
-**Steps**:
-1. Checkout repository
-2. Set up Python 3.11
-3. Install dependencies (requests, python-dotenv)
-4. Run `fetch_historical_cpi.py` (requires `FRED_API_KEY` secret)
-5. Run `fetch_imf_forecasts.py` (no API key required)
-6. Copy JSON files to `docs/data/`
-7. Commit and push if data changed
-
-**Required Secret**: `FRED_API_KEY`  
-Get free at: https://fred.stlouisfed.org/docs/api/api_key.html
-
----
-
-## Weekly Alert System
-
-### Overview
-
-A research-style email alert sent every Monday if material changes are detected.
-
-**No analysis. No predictions. Just the data.**
-
-### Material Change Rules
-
-A change is considered **material** if:
-
-```
-1. |delta_pp| >= 0.3  (absolute change >= 0.3 percentage points)
-   OR
-2. Direction reversal (rising → falling OR falling → rising)
-```
-
-Direction is determined as:
-- **Rising (↑)**: delta > +0.05 pp
-- **Falling (↓)**: delta < -0.05 pp
-- **Stable (→)**: -0.05 ≤ delta ≤ +0.05 pp
-
-### Snapshot Schema
-
-```json
-{
-  "week_start": "2026-01-27",
-  "created_at": "2026-01-27T08:00:00.000Z",
-  "countries": {
-    "US": {
-      "code": "US",
-      "name": "United States",
-      "yoy_inflation": 2.9,
-      "reference_period": "2025-01",
-      "data_date": "2026-01-27"
-    }
-  }
-}
-```
-
-### Change Detection Output
-
-```json
-{
-  "code": "US",
-  "name": "United States",
-  "current_yoy": 3.2,
-  "previous_yoy": 2.9,
-  "delta_pp": 0.3,
-  "direction": "rising",
-  "direction_symbol": "↑",
-  "is_material": true,
-  "current_period": "2025-02",
-  "previous_period": "2025-01"
-}
-```
-
-### Workflow
-
-1. Load current `historical_cpi.json`
-2. Create snapshot for current week
-3. Load previous week's snapshot from `weekly_snapshots.json`
-4. Compare: calculate delta for each country
-5. Apply material change rules
-6. Generate email content
-7. Send email via Resend API
-8. Save new snapshot
-
-### Environment Variables
-
-```bash
-# Required for email sending
-RESEND_API_KEY=your_resend_api_key
-
-# Comma-separated recipient list
-ALERT_RECIPIENTS=user1@example.com,user2@example.com
-```
-
-### GitHub Actions
-
-- **Workflow**: `.github/workflows/weekly-alert.yml`
-- **Schedule**: Mondays 8:00 AM EST (13:00 UTC)
-- **Manual trigger**: Supports `--dry-run` for testing
+The automated workflow runs weekly:
+1. Fetches latest CPI data from FRED
+2. Fetches latest IMF forecasts
+3. Fetches Fed/Cleveland Fed forecasts from FRED
+4. Copies updated JSON files to docs/data/
+5. Commits and pushes changes
 
 ---
 
 ## File Structure
 
 ```
-inflation-dashboard/
-├── README.md                    # Project overview
-├── METHODOLOGY.md               # This file
-├── scripts/
-│   ├── fetch_historical_cpi.py  # Main CPI data fetcher
-│   ├── fetch_imf_forecasts.py   # IMF WEO forecasts fetcher
-│   └── send_weekly_alert.py     # Weekly email alert
-├── data/
-│   ├── historical_cpi.json      # Combined CPI data
-│   ├── imf_forecasts.json       # IMF forecasts
-│   └── weekly_snapshots.json    # Historical weekly snapshots
-├── docs/                        # GitHub Pages root
-│   ├── index.html               # Overview page
-│   ├── styles.css               # Shared styles
-│   ├── country.js               # Shared country page logic
-│   ├── us.html, uk.html, ...    # Country detail pages
-│   └── data/
-│       ├── historical_cpi.json
-│       └── imf_forecasts.json
-└── .github/
-    └── workflows/
-        ├── update-data.yml      # Weekly data updates (Mon 7am EST)
-        └── weekly-alert.yml     # Weekly email alert (Mon 8am EST)
+docs/data/
+├── historical_cpi.json    # 10-year CPI history per country
+├── cb_forecasts.json      # Central bank forecasts
+└── imf_forecasts.json     # IMF WEO projections
+
+scripts/
+├── fetch_historical_cpi.py   # FRED API → historical_cpi.json
+├── fetch_cb_forecasts.py     # Hybrid API + manual → cb_forecasts.json
+└── fetch_imf_forecasts.py    # IMF API → imf_forecasts.json
+
+data/
+├── cpi_supplements.json      # Manual data for FRED lag
+└── (copies of above for backup)
 ```
 
 ---
 
-## Known Limitations
+## JSON Schema
 
-1. **Data Lag**: OECD-sourced data via FRED may lag primary sources by days or weeks
-2. **Quarterly Countries**: Australia and New Zealand data updates less frequently
-3. **Central Bank Forecasts**: Currently maintained manually in `country.js`
-4. **IMF Forecasts**: Only updated twice yearly (April, October)
-5. **Revisions**: Historical data may be revised by source agencies
-6. **Japan**: Temporarily excluded due to FRED COICOP 1999 discontinuation
+### historical_cpi.json
 
----
+```json
+{
+  "_metadata": {
+    "last_updated": "2026-01-26",
+    "description": "Historical CPI inflation data"
+  },
+  "US": {
+    "name": "United States",
+    "flag": "🇺🇸",
+    "target": 2.0,
+    "latest": {"date": "2025-12", "value": 2.9},
+    "previous": {"date": "2025-11", "value": 2.7},
+    "history": [
+      {"date": "2015-01", "value": -0.1},
+      ...
+    ]
+  }
+}
+```
 
-## Environment Variables
+### cb_forecasts.json
 
-```bash
-# Required for CPI data fetching
-FRED_API_KEY=your_key_here
+```json
+{
+  "_metadata": {
+    "last_updated": "2026-01-26"
+  },
+  "forecasts": [
+    {
+      "bank": "Federal Reserve (FOMC)",
+      "country": "US",
+      "metric": "PCE Inflation",
+      "source": "Summary of Economic Projections",
+      "source_date": "Dec 2025",
+      "projections": [
+        {"year": "2025", "value": 2.8},
+        {"year": "2026", "value": 2.4},
+        {"year": "2027", "value": 2.1}
+      ]
+    }
+  ]
+}
+```
 
-# Optional (increases BLS rate limits)
-BLS_API_KEY=your_key_here
+### imf_forecasts.json
 
-# Required for weekly alerts
-RESEND_API_KEY=your_resend_api_key
-ALERT_RECIPIENTS=email1@example.com,email2@example.com
+```json
+{
+  "_metadata": {
+    "source": "IMF World Economic Outlook",
+    "release": "October 2025",
+    "last_updated": "2026-01-26"
+  },
+  "US": {
+    "2025": 2.8,
+    "2026": 2.3,
+    "2027": 2.1
+  }
+}
 ```
 
 ---
 
-## Version History
+## Limitations
 
-| Date | Change |
-|------|--------|
-| Jan 2026 | Added weekly email alert system |
-| Jan 2026 | Removed Japan temporarily (COICOP 1999 discontinued) |
-| Jan 2026 | Switched US to FRED source |
-| Jan 2026 | Added IMF WEO forecasts integration |
-| Jan 2026 | Added Canada and Switzerland |
-| Jan 2026 | Added GitHub Actions automation |
-| Jan 2026 | Initial release with 9 economies |
+1. **Data Timeliness:** FRED data may lag official releases; we supplement manually when needed
+2. **Central Bank Forecasts:** Most require manual updates; not all banks provide multi-year projections
+3. **Methodology Differences:** Countries use slightly different CPI baskets and methodologies
+4. **Revisions:** Historical data may be revised by statistical agencies after initial release
 
 ---
 
-## License
+## Source Links
 
-MIT License — See repository for details.
+### Statistical Agencies
+- **US BLS:** https://www.bls.gov/cpi/
+- **Eurostat:** https://ec.europa.eu/eurostat/web/hicp
+- **UK ONS:** https://www.ons.gov.uk/economy/inflationandpriceindices
+- **Statistics Canada:** https://www.statcan.gc.ca/en/subjects-start/prices_and_price_indexes
+- **Australia ABS:** https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation
+- **Stats NZ:** https://www.stats.govt.nz/indicators/consumers-price-index-cpi/
+- **Stats SA:** https://www.statssa.gov.za/?cat=33
+- **China NBS:** http://www.stats.gov.cn/english/
+
+### Central Banks
+- **Federal Reserve:** https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm
+- **ECB:** https://www.ecb.europa.eu/pub/projections/html/index.en.html
+- **Bank of England:** https://www.bankofengland.co.uk/monetary-policy-report
+- **RBA:** https://www.rba.gov.au/publications/smp/
+- **Bank of Canada:** https://www.bankofcanada.ca/publications/mpr/
+- **RBNZ:** https://www.rbnz.govt.nz/monetary-policy/monetary-policy-statement
+- **SARB:** https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements
+
+### APIs
+- **FRED API:** https://fred.stlouisfed.org/docs/api/
+- **IMF WEO API:** https://www.imf.org/en/Publications/WEO
+
+---
+
+*For architecture and project management details, see PROJECT_PLAN.md*
