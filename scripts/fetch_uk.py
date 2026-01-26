@@ -1,13 +1,21 @@
 # -*- coding: utf-8 -*-
+import os
 import requests
 from datetime import datetime
+from dotenv import load_dotenv
 
-FRED_API_KEY = "c61001ab2426c42a3583e4738770c3df"
+# Load environment variables from .env.local
+load_dotenv('.env.local')
+
+FRED_API_KEY = os.environ.get("FRED_API_KEY")
 SERIES_ID = "GBRCPIALLMINMEI"  # UK CPI All Items (2015=100)
 
 
 def fetch_uk_cpi_series(months=13):
     """Fetch UK CPI data from FRED API"""
+    if not FRED_API_KEY:
+        raise ValueError("FRED_API_KEY not set. Add it to .env.local")
+    
     url = "https://api.stlouisfed.org/fred/series/observations"
     
     params = {
