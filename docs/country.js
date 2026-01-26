@@ -81,6 +81,24 @@ const TARGET_INFO = {
         quote: 'The primary objective of monetary policy is to maintain price stability while keeping in mind the objective of growth. The inflation target is set at 4 per cent with a tolerance band of +/- 2 per cent.',
         quoteSource: 'RBI Monetary Policy Framework'
     },
+    KR: {
+        target: 2.0,
+        description: 'The Bank of Korea targets 2% CPI inflation. The inflation targeting framework was adopted in 1998 following the Asian financial crisis. Korea has maintained relatively stable inflation near target in recent years.',
+        quote: 'The Bank of Korea sets the inflation target at 2% in terms of consumer price inflation.',
+        quoteSource: 'Bank of Korea Monetary Policy'
+    },
+    SG: {
+        target: 2.0,
+        description: 'The Monetary Authority of Singapore (MAS) does not have an explicit inflation target. Instead, MAS uses the exchange rate as its primary monetary policy tool to maintain price stability. The implied target is around 2% for medium-term price stability.',
+        quote: 'MAS conducts monetary policy by managing the trade-weighted exchange rate of the Singapore dollar within an undisclosed policy band.',
+        quoteSource: 'MAS Monetary Policy Framework'
+    },
+    VE: {
+        target: null,
+        description: 'Venezuela does not have a formal inflation targeting framework. The country experienced hyperinflation from 2016-2021, with rates exceeding 1,000,000% in 2018. Since 2022, inflation has moderated significantly but remains elevated compared to most economies.',
+        quote: 'Venezuela emerged from hyperinflation in early 2022 after more than four years, but inflation remains high by international standards.',
+        quoteSource: 'Central Bank of Venezuela / IMF'
+    },
     CN: {
         target: 3.0,
         description: 'China sets an annual CPI target, typically around 3%, as part of its government work report. The target is more of a ceiling than a strict objective.',
@@ -144,6 +162,24 @@ const DATA_SOURCES = {
         { label: 'FRED Series', value: 'INDCPIALLMINMEI', url: 'https://fred.stlouisfed.org/series/INDCPIALLMINMEI' },
         { label: 'Forecasts', value: 'RBI Monetary Policy Statement', url: 'https://www.rbi.org.in/Scripts/PublicationsView.aspx' },
         { label: 'Target', value: 'RBI Monetary Policy Framework', url: 'https://www.rbi.org.in/' }
+    ],
+    KR: [
+        { label: 'CPI Data', value: 'Statistics Korea (KOSTAT)', url: 'https://kostat.go.kr/en/' },
+        { label: 'FRED Series', value: 'KORCPIALLMINMEI', url: 'https://fred.stlouisfed.org/series/KORCPIALLMINMEI' },
+        { label: 'Forecasts', value: 'Bank of Korea Economic Outlook', url: 'https://www.bok.or.kr/eng/main/main.do' },
+        { label: 'Target', value: 'Bank of Korea Monetary Policy', url: 'https://www.bok.or.kr/eng/main/main.do' }
+    ],
+    SG: [
+        { label: 'CPI Data', value: 'Department of Statistics Singapore', url: 'https://www.singstat.gov.sg/' },
+        { label: 'FRED Series', value: 'SGPCPIALLMINMEI', url: 'https://fred.stlouisfed.org/series/SGPCPIALLMINMEI' },
+        { label: 'Forecasts', value: 'MAS Survey of Professional Forecasters', url: 'https://www.mas.gov.sg/monetary-policy' },
+        { label: 'Policy', value: 'MAS Monetary Policy', url: 'https://www.mas.gov.sg/monetary-policy' }
+    ],
+    VE: [
+        { label: 'CPI Data', value: 'Central Bank of Venezuela (BCV)', url: 'https://www.bcv.org.ve/' },
+        { label: 'IMF Data', value: 'IMF World Economic Outlook', url: 'https://www.imf.org/en/Publications/WEO' },
+        { label: 'Forecasts', value: 'IMF Article IV Consultations', url: 'https://www.imf.org/en/Countries/VEN' },
+        { label: 'Context', value: 'Hyperinflation ended 2022', url: 'https://en.wikipedia.org/wiki/Hyperinflation_in_Venezuela' }
     ],
     CN: [
         { label: 'CPI Data', value: 'NBS China via FRED', url: 'https://fred.stlouisfed.org/series/CHNCPIALLMINMEI' },
@@ -390,7 +426,7 @@ async function renderForecastTable(countryCode) {
 
     // If we have both CB and IMF, show comparison table
     if (cbForecast && imfForecast && imfForecast.forecasts) {
-        const currentYear = new Date().getFullYear(); const imfYears = Object.keys(imfForecast.forecasts).filter(y => parseInt(y) >= currentYear - 1).sort();
+        const imfYears = Object.keys(imfForecast.forecasts).sort();
         
         html = `
             <p style="margin-bottom: 1rem;">Comparison of inflation projections from official sources.</p>
@@ -480,7 +516,7 @@ async function renderForecastTable(countryCode) {
         `;
     } else if (imfForecast && imfForecast.forecasts) {
         // Only IMF forecast available
-        const currentYear = new Date().getFullYear(); const years = Object.keys(imfForecast.forecasts).filter(y => parseInt(y) >= currentYear - 1).sort();
+        const years = Object.keys(imfForecast.forecasts).sort();
         
         html = `
             <p style="margin-bottom: 1rem;">IMF World Economic Outlook from <a href="${imfData.url || 'https://www.imf.org/external/datamapper/PCPIPCH@WEO'}" target="_blank">IMF DataMapper</a></p>

@@ -3,7 +3,7 @@
     "last_updated": "January 2026",
     "notes": "Central bank inflation forecasts and policy rates"
   },
-  "display_order": ["US", "EA", "UK", "CA", "AU", "NZ", "ZA", "JP", "IN", "CN"],
+  "display_order": ["US", "EA", "UK", "CA", "AU", "NZ", "ZA", "JP", "KR", "SG", "IN", "CN", "VE"],
   "forecasts": {
     "US": {
       "flag": "🇺🇸",
@@ -175,6 +175,63 @@
       "policy_rate": {
         "rate": "5.25%",
         "last_change": "↓ Dec 2025"
+      }
+    },
+    "KR": {
+      "flag": "🇰🇷",
+      "source": "BOK",
+      "source_full": "Bank of Korea - Economic Outlook",
+      "source_url": "https://www.bok.or.kr/eng/main/main.do",
+      "publication_date": "November 2025",
+      "forecast_type": "BOK projection (CPI)",
+      "note": "2025 full-year inflation of 2.1% aligned with BOK 2% target.",
+      "projections": {
+        "2025": 2.1,
+        "2026": 1.9,
+        "2027": 2.0
+      },
+      "key_quote": "Inflation expected to remain close to target",
+      "policy_rate": {
+        "rate": "2.50%",
+        "last_change": "— Nov 2025 (hold)"
+      }
+    },
+    "SG": {
+      "flag": "🇸🇬",
+      "source": "MAS",
+      "source_full": "MAS Survey of Professional Forecasters",
+      "source_url": "https://www.mas.gov.sg/monetary-policy",
+      "publication_date": "December 2025",
+      "forecast_type": "SPF median forecast (CPI)",
+      "note": "MAS uses exchange rate policy, not interest rates. Core inflation forecast 0.5-1.5% for 2026.",
+      "projections": {
+        "2025": 0.9,
+        "2026": 1.5,
+        "2027": 1.8
+      },
+      "key_quote": "Core inflation to remain subdued",
+      "policy_rate": {
+        "rate": "S$NEER band",
+        "last_change": "— Oct 2025 (hold)"
+      }
+    },
+    "VE": {
+      "flag": "🇻🇪",
+      "source": "IMF",
+      "source_full": "IMF World Economic Outlook",
+      "source_url": "https://www.imf.org/en/Publications/WEO",
+      "publication_date": "October 2025",
+      "forecast_type": "IMF staff projection (CPI)",
+      "note": "Post-hyperinflation recovery. BCV does not publish forecasts. Data reliability uncertain.",
+      "projections": {
+        "2025": 150,
+        "2026": 80,
+        "2027": 50
+      },
+      "key_quote": "Inflation moderating from hyperinflation peak but remains elevated",
+      "policy_rate": {
+        "rate": "N/A",
+        "last_change": "—"
       }
     },
     "CN": {
