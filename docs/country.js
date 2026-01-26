@@ -2,123 +2,19 @@
  * Inflation Dashboard - Country Page Module
  * 
  * Shared JavaScript for all country detail pages.
- * Loads data from data/historical_cpi.json and renders charts/tables.
+ * Loads ALL data from JSON files for consistency:
+ * - data/historical_cpi.json - CPI history
+ * - data/cb_forecasts.json - Central bank forecasts (single source of truth)
+ * - data/imf_forecasts.json - IMF WEO forecasts
+ * 
+ * Updated: 2026-01-26
  */
 
-// Central bank forecast data (hardcoded - no reliable API for most)
-const FORECASTS = {
-    US: {
-        source: 'Federal Reserve',
-        sourceUrl: 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm',
-        type: 'FOMC PCE Projections',
-        data: [
-            { period: '2025', value: 2.5 },
-            { period: '2026', value: 2.1 },
-            { period: '2027', value: 2.0 },
-            { period: 'Longer Run', value: 2.0 }
-        ],
-        note: 'PCE inflation (Fed\'s preferred measure), median projections'
-    },
-    CA: {
-        source: 'Bank of Canada',
-        sourceUrl: 'https://www.bankofcanada.ca/publications/mpr/',
-        type: 'MPR Projections',
-        data: [
-            { period: '2025', value: 2.0 },
-            { period: '2026', value: 2.0 }
-        ],
-        note: 'CPI inflation, from Monetary Policy Report'
-    },
-    UK: {
-        source: 'Bank of England',
-        sourceUrl: 'https://www.bankofengland.co.uk/monetary-policy-report',
-        type: 'MPC Projections',
-        data: [
-            { period: 'Q4 2025', value: 2.7 },
-            { period: 'Q4 2026', value: 2.2 },
-            { period: 'Q4 2027', value: 1.8 }
-        ],
-        note: 'CPI inflation, modal projections from November 2024 MPR'
-    },
-    CH: {
-        source: 'Swiss National Bank',
-        sourceUrl: 'https://www.snb.ch/en/the-snb/mandates-goals/monetary-policy/decisions',
-        type: 'Conditional Forecast',
-        data: [
-            { period: '2025', value: 0.3 },
-            { period: '2026', value: 0.8 },
-            { period: '2027', value: 0.8 }
-        ],
-        note: 'CPI inflation, conditional on policy rate remaining unchanged'
-    },
-    EA: {
-        source: 'European Central Bank',
-        sourceUrl: 'https://www.ecb.europa.eu/press/projections/html/index.en.html',
-        type: 'Staff Projections',
-        data: [
-            { period: '2025', value: 2.1 },
-            { period: '2026', value: 1.9 },
-            { period: '2027', value: 2.1 }
-        ],
-        note: 'HICP inflation, December 2024 projections'
-    },
-    DE: {
-        source: 'European Central Bank',
-        sourceUrl: 'https://www.ecb.europa.eu/press/projections/html/index.en.html',
-        type: 'Euro Area Projections',
-        data: [
-            { period: '2025', value: 2.1 },
-            { period: '2026', value: 1.9 },
-            { period: '2027', value: 2.1 }
-        ],
-        note: 'Germany follows ECB monetary policy as Euro Area member'
-    },
-    AU: {
-        source: 'Reserve Bank of Australia',
-        sourceUrl: 'https://www.rba.gov.au/publications/smp/',
-        type: 'SMP Forecasts',
-        data: [
-            { period: 'Jun 2025', value: 2.8 },
-            { period: 'Dec 2025', value: 2.6 },
-            { period: 'Jun 2026', value: 2.7 }
-        ],
-        note: 'Trimmed mean inflation, November 2024 SMP'
-    },
-    NZ: {
-        source: 'Reserve Bank of New Zealand',
-        sourceUrl: 'https://www.rbnz.govt.nz/monetary-policy/monetary-policy-statement',
-        type: 'MPS Projections',
-        data: [
-            { period: 'Mar 2025', value: 2.1 },
-            { period: 'Mar 2026', value: 2.0 },
-            { period: 'Mar 2027', value: 2.0 }
-        ],
-        note: 'CPI inflation, November 2024 MPS'
-    },
-    ZA: {
-        source: 'South African Reserve Bank',
-        sourceUrl: 'https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements',
-        type: 'MPC Projections',
-        data: [
-            { period: '2025', value: 4.0 },
-            { period: '2026', value: 4.5 }
-        ],
-        note: 'CPI inflation, November 2024 MPC statement'
-    },
-    CN: {
-        source: 'IMF World Economic Outlook',
-        sourceUrl: 'https://www.imf.org/en/Publications/WEO',
-        type: 'IMF Projections',
-        data: [
-            { period: '2025', value: 1.0 },
-            { period: '2026', value: 1.5 },
-            { period: '2027', value: 1.8 }
-        ],
-        note: 'China does not publish official multi-year inflation forecasts'
-    }
-};
+// ============================================================
+// STATIC DATA (rarely changes, OK to hardcode)
+// ============================================================
 
-// Target descriptions
+// Target descriptions and quotes
 const TARGET_INFO = {
     US: {
         target: 2.0,
@@ -139,23 +35,10 @@ const TARGET_INFO = {
         quote: 'The inflation target of 2% is expressed in terms of an annual rate of inflation based on the Consumer Prices Index (CPI).',
         quoteSource: 'Bank of England Monetary Policy Framework'
     },
-    CH: {
-        target: 1.0,
-        targetRange: '0-2%',
-        description: 'The Swiss National Bank defines price stability as a rise in the Swiss consumer price index (CPI) of less than 2% per annum. Deflation also breaches the objective of price stability.',
-        quote: 'The SNB equates price stability with a rise in the Swiss consumer price index (CPI) of less than 2% per annum. Deflation, i.e. a sustained decrease in the price level, also breaches the objective of price stability.',
-        quoteSource: 'SNB Monetary Policy Strategy'
-    },
     EA: {
         target: 2.0,
         description: 'The ECB aims for 2% inflation over the medium term, measured by the Harmonised Index of Consumer Prices (HICP).',
         quote: 'The Governing Council considers that price stability is best maintained by aiming for a 2% inflation target over the medium term. This target is symmetric.',
-        quoteSource: 'ECB Monetary Policy Strategy, July 2021'
-    },
-    DE: {
-        target: 2.0,
-        description: 'As a Euro Area member, Germany follows ECB monetary policy with a 2% inflation target.',
-        quote: 'The Governing Council considers that price stability is best maintained by aiming for a 2% inflation target over the medium term.',
         quoteSource: 'ECB Monetary Policy Strategy, July 2021'
     },
     AU: {
@@ -187,7 +70,7 @@ const TARGET_INFO = {
     }
 };
 
-// Data source information
+// Data source information (links rarely change)
 const DATA_SOURCES = {
     US: [
         { label: 'CPI Data', value: 'Bureau of Labor Statistics', url: 'https://www.bls.gov/cpi/' },
@@ -207,23 +90,11 @@ const DATA_SOURCES = {
         { label: 'Forecasts', value: 'Bank of England Monetary Policy Report', url: 'https://www.bankofengland.co.uk/monetary-policy-report' },
         { label: 'Target', value: 'BoE Monetary Policy Framework', url: 'https://www.bankofengland.co.uk/monetary-policy' }
     ],
-    CH: [
-        { label: 'CPI Data', value: 'Federal Statistical Office via FRED', url: 'https://fred.stlouisfed.org/series/CHECPIALLMINMEI' },
-        { label: 'Series ID', value: 'CHECPIALLMINMEI (OECD)', url: 'https://fred.stlouisfed.org/series/CHECPIALLMINMEI' },
-        { label: 'Forecasts', value: 'SNB Conditional Inflation Forecast', url: 'https://www.snb.ch/en/the-snb/mandates-goals/monetary-policy/decisions' },
-        { label: 'Target', value: 'SNB Monetary Policy Strategy', url: 'https://www.snb.ch/en/the-snb/mandates-goals/monetary-policy/strategy' }
-    ],
     EA: [
         { label: 'HICP Data', value: 'Eurostat via ECB Data Portal', url: 'https://data.ecb.europa.eu/data/datasets/ICP' },
         { label: 'Series ID', value: 'ICP.M.U2.N.000000.4.ANR', url: 'https://data.ecb.europa.eu/' },
         { label: 'Forecasts', value: 'ECB Staff Macroeconomic Projections', url: 'https://www.ecb.europa.eu/press/projections/html/index.en.html' },
         { label: 'Target', value: 'ECB Monetary Policy Strategy', url: 'https://www.ecb.europa.eu/mopo/strategy/html/index.en.html' }
-    ],
-    DE: [
-        { label: 'CPI Data', value: 'Destatis via FRED', url: 'https://fred.stlouisfed.org/series/DEUCPIALLMINMEI' },
-        { label: 'Series ID', value: 'DEUCPIALLMINMEI (OECD)', url: 'https://fred.stlouisfed.org/series/DEUCPIALLMINMEI' },
-        { label: 'Forecasts', value: 'ECB Staff Projections (Euro Area)', url: 'https://www.ecb.europa.eu/press/projections/html/index.en.html' },
-        { label: 'Target', value: 'ECB Monetary Policy (Euro Area)', url: 'https://www.ecb.europa.eu/mopo/strategy/html/index.en.html' }
     ],
     AU: [
         { label: 'CPI Data', value: 'Australian Bureau of Statistics via FRED', url: 'https://fred.stlouisfed.org/series/AUSCPIALLQINMEI' },
@@ -251,15 +122,20 @@ const DATA_SOURCES = {
     ]
 };
 
+// ============================================================
+// MAIN INITIALIZATION FUNCTION
+// ============================================================
+
 /**
  * Initialize a country page
  * @param {string} countryCode - Two-letter country code (US, UK, etc.)
  */
 async function initCountryPage(countryCode) {
     try {
-        const response = await fetch('data/historical_cpi.json');
-        const allData = await response.json();
-        const countryData = allData[countryCode];
+        // Load CPI data
+        const cpiResponse = await fetch('data/historical_cpi.json');
+        const allCpiData = await cpiResponse.json();
+        const countryData = allCpiData[countryCode];
 
         if (!countryData) {
             showError('Country data not found');
@@ -272,7 +148,7 @@ async function initCountryPage(countryCode) {
         // Render historical chart
         renderHistoricalChart(countryCode, countryData);
 
-        // Render forecast table (async - loads IMF data)
+        // Render forecast table (loads from cb_forecasts.json and imf_forecasts.json)
         await renderForecastTable(countryCode);
 
         // Render target information
@@ -286,6 +162,10 @@ async function initCountryPage(countryCode) {
         showError('Error loading data. Please refresh the page.');
     }
 }
+
+// ============================================================
+// METRICS UPDATE
+// ============================================================
 
 function updateMetrics(countryCode, data) {
     const current = data.latest;
@@ -318,7 +198,7 @@ function updateMetrics(countryCode, data) {
 
     // Target
     const targetEl = document.getElementById('targetValue');
-    if (targetEl) {
+    if (targetEl && targetInfo) {
         targetEl.textContent = targetInfo.targetRange || (target.toFixed(1) + '%');
     }
 
@@ -338,6 +218,10 @@ function updateMetrics(countryCode, data) {
         }
     }
 }
+
+// ============================================================
+// HISTORICAL CHART
+// ============================================================
 
 function renderHistoricalChart(countryCode, data) {
     const canvas = document.getElementById('historyChart');
@@ -408,7 +292,7 @@ function renderHistoricalChart(countryCode, data) {
                         callback: function(val, index) {
                             const label = this.getLabelForValue(val);
                             // Show only January of each year
-                            if (label.endsWith('-01')) {
+                            if (label.endsWith('-01') || label.endsWith('-Q1')) {
                                 return label.substring(0, 4);
                             }
                             return null;
@@ -431,36 +315,50 @@ function renderHistoricalChart(countryCode, data) {
     });
 }
 
+// ============================================================
+// FORECAST TABLE - LOADS FROM JSON FILES
+// ============================================================
+
 async function renderForecastTable(countryCode) {
     const container = document.getElementById('forecastTable');
     if (!container) return;
 
-    const cbForecast = FORECASTS[countryCode];
-    
-    // Try to load IMF forecasts
+    let cbForecast = null;
+    let cbData = null;
     let imfData = null;
+    let imfForecast = null;
+
+    // Load central bank forecasts from JSON (single source of truth)
     try {
-        const response = await fetch('data/imf_forecasts.json');
-        if (response.ok) {
-            imfData = await response.json();
+        const cbResponse = await fetch('data/cb_forecasts.json');
+        if (cbResponse.ok) {
+            cbData = await cbResponse.json();
+            cbForecast = cbData.forecasts?.[countryCode];
         }
     } catch (e) {
-        console.log('IMF forecasts not available');
+        console.log('CB forecasts not available:', e);
     }
-    
-    const imfForecast = imfData?.countries?.[countryCode];
-    
+
+    // Load IMF forecasts
+    try {
+        const imfResponse = await fetch('data/imf_forecasts.json');
+        if (imfResponse.ok) {
+            imfData = await imfResponse.json();
+            imfForecast = imfData?.countries?.[countryCode];
+        }
+    } catch (e) {
+        console.log('IMF forecasts not available:', e);
+    }
+
     if (!cbForecast && !imfForecast) {
         container.innerHTML = '<p>No forecast data available for this country.</p>';
         return;
     }
 
     let html = '';
-    
-    // If we have both, show comparison table
-    if (cbForecast && imfForecast) {
-        // Get all years from both sources
-        const cbYears = cbForecast.data.map(d => d.period);
+
+    // If we have both CB and IMF, show comparison table
+    if (cbForecast && imfForecast && imfForecast.forecasts) {
         const imfYears = Object.keys(imfForecast.forecasts).sort();
         
         html = `
@@ -475,21 +373,21 @@ async function renderForecastTable(countryCode) {
                 </thead>
                 <tbody>
                     <tr>
-                        <td><a href="${cbForecast.sourceUrl}" target="_blank">${cbForecast.source}</a></td>
-                        <td>${cbForecast.type}</td>
+                        <td><a href="${cbForecast.source_url}" target="_blank">${cbForecast.source_full || cbForecast.source}</a></td>
+                        <td>${cbForecast.forecast_type}</td>
         `;
         
-        // Add CB forecast values aligned to IMF years where possible
+        // Add CB forecast values aligned to IMF years
         for (const year of imfYears) {
-            const cbMatch = cbForecast.data.find(d => d.period === year || d.period.includes(year));
-            html += `<td>${cbMatch ? cbMatch.value.toFixed(1) + '%' : '—'}</td>`;
+            const value = cbForecast.projections?.[year];
+            html += `<td>${value !== null && value !== undefined ? value.toFixed(1) + '%' : '—'}</td>`;
         }
         
         html += `
                     </tr>
                     <tr>
-                        <td><a href="${imfData.url}" target="_blank">IMF</a></td>
-                        <td>WEO ${imfData.version}</td>
+                        <td><a href="${imfData.url || 'https://www.imf.org/external/datamapper/PCPIPCH@WEO'}" target="_blank">IMF</a></td>
+                        <td>WEO ${imfData.version || ''}</td>
         `;
         
         for (const year of imfYears) {
@@ -503,13 +401,15 @@ async function renderForecastTable(countryCode) {
             </table>
             <p style="margin-top: 0.75rem; font-size: 0.8125rem; color: #6b7280;">
                 <strong>Central Bank:</strong> ${cbForecast.note}<br>
-                <strong>IMF:</strong> World Economic Outlook (${imfData.version}), retrieved ${imfData.retrieved}
+                <strong>IMF:</strong> World Economic Outlook${imfData.version ? ' (' + imfData.version + ')' : ''}${imfData.retrieved ? ', retrieved ' + imfData.retrieved : ''}
             </p>
         `;
     } else if (cbForecast) {
         // Only central bank forecast available
+        const years = Object.keys(cbForecast.projections).filter(y => y !== 'longer_run').sort();
+        
         html = `
-            <p style="margin-bottom: 1rem;">${cbForecast.type} from <a href="${cbForecast.sourceUrl}" target="_blank">${cbForecast.source}</a></p>
+            <p style="margin-bottom: 1rem;">${cbForecast.forecast_type} from <a href="${cbForecast.source_url}" target="_blank">${cbForecast.source_full || cbForecast.source}</a></p>
             <table class="forecast-table">
                 <thead>
                     <tr>
@@ -520,11 +420,24 @@ async function renderForecastTable(countryCode) {
                 <tbody>
         `;
 
-        for (const row of cbForecast.data) {
+        for (const year of years) {
+            const value = cbForecast.projections[year];
+            if (value !== null) {
+                html += `
+                    <tr>
+                        <td>${year}</td>
+                        <td>${value.toFixed(1)}%</td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Add longer run if available
+        if (cbForecast.projections.longer_run !== undefined) {
             html += `
                 <tr>
-                    <td>${row.period}</td>
-                    <td>${row.value.toFixed(1)}%</td>
+                    <td>Longer Run</td>
+                    <td>${cbForecast.projections.longer_run.toFixed(1)}%</td>
                 </tr>
             `;
         }
@@ -534,12 +447,12 @@ async function renderForecastTable(countryCode) {
             </table>
             <p style="margin-top: 0.75rem; font-size: 0.8125rem; color: #6b7280;">${cbForecast.note}</p>
         `;
-    } else if (imfForecast) {
+    } else if (imfForecast && imfForecast.forecasts) {
         // Only IMF forecast available
         const years = Object.keys(imfForecast.forecasts).sort();
         
         html = `
-            <p style="margin-bottom: 1rem;">IMF World Economic Outlook (${imfData.version}) from <a href="${imfData.url}" target="_blank">IMF DataMapper</a></p>
+            <p style="margin-bottom: 1rem;">IMF World Economic Outlook from <a href="${imfData.url || 'https://www.imf.org/external/datamapper/PCPIPCH@WEO'}" target="_blank">IMF DataMapper</a></p>
             <table class="forecast-table">
                 <thead>
                     <tr>
@@ -563,13 +476,17 @@ async function renderForecastTable(countryCode) {
                 </tbody>
             </table>
             <p style="margin-top: 0.75rem; font-size: 0.8125rem; color: #6b7280;">
-                ${imfData.indicator_label}. Retrieved ${imfData.retrieved}.
+                ${imfData.indicator_label || 'Inflation rate, average consumer prices'}. Retrieved ${imfData.retrieved || 'recently'}.
             </p>
         `;
     }
 
     container.innerHTML = html;
 }
+
+// ============================================================
+// TARGET INFO AND DATA SOURCES
+// ============================================================
 
 function renderTargetInfo(countryCode) {
     const container = document.getElementById('targetInfo');
@@ -607,8 +524,18 @@ function renderDataSources(countryCode) {
     container.innerHTML = html;
 }
 
-// Utility functions
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+
 function formatDate(dateStr) {
+    if (!dateStr) return '—';
+    
+    // Handle quarterly format (e.g., "2025-Q3")
+    if (dateStr.includes('Q')) {
+        return dateStr;
+    }
+    
     const [year, month] = dateStr.split('-');
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return months[parseInt(month) - 1] + ' ' + year;
@@ -628,3 +555,6 @@ function showError(message) {
         main.innerHTML = `<div class="container"><div class="section error">${message}</div></div>`;
     }
 }
+
+// Log version for debugging
+console.log('country.js loaded - Version 2026-01-26 (loads forecasts from JSON)');

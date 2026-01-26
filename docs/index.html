@@ -3,34 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inflation Monitor</title>
+    <title>Inflation, Officially</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <nav class="nav">
         <div class="nav-container">
-            <a href="index.html" class="nav-brand">📊 Inflation Monitor</a>
-            <span class="nav-update">Data updated: January 2026</span>
+            <a href="index.html" class="nav-brand">Inflation, Officially</a>
+            <span class="nav-tagline">Official Data & Central Bank Expectations</span>
         </div>
     </nav>
 
     <main class="container">
-        <header class="page-header">
-            <h1>Global Inflation Overview</h1>
-            <p class="page-subtitle">Latest official CPI data and central bank forecasts from major economies</p>
-        </header>
-
-        <!-- Current Data Table -->
+        <!-- Current Inflation Table -->
         <section class="section">
             <div class="section-header">
                 <h2 class="section-title">Current Inflation</h2>
-                <p class="section-subtitle">Click any row for detailed country analysis</p>
+                <p class="section-subtitle">Latest official CPI data from major economies</p>
             </div>
             <table class="data-table">
                 <thead>
                     <tr>
                         <th>Country</th>
-                        <th>Latest CPI</th>
+                        <th>Current</th>
                         <th>Previous</th>
                         <th>Change</th>
                         <th>Target</th>
@@ -38,84 +33,13 @@
                         <th>As Of</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr onclick="window.location='us.html'" class="clickable-row">
-                        <td class="country-cell">🇺🇸 United States</td>
-                        <td class="value-cell"><strong>2.68%</strong></td>
-                        <td>2.75%</td>
-                        <td class="change-down">▼ 0.07</td>
-                        <td>2.0%</td>
-                        <td><span class="status-warning">Above Target</span></td>
-                        <td>Dec 2025</td>
-                    </tr>
-                    <tr onclick="window.location='ea.html'" class="clickable-row">
-                        <td class="country-cell">🇪🇺 Euro Area</td>
-                        <td class="value-cell"><strong>2.1%</strong></td>
-                        <td>2.0%</td>
-                        <td class="change-up">▲ 0.1</td>
-                        <td>2.0%</td>
-                        <td><span class="status-warning">Slightly Above</span></td>
-                        <td>Dec 2025</td>
-                    </tr>
-                    <tr onclick="window.location='uk.html'" class="clickable-row">
-                        <td class="country-cell">🇬🇧 United Kingdom</td>
-                        <td class="value-cell"><strong>2.6%</strong></td>
-                        <td>2.3%</td>
-                        <td class="change-up">▲ 0.3</td>
-                        <td>2.0%</td>
-                        <td><span class="status-warning">Above Target</span></td>
-                        <td>Nov 2025</td>
-                    </tr>
-                    <tr onclick="window.location='ca.html'" class="clickable-row">
-                        <td class="country-cell">🇨🇦 Canada</td>
-                        <td class="value-cell"><strong>2.0%</strong></td>
-                        <td>2.0%</td>
-                        <td class="change-neutral">— 0.0</td>
-                        <td>2.0%</td>
-                        <td><span class="status-good">At Target</span></td>
-                        <td>Nov 2025</td>
-                    </tr>
-                    <tr onclick="window.location='au.html'" class="clickable-row">
-                        <td class="country-cell">🇦🇺 Australia</td>
-                        <td class="value-cell"><strong>2.8%</strong></td>
-                        <td>2.7%</td>
-                        <td class="change-up">▲ 0.1</td>
-                        <td>2-3%</td>
-                        <td><span class="status-good">In Range</span></td>
-                        <td>Q3 2025</td>
-                    </tr>
-                    <tr onclick="window.location='nz.html'" class="clickable-row">
-                        <td class="country-cell">🇳🇿 New Zealand</td>
-                        <td class="value-cell"><strong>2.2%</strong></td>
-                        <td>3.3%</td>
-                        <td class="change-down">▼ 1.1</td>
-                        <td>1-3%</td>
-                        <td><span class="status-good">In Range</span></td>
-                        <td>Q3 2025</td>
-                    </tr>
-                    <tr onclick="window.location='za.html'" class="clickable-row">
-                        <td class="country-cell">🇿🇦 South Africa</td>
-                        <td class="value-cell"><strong>2.8%</strong></td>
-                        <td>3.2%</td>
-                        <td class="change-down">▼ 0.4</td>
-                        <td>3.0%</td>
-                        <td><span class="status-good">Below Target</span></td>
-                        <td>Oct 2025</td>
-                    </tr>
-                    <tr onclick="window.location='cn.html'" class="clickable-row">
-                        <td class="country-cell">🇨🇳 China</td>
-                        <td class="value-cell"><strong>0.8%</strong></td>
-                        <td>0.7%</td>
-                        <td class="change-up">▲ 0.1</td>
-                        <td>~2%</td>
-                        <td><span class="status-alert">Deflationary</span></td>
-                        <td>Dec 2025</td>
-                    </tr>
+                <tbody id="inflationTableBody">
+                    <tr><td colspan="7" class="loading">Loading data...</td></tr>
                 </tbody>
             </table>
         </section>
 
-        <!-- Central Bank Outlook Table -->
+        <!-- Central Bank Outlook Table - DYNAMICALLY LOADED -->
         <section class="section">
             <div class="section-header">
                 <h2 class="section-title">Central Bank Outlook</h2>
@@ -129,143 +53,267 @@
                         <th>2025</th>
                         <th>2026</th>
                         <th>2027</th>
-                        <th>Key Assessment</th>
+                        <th class="assessment-header">Key Assessment</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr onclick="window.location='us.html'" class="clickable-row">
-                        <td class="country-cell">🇺🇸 US</td>
-                        <td class="source-cell">FOMC Dec '25</td>
-                        <td>2.8%</td>
-                        <td><strong>2.4%</strong></td>
-                        <td>2.1%</td>
-                        <td class="assessment-cell">"Core inflation 2.5% in 2026, expects only 1 rate cut"</td>
-                    </tr>
-                    <tr onclick="window.location='ea.html'" class="clickable-row">
-                        <td class="country-cell">🇪🇺 EA</td>
-                        <td class="source-cell">ECB Dec '25</td>
-                        <td>2.1%</td>
-                        <td><strong>1.9%</strong></td>
-                        <td>1.8%</td>
-                        <td class="assessment-cell">"Below target in 2026-27, returns to 2% in 2028"</td>
-                    </tr>
-                    <tr onclick="window.location='uk.html'" class="clickable-row">
-                        <td class="country-cell">🇬🇧 UK</td>
-                        <td class="source-cell">BoE Nov '25</td>
-                        <td>3.8%</td>
-                        <td><strong>2.5%</strong></td>
-                        <td>1.9%</td>
-                        <td class="assessment-cell">"Inflation judged to have peaked, below 2% by Q2 2027"</td>
-                    </tr>
-                    <tr onclick="window.location='ca.html'" class="clickable-row">
-                        <td class="country-cell">🇨🇦 CA</td>
-                        <td class="source-cell">BoC Oct '25</td>
-                        <td>2.4%</td>
-                        <td><strong>2.0%</strong></td>
-                        <td>2.0%</td>
-                        <td class="assessment-cell">"Weaker demand to offset tariff price pressures"</td>
-                    </tr>
-                    <tr onclick="window.location='au.html'" class="clickable-row">
-                        <td class="country-cell">🇦🇺 AU</td>
-                        <td class="source-cell">RBA Nov '25</td>
-                        <td>3.2%</td>
-                        <td><strong>2.7%</strong></td>
-                        <td>2.6%</td>
-                        <td class="assessment-cell">"Above 3% until mid-2026, target by late 2027"</td>
-                    </tr>
-                    <tr onclick="window.location='nz.html'" class="clickable-row">
-                        <td class="country-cell">🇳🇿 NZ</td>
-                        <td class="source-cell">RBNZ Nov '25</td>
-                        <td>3.0%</td>
-                        <td><strong>2.0%</strong></td>
-                        <td>2.0%</td>
-                        <td class="assessment-cell">"Spare capacity, expect 2% by mid-2026"</td>
-                    </tr>
-                    <tr onclick="window.location='za.html'" class="clickable-row">
-                        <td class="country-cell">🇿🇦 ZA</td>
-                        <td class="source-cell">SARB Nov '25</td>
-                        <td>3.3%</td>
-                        <td><strong>3.5%</strong></td>
-                        <td>3.1%</td>
-                        <td class="assessment-cell">"On track to deliver new 3% target over medium term"</td>
-                    </tr>
-                    <tr onclick="window.location='cn.html'" class="clickable-row">
-                        <td class="country-cell">🇨🇳 CN</td>
-                        <td class="source-cell">IMF Dec '25</td>
-                        <td>0.0%</td>
-                        <td><strong>0.8%</strong></td>
-                        <td>—</td>
-                        <td class="assessment-cell">"Deflationary pressures amid weak domestic demand"</td>
-                    </tr>
+                <tbody id="outlookTableBody">
+                    <tr><td colspan="6" class="loading">Loading forecasts...</td></tr>
                 </tbody>
             </table>
         </section>
 
-        <!-- Policy Rates Summary -->
+        <!-- Policy Rates Grid - DYNAMICALLY LOADED -->
         <section class="section">
             <div class="section-header">
                 <h2 class="section-title">Policy Rates</h2>
-                <p class="section-subtitle">Current central bank interest rates (as of January 2026)</p>
+                <p class="section-subtitle" id="policyRatesSubtitle">Current central bank interest rates</p>
             </div>
-            <div class="rates-grid">
-                <div class="rate-card">
-                    <span class="rate-flag">🇺🇸</span>
-                    <span class="rate-name">Fed</span>
-                    <span class="rate-value">3.50-3.75%</span>
-                    <span class="rate-change">↓ 25bp Dec</span>
-                </div>
-                <div class="rate-card">
-                    <span class="rate-flag">🇪🇺</span>
-                    <span class="rate-name">ECB</span>
-                    <span class="rate-value">2.00%</span>
-                    <span class="rate-change">— held</span>
-                </div>
-                <div class="rate-card">
-                    <span class="rate-flag">🇬🇧</span>
-                    <span class="rate-name">BoE</span>
-                    <span class="rate-value">3.75%</span>
-                    <span class="rate-change">↓ 25bp Dec</span>
-                </div>
-                <div class="rate-card">
-                    <span class="rate-flag">🇨🇦</span>
-                    <span class="rate-name">BoC</span>
-                    <span class="rate-value">2.25%</span>
-                    <span class="rate-change">↓ 25bp Oct</span>
-                </div>
-                <div class="rate-card">
-                    <span class="rate-flag">🇦🇺</span>
-                    <span class="rate-name">RBA</span>
-                    <span class="rate-value">3.60%</span>
-                    <span class="rate-change">— held</span>
-                </div>
-                <div class="rate-card">
-                    <span class="rate-flag">🇳🇿</span>
-                    <span class="rate-name">RBNZ</span>
-                    <span class="rate-value">2.25%</span>
-                    <span class="rate-change">↓ 25bp Nov</span>
-                </div>
-                <div class="rate-card">
-                    <span class="rate-flag">🇿🇦</span>
-                    <span class="rate-name">SARB</span>
-                    <span class="rate-value">6.75%</span>
-                    <span class="rate-change">↓ 25bp Nov</span>
-                </div>
-                <div class="rate-card">
-                    <span class="rate-flag">🇨🇳</span>
-                    <span class="rate-name">PBOC</span>
-                    <span class="rate-value">3.10%</span>
-                    <span class="rate-change">— accom.</span>
-                </div>
+            <div class="rates-grid" id="ratesGrid">
+                <div class="loading">Loading rates...</div>
             </div>
         </section>
 
-        <footer class="page-footer">
-            <p>Data sourced from official statistical agencies and central banks. Click country rows for detailed analysis, historical charts, and source citations.</p>
-            <p class="footer-links">
-                <a href="https://github.com/jing-ny/inflation-dashboard">GitHub</a> · 
-                <a href="METHODOLOGY.md">Methodology</a>
+        <!-- About Section -->
+        <section class="section about-section">
+            <h2 class="section-title">About This Dashboard</h2>
+            <p>This dashboard tracks official inflation statistics and central bank forecasts across 8 major economies. All data comes from official government statistics agencies and central bank publications—no commentary, no predictions, just the numbers with sources.</p>
+            <p style="margin-top: 0.75rem; font-size: 0.875rem; color: #6b7280;">
+                Click any row to see detailed historical charts, forecast comparisons, and target information.
             </p>
-        </footer>
+        </section>
     </main>
+
+    <footer class="footer">
+        <p>All data from official government statistics and central bank publications</p>
+        <p><a href="https://github.com/jing-ny/inflation-dashboard" target="_blank">GitHub</a> · For informational purposes only · Not investment advice</p>
+    </footer>
+
+    <script>
+    /**
+     * Index Page - Dynamic Data Loading
+     * Loads all data from JSON files for consistency with country pages
+     */
+
+    // Country page mapping
+    const COUNTRY_PAGES = {
+        US: 'us.html', EA: 'ea.html', UK: 'uk.html', AU: 'au.html',
+        CA: 'ca.html', NZ: 'nz.html', ZA: 'za.html', CN: 'cn.html'
+    };
+
+    // Target definitions (rarely change, ok to hardcode)
+    const TARGETS = {
+        US: { value: 2.0, display: '2.0%', range: null },
+        EA: { value: 2.0, display: '2.0%', range: null },
+        UK: { value: 2.0, display: '2.0%', range: null },
+        AU: { value: 2.5, display: '2-3%', range: [2, 3] },
+        CA: { value: 2.0, display: '1-3%', range: [1, 3] },
+        NZ: { value: 2.0, display: '1-3%', range: [1, 3] },
+        ZA: { value: 4.5, display: '3-6%', range: [3, 6] },
+        CN: { value: 3.0, display: '~3%', range: null }
+    };
+
+    // Display order
+    const DISPLAY_ORDER = ['US', 'EA', 'UK', 'CA', 'AU', 'NZ', 'ZA', 'CN'];
+
+    /**
+     * Load and render the current inflation table
+     */
+    async function loadInflationTable() {
+        const tbody = document.getElementById('inflationTableBody');
+        
+        try {
+            const response = await fetch('data/historical_cpi.json');
+            const cpiData = await response.json();
+
+            let html = '';
+            for (const code of DISPLAY_ORDER) {
+                const data = cpiData[code];
+                if (!data) continue;
+
+                const current = data.latest?.value ?? data.history?.[data.history.length - 1]?.value;
+                const previous = data.previous?.value ?? data.history?.[data.history.length - 2]?.value;
+                const currentDate = data.latest?.date ?? data.history?.[data.history.length - 1]?.date;
+                const target = TARGETS[code];
+                const page = COUNTRY_PAGES[code];
+
+                // Calculate change
+                const change = previous !== null ? (current - previous) : null;
+                const changeStr = change !== null ? 
+                    (change > 0 ? `▲ ${change.toFixed(1)}` : change < 0 ? `▼ ${Math.abs(change).toFixed(1)}` : '—') : '—';
+                const changeClass = change > 0.05 ? 'change-up' : change < -0.05 ? 'change-down' : '';
+
+                // Determine status
+                let statusClass, statusText;
+                if (target.range) {
+                    if (current >= target.range[0] && current <= target.range[1]) {
+                        statusClass = 'status-good';
+                        statusText = 'In Range';
+                    } else if (current < target.range[0]) {
+                        statusClass = 'status-alert';
+                        statusText = 'Below Range';
+                    } else {
+                        statusClass = 'status-warning';
+                        statusText = 'Above Range';
+                    }
+                } else {
+                    const diff = current - target.value;
+                    if (Math.abs(diff) <= 0.5) {
+                        statusClass = 'status-good';
+                        statusText = 'Near Target';
+                    } else if (diff < 0) {
+                        statusClass = 'status-alert';
+                        statusText = 'Below Target';
+                    } else {
+                        statusClass = 'status-warning';
+                        statusText = 'Above Target';
+                    }
+                }
+
+                // Special case for China (deflationary)
+                if (code === 'CN' && current < 1) {
+                    statusClass = 'status-alert';
+                    statusText = 'Deflationary';
+                }
+
+                html += `
+                    <tr onclick="window.location='${page}'" class="clickable-row">
+                        <td class="country-cell">${data.flag || ''} ${data.name || code}</td>
+                        <td class="value-cell"><strong>${current.toFixed(1)}%</strong></td>
+                        <td>${previous !== null ? previous.toFixed(1) + '%' : '—'}</td>
+                        <td class="${changeClass}">${changeStr}</td>
+                        <td>${target.display}</td>
+                        <td><span class="${statusClass}">${statusText}</span></td>
+                        <td>${formatDate(currentDate)}</td>
+                    </tr>
+                `;
+            }
+
+            tbody.innerHTML = html;
+
+        } catch (error) {
+            console.error('Error loading inflation data:', error);
+            tbody.innerHTML = '<tr><td colspan="7" class="error">Error loading data. Please refresh.</td></tr>';
+        }
+    }
+
+    /**
+     * Load and render the Central Bank Outlook table from cb_forecasts.json
+     */
+    async function loadOutlookTable() {
+        const tbody = document.getElementById('outlookTableBody');
+        
+        try {
+            const response = await fetch('data/cb_forecasts.json');
+            const forecastData = await response.json();
+            
+            const displayOrder = forecastData.display_order || DISPLAY_ORDER;
+            let html = '';
+
+            for (const code of displayOrder) {
+                const forecast = forecastData.forecasts[code];
+                if (!forecast) continue;
+
+                const page = COUNTRY_PAGES[code];
+                const proj = forecast.projections;
+                
+                // Format source with date abbreviation
+                const sourceDate = forecast.publication_date
+                    .replace('December', 'Dec')
+                    .replace('November', 'Nov')
+                    .replace('October', 'Oct')
+                    .replace('2025', "'25")
+                    .replace('2026', "'26");
+
+                html += `
+                    <tr onclick="window.location='${page}'" class="clickable-row">
+                        <td class="country-cell">${forecast.flag} ${code}</td>
+                        <td class="source-cell">${forecast.source} ${sourceDate}</td>
+                        <td>${proj['2025'] !== null ? proj['2025'].toFixed(1) + '%' : '—'}</td>
+                        <td><strong>${proj['2026'] !== null ? proj['2026'].toFixed(1) + '%' : '—'}</strong></td>
+                        <td>${proj['2027'] !== null ? proj['2027'].toFixed(1) + '%' : '—'}</td>
+                        <td class="assessment-cell">"${forecast.key_quote}"</td>
+                    </tr>
+                `;
+            }
+
+            tbody.innerHTML = html;
+
+        } catch (error) {
+            console.error('Error loading forecast data:', error);
+            tbody.innerHTML = '<tr><td colspan="6" class="error">Error loading forecasts. Please refresh.</td></tr>';
+        }
+    }
+
+    /**
+     * Load and render the Policy Rates grid from cb_forecasts.json
+     */
+    async function loadPolicyRates() {
+        const grid = document.getElementById('ratesGrid');
+        const subtitle = document.getElementById('policyRatesSubtitle');
+        
+        try {
+            const response = await fetch('data/cb_forecasts.json');
+            const forecastData = await response.json();
+            
+            // Update subtitle with date
+            const lastUpdated = forecastData.metadata?.last_updated || 'January 2026';
+            subtitle.textContent = `Current central bank interest rates (as of ${lastUpdated})`;
+
+            const displayOrder = forecastData.display_order || DISPLAY_ORDER;
+            let html = '';
+
+            for (const code of displayOrder) {
+                const forecast = forecastData.forecasts[code];
+                if (!forecast || !forecast.policy_rate) continue;
+
+                const rate = forecast.policy_rate;
+                
+                // Determine arrow direction from last_change
+                let changeClass = '';
+                if (rate.last_change.includes('↓')) changeClass = 'rate-down';
+                else if (rate.last_change.includes('↑')) changeClass = 'rate-up';
+
+                html += `
+                    <div class="rate-card">
+                        <span class="rate-flag">${forecast.flag}</span>
+                        <span class="rate-name">${forecast.source}</span>
+                        <span class="rate-value">${rate.rate}</span>
+                        <span class="rate-change ${changeClass}">${rate.last_change}</span>
+                    </div>
+                `;
+            }
+
+            grid.innerHTML = html;
+
+        } catch (error) {
+            console.error('Error loading policy rates:', error);
+            grid.innerHTML = '<div class="error">Error loading rates.</div>';
+        }
+    }
+
+    /**
+     * Format date string (YYYY-MM or YYYY-QN) to readable format
+     */
+    function formatDate(dateStr) {
+        if (!dateStr) return '—';
+        
+        // Handle quarterly format (e.g., "2025-Q3")
+        if (dateStr.includes('Q')) {
+            return dateStr;
+        }
+        
+        // Handle monthly format (e.g., "2025-12")
+        const [year, month] = dateStr.split('-');
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${months[parseInt(month) - 1]} ${year}`;
+    }
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', () => {
+        loadInflationTable();
+        loadOutlookTable();
+        loadPolicyRates();
+    });
+    </script>
 </body>
 </html>

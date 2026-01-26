@@ -1,0 +1,195 @@
+{
+  "metadata": {
+    "last_updated": "2026-01-26",
+    "description": "Central bank inflation forecasts - single source of truth for dashboard"
+  },
+  "forecasts": {
+    "US": {
+      "country_name": "United States",
+      "flag": "🇺🇸",
+      "central_bank": "Federal Reserve",
+      "source": "FOMC",
+      "source_full": "Federal Reserve (FOMC SEP)",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "publication_date": "December 2025",
+      "forecast_type": "PCE Projections",
+      "measure": "PCE inflation",
+      "projections": {
+        "2025": 2.8,
+        "2026": 2.4,
+        "2027": 2.1,
+        "longer_run": 2.0
+      },
+      "key_quote": "Core inflation 2.5% in 2026, expects only 1 rate cut",
+      "note": "PCE inflation (Fed's preferred measure), median projections",
+      "policy_rate": {
+        "rate": "4.25-4.50%",
+        "name": "Fed Funds Rate",
+        "last_change": "↓ 25bp Dec 2025"
+      }
+    },
+    "EA": {
+      "country_name": "Euro Area",
+      "flag": "🇪🇺",
+      "central_bank": "European Central Bank",
+      "source": "ECB",
+      "source_full": "European Central Bank (Staff Projections)",
+      "source_url": "https://www.ecb.europa.eu/press/projections/html/index.en.html",
+      "publication_date": "December 2025",
+      "forecast_type": "Staff Projections",
+      "measure": "HICP inflation",
+      "projections": {
+        "2025": 2.1,
+        "2026": 1.9,
+        "2027": 1.8,
+        "2028": 2.0
+      },
+      "key_quote": "Below target in 2026-27, returns to 2% in 2028",
+      "note": "HICP inflation, December 2025 projections",
+      "policy_rate": {
+        "rate": "3.15%",
+        "name": "Main Refinancing Rate",
+        "last_change": "— held"
+      }
+    },
+    "UK": {
+      "country_name": "United Kingdom",
+      "flag": "🇬🇧",
+      "central_bank": "Bank of England",
+      "source": "BoE",
+      "source_full": "Bank of England (MPR)",
+      "source_url": "https://www.bankofengland.co.uk/monetary-policy-report",
+      "publication_date": "November 2025",
+      "forecast_type": "MPC Projections",
+      "measure": "CPI inflation",
+      "projections": {
+        "2025": 3.8,
+        "2026": 2.5,
+        "2027": 1.9
+      },
+      "key_quote": "Inflation judged to have peaked, below 2% by Q2 2027",
+      "note": "CPI inflation, modal projections from November 2025 MPR",
+      "policy_rate": {
+        "rate": "4.75%",
+        "name": "Bank Rate",
+        "last_change": "↓ 25bp Nov 2025"
+      }
+    },
+    "AU": {
+      "country_name": "Australia",
+      "flag": "🇦🇺",
+      "central_bank": "Reserve Bank of Australia",
+      "source": "RBA",
+      "source_full": "Reserve Bank of Australia (SMP)",
+      "source_url": "https://www.rba.gov.au/publications/smp/",
+      "publication_date": "November 2025",
+      "forecast_type": "SMP Forecasts",
+      "measure": "Trimmed mean inflation",
+      "projections": {
+        "2025": 3.2,
+        "2026": 2.7,
+        "2027": 2.6
+      },
+      "key_quote": "Above 3% until mid-2026, target by late 2027",
+      "note": "Trimmed mean inflation, November 2025 SMP",
+      "policy_rate": {
+        "rate": "4.35%",
+        "name": "Cash Rate",
+        "last_change": "— held"
+      }
+    },
+    "CA": {
+      "country_name": "Canada",
+      "flag": "🇨🇦",
+      "central_bank": "Bank of Canada",
+      "source": "BoC",
+      "source_full": "Bank of Canada (MPR)",
+      "source_url": "https://www.bankofcanada.ca/publications/mpr/",
+      "publication_date": "October 2025",
+      "forecast_type": "MPR Projections",
+      "measure": "CPI inflation",
+      "projections": {
+        "2025": 2.4,
+        "2026": 2.0,
+        "2027": 2.0
+      },
+      "key_quote": "Weaker demand to offset tariff price pressures",
+      "note": "CPI inflation, from Monetary Policy Report",
+      "policy_rate": {
+        "rate": "3.25%",
+        "name": "Policy Rate",
+        "last_change": "↓ 50bp Oct 2025"
+      }
+    },
+    "NZ": {
+      "country_name": "New Zealand",
+      "flag": "🇳🇿",
+      "central_bank": "Reserve Bank of New Zealand",
+      "source": "RBNZ",
+      "source_full": "Reserve Bank of New Zealand (MPS)",
+      "source_url": "https://www.rbnz.govt.nz/monetary-policy/monetary-policy-statement",
+      "publication_date": "November 2025",
+      "forecast_type": "MPS Projections",
+      "measure": "CPI inflation",
+      "projections": {
+        "2025": 3.0,
+        "2026": 2.0,
+        "2027": 2.0
+      },
+      "key_quote": "Spare capacity, expect 2% by mid-2026",
+      "note": "CPI inflation, November 2025 MPS",
+      "policy_rate": {
+        "rate": "4.25%",
+        "name": "OCR",
+        "last_change": "↓ 50bp Nov 2025"
+      }
+    },
+    "ZA": {
+      "country_name": "South Africa",
+      "flag": "🇿🇦",
+      "central_bank": "South African Reserve Bank",
+      "source": "SARB",
+      "source_full": "South African Reserve Bank (MPC)",
+      "source_url": "https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements",
+      "publication_date": "November 2025",
+      "forecast_type": "MPC Projections",
+      "measure": "CPI inflation",
+      "projections": {
+        "2025": 3.3,
+        "2026": 3.5,
+        "2027": 3.1
+      },
+      "key_quote": "On track to deliver new 3% target over medium term",
+      "note": "CPI inflation, November 2025 MPC statement",
+      "policy_rate": {
+        "rate": "7.75%",
+        "name": "Repo Rate",
+        "last_change": "↓ 25bp Nov 2025"
+      }
+    },
+    "CN": {
+      "country_name": "China",
+      "flag": "🇨🇳",
+      "central_bank": "People's Bank of China",
+      "source": "IMF",
+      "source_full": "IMF Staff Projections",
+      "source_url": "https://www.imf.org/en/Publications/WEO",
+      "publication_date": "December 2025",
+      "forecast_type": "IMF Projections",
+      "measure": "CPI inflation",
+      "projections": {
+        "2025": 0.0,
+        "2026": 0.8,
+        "2027": null
+      },
+      "key_quote": "Deflationary pressures amid weak domestic demand",
+      "note": "PBOC does not publish official forecasts; IMF projections used",
+      "policy_rate": {
+        "rate": "3.10%",
+        "name": "LPR (1Y)",
+        "last_change": "— accommodative"
+      }
+    }
+  },
+  "display_order": ["US", "EA", "UK", "CA", "AU", "NZ", "ZA", "CN"]
+}
