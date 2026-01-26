@@ -11,6 +11,8 @@ A simple dashboard tracking official inflation data and central bank forecasts a
 ### Current Inflation Rates
 Year-over-year consumer price index (CPI) changes for:
 - 🇺🇸 United States
+- 🇨🇳 China
+- 🇯🇵 Japan
 - 🇪🇺 Euro Area
 - 🇬🇧 United Kingdom
 - 🇩🇪 Germany
@@ -30,6 +32,7 @@ Official inflation projections from:
 - US Federal Reserve (FOMC projections)
 - Cleveland Fed (inflation expectations model)
 - European Central Bank (staff projections & survey)
+- Bank of Japan (Outlook Report)
 - Bank of England
 - Reserve Bank of Australia
 
@@ -44,6 +47,8 @@ All data comes from official government statistics and central bank publications
 | [Bureau of Labor Statistics](https://www.bls.gov/) | US CPI |
 | [FRED (St. Louis Fed)](https://fred.stlouisfed.org/) | International CPI, Fed forecasts |
 | [ECB Data Portal](https://data.ecb.europa.eu/) | Euro Area HICP, ECB forecasts |
+| [National Bureau of Statistics](https://www.stats.gov.cn/english/) | China CPI |
+| [Statistics Bureau of Japan](https://www.stat.go.jp/english/) | Japan CPI |
 | [Bank of England](https://www.bankofengland.co.uk/) | UK forecasts |
 
 For detailed methodology, see [METHODOLOGY.md](METHODOLOGY.md).
