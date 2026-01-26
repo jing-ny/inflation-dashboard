@@ -56,11 +56,17 @@ const TARGET_INFO = {
         quoteSource: 'Remit for the Monetary Policy Committee, 2024'
     },
     ZA: {
-        target: 4.5,
-        targetRange: '3-6%',
-        description: 'The SARB targets 3-6% CPI inflation, with a recent preference for anchoring expectations around 4.5%.',
-        quote: 'The inflation target range is 3–6%. The SARB has signalled a preference for inflation expectations to be anchored around the 4.5% midpoint of the target range.',
-        quoteSource: 'SARB Monetary Policy Review, 2024'
+        target: 3.0,
+        targetRange: '2-4%',
+        description: 'The SARB targets 3% CPI inflation with a ±1 percentage point tolerance band (2-4%). This replaced the previous 3-6% target range in November 2025—the first change in 25 years. The new lower target aims to anchor inflation expectations and reduce borrowing costs over time.',
+        quote: 'South Africa\'s inflation target is 3%, with a tolerance band of plus or minus 1 percentage point. This target refers to the headline change in the consumer price index.',
+        quoteSource: 'SARB Monetary Policy Framework, November 2025',
+        targetChange: {
+            date: 'November 2025',
+            previous: '3-6% (4.5% midpoint)',
+            current: '3% ± 1pp',
+            note: 'First target change in 25 years'
+        }
     },
     JP: {
         target: 2.0,
@@ -118,7 +124,7 @@ const DATA_SOURCES = {
         { label: 'CPI Data', value: 'Statistics South Africa via FRED', url: 'https://fred.stlouisfed.org/series/ZAFCPIALLMINMEI' },
         { label: 'Series ID', value: 'ZAFCPIALLMINMEI (OECD)', url: 'https://fred.stlouisfed.org/series/ZAFCPIALLMINMEI' },
         { label: 'Forecasts', value: 'SARB Monetary Policy Committee Statements', url: 'https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements' },
-        { label: 'Target', value: 'SARB Inflation Targeting Framework', url: 'https://www.resbank.co.za/en/home/what-we-do/monetary-policy' }
+        { label: 'Target', value: 'SARB Monetary Policy (3% target, Nov 2025)', url: 'https://www.resbank.co.za/en/home/what-we-do/monetary-policy' }
     ],
     JP: [
         { label: 'CPI Data', value: 'Statistics Bureau of Japan via FRED', url: 'https://fred.stlouisfed.org/series/JPNCPALTT01GYM659N' },
@@ -507,13 +513,40 @@ function renderTargetInfo(countryCode) {
     const info = TARGET_INFO[countryCode];
     if (!info) return;
 
-    container.innerHTML = `
-        <p>${info.description}</p>
+    let html = `<p>${info.description}</p>`;
+    
+    // Add target change alert box if there's a recent policy change
+    if (info.targetChange) {
+        html += `
+            <div class="policy-change-alert">
+                <div class="policy-change-header">
+                    <span class="policy-change-icon">📋</span>
+                    <strong>Recent Policy Change</strong>
+                    <span class="policy-change-date">${info.targetChange.date}</span>
+                </div>
+                <div class="policy-change-details">
+                    <div class="policy-change-row">
+                        <span class="policy-label">Previous target:</span>
+                        <span class="policy-value previous">${info.targetChange.previous}</span>
+                    </div>
+                    <div class="policy-change-row">
+                        <span class="policy-label">New target:</span>
+                        <span class="policy-value current">${info.targetChange.current}</span>
+                    </div>
+                    ${info.targetChange.note ? `<p class="policy-change-note">${info.targetChange.note}</p>` : ''}
+                </div>
+            </div>
+        `;
+    }
+    
+    html += `
         <blockquote class="target-quote">
             "${info.quote}"
             <div class="target-quote-source">— ${info.quoteSource}</div>
         </blockquote>
     `;
+    
+    container.innerHTML = html;
 }
 
 function renderDataSources(countryCode) {
