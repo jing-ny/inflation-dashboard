@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>South Africa | Inflation, Officially</title>
+    <title>South Africa Inflation | Inflation, Officially</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -11,7 +11,18 @@
     <nav class="nav">
         <div class="nav-container">
             <a href="index.html" class="nav-brand">Inflation, Officially</a>
-            <a href="index.html" class="nav-back">← Overview</a>
+            <div class="nav-links">
+                <a href="index.html">Overview</a>
+                <a href="us.html">🇺🇸 US</a>
+                <a href="ea.html">🇪🇺 EA</a>
+                <a href="uk.html">🇬🇧 UK</a>
+                <a href="ca.html">🇨🇦 CA</a>
+                <a href="au.html">🇦🇺 AU</a>
+                <a href="nz.html">🇳🇿 NZ</a>
+                <a href="za.html" class="active">🇿🇦 ZA</a>
+                <a href="jp.html">🇯🇵 JP</a>
+                <a href="cn.html">🇨🇳 CN</a>
+            </div>
         </div>
     </nav>
 
@@ -22,32 +33,35 @@
         </header>
 
         <!-- Key Metrics -->
-        <div class="metrics-grid">
+        <section class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-label">Current Inflation</div>
                 <div class="metric-value" id="currentValue">—</div>
-                <div class="metric-detail" id="currentDate">Loading...</div>
+                <div class="metric-detail" id="currentDate">—</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label">Previous Reading</div>
-                <div class="metric-value neutral" id="previousValue">—</div>
+                <div class="metric-label">Previous</div>
+                <div class="metric-value secondary" id="previousValue">—</div>
                 <div class="metric-detail" id="previousDate">—</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label">SARB Target</div>
-                <div class="metric-value on-target" id="targetValue">3-6%</div>
-                <div class="metric-detail">Preference for 4.5%</div>
+                <div class="metric-label">Target</div>
+                <div class="metric-value target" id="targetValue">2-4%</div>
+                <div class="metric-detail">SARB (new target Nov 2025)</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label">vs Target</div>
                 <div class="metric-value" id="statusValue">—</div>
                 <div class="metric-detail" id="statusDetail">—</div>
             </div>
-        </div>
+        </section>
 
         <!-- Historical Chart -->
         <section class="section">
-            <h2 class="section-title">10-Year Inflation History</h2>
+            <div class="section-header">
+                <h2 class="section-title">10-Year History</h2>
+                <p class="section-subtitle">Year-over-year CPI change with SARB target</p>
+            </div>
             <div class="chart-container">
                 <canvas id="historyChart"></canvas>
             </div>
@@ -55,20 +69,71 @@
 
         <!-- Forecasts -->
         <section class="section">
-            <h2 class="section-title">SARB Inflation Forecasts</h2>
-            <div id="forecastTable">Loading...</div>
+            <div class="section-header">
+                <h2 class="section-title">Inflation Outlook</h2>
+                <p class="section-subtitle">Official projections from central bank and international organizations</p>
+            </div>
+            <div id="forecastTable">
+                <p class="loading">Loading forecasts...</p>
+            </div>
         </section>
 
-        <!-- Inflation Target -->
+        <!-- Target Information -->
         <section class="section">
-            <h2 class="section-title">Inflation Target</h2>
-            <div id="targetInfo">Loading...</div>
+            <div class="section-header">
+                <h2 class="section-title">Inflation Target</h2>
+            </div>
+            <div id="targetInfo">
+                <!-- Populated by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Policy Updates Timeline (Option 2) -->
+        <section class="section">
+            <div class="section-header">
+                <h2 class="section-title">Policy Updates</h2>
+                <p class="section-subtitle">Recent changes to South Africa's monetary policy framework</p>
+            </div>
+            <div class="policy-updates-section">
+                <div class="policy-timeline">
+                    <div class="policy-event">
+                        <div class="policy-event-date">November 12, 2025</div>
+                        <div class="policy-event-title">New Inflation Target Announced</div>
+                        <p class="policy-event-description">
+                            Finance Minister Enoch Godongwana and SARB Governor Lesetja Kganyago jointly announced 
+                            a new inflation target of 3% with a ±1 percentage point tolerance band, replacing the 
+                            25-year-old 3-6% target range. The new target aims to anchor lower inflation expectations 
+                            and reduce borrowing costs over the medium term.
+                        </p>
+                    </div>
+                    <div class="policy-event">
+                        <div class="policy-event-date">November 20, 2025</div>
+                        <div class="policy-event-title">Rate Cut to 6.75%</div>
+                        <p class="policy-event-description">
+                            The MPC unanimously reduced the repo rate by 25bp to 6.75%, the sixth consecutive cut 
+                            since September 2024. The SARB noted that if price setters adopt the 3% target, 
+                            South Africa will have room to reach lower rates faster.
+                        </p>
+                    </div>
+                    <div class="policy-event">
+                        <div class="policy-event-date">January 20, 2026</div>
+                        <div class="policy-event-title">On Track for 3% Target</div>
+                        <p class="policy-event-description">
+                            Governor Kganyago stated at Davos that inflation is on course to meet the new 3% target 
+                            in 2026, ahead of the original 2027 timeline. Full-year 2025 inflation expected between 
+                            3.2-3.4%, with 2026 averaging around 3.6%.
+                        </p>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- Data Sources -->
-        <div class="sources" id="dataSources">
-            Loading...
-        </div>
+        <section class="section sources-section">
+            <div id="dataSources">
+                <!-- Populated by JavaScript -->
+            </div>
+        </section>
     </main>
 
     <footer class="footer">
@@ -78,7 +143,8 @@
 
     <script src="country.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => initCountryPage('ZA'));
+        // Initialize South Africa page
+        initCountryPage('ZA');
     </script>
 </body>
 </html>
