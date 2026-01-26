@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Japan Inflation | Inflation, Officially</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-brand">Inflation, Officially</a>
+            <div class="nav-links">
+                <a href="index.html">Overview</a>
+                <a href="us.html">🇺🇸 US</a>
+                <a href="ea.html">🇪🇺 EA</a>
+                <a href="uk.html">🇬🇧 UK</a>
+                <a href="ca.html">🇨🇦 CA</a>
+                <a href="au.html">🇦🇺 AU</a>
+                <a href="nz.html">🇳🇿 NZ</a>
+                <a href="za.html">🇿🇦 ZA</a>
+                <a href="jp.html" class="active">🇯🇵 JP</a>
+                <a href="cn.html">🇨🇳 CN</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <header class="page-header">
+            <h1><span class="flag">🇯🇵</span> Japan</h1>
+            <p class="page-subtitle">Consumer Price Index (CPI) · All Items · Monthly</p>
+        </header>
+
+        <!-- Key Metrics -->
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Current Inflation</div>
+                <div class="metric-value" id="currentValue">—</div>
+                <div class="metric-detail" id="currentDate">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Previous</div>
+                <div class="metric-value secondary" id="previousValue">—</div>
+                <div class="metric-detail" id="previousDate">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Target</div>
+                <div class="metric-value target" id="targetValue">2.0%</div>
+                <div class="metric-detail">Bank of Japan</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">vs Target</div>
+                <div class="metric-value" id="statusValue">—</div>
+                <div class="metric-detail" id="statusDetail">—</div>
+            </div>
+        </section>
+
+        <!-- Historical Chart -->
+        <section class="section">
+            <div class="section-header">
+                <h2 class="section-title">10-Year History</h2>
+                <p class="section-subtitle">Year-over-year CPI change with BoJ 2% target</p>
+            </div>
+            <div class="chart-container">
+                <canvas id="historyChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Forecasts -->
+        <section class="section">
+            <div class="section-header">
+                <h2 class="section-title">Inflation Outlook</h2>
+                <p class="section-subtitle">Official projections from central bank and international organizations</p>
+            </div>
+            <div id="forecastTable">
+                <p class="loading">Loading forecasts...</p>
+            </div>
+        </section>
+
+        <!-- Target Information -->
+        <section class="section">
+            <div class="section-header">
+                <h2 class="section-title">Inflation Target</h2>
+            </div>
+            <div id="targetInfo">
+                <!-- Populated by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Data Sources -->
+        <section class="section sources-section">
+            <div id="dataSources">
+                <!-- Populated by JavaScript -->
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>All data from official government statistics and central bank publications</p>
+        <p><a href="https://github.com/jing-ny/inflation-dashboard" target="_blank">GitHub</a> · For informational purposes only · Not investment advice</p>
+    </footer>
+
+    <script src="country.js"></script>
+    <script>
+        // Initialize Japan page
+        initCountryPage('JP');
+    </script>
+</body>
+</html>

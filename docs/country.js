@@ -62,6 +62,12 @@ const TARGET_INFO = {
         quote: 'The inflation target range is 3–6%. The SARB has signalled a preference for inflation expectations to be anchored around the 4.5% midpoint of the target range.',
         quoteSource: 'SARB Monetary Policy Review, 2024'
     },
+    JP: {
+        target: 2.0,
+        description: 'The Bank of Japan targets 2% CPI inflation, a goal adopted in January 2013 after decades of deflation. Japan achieved sustained inflation above target for the first time since the 1990s in 2022-2024.',
+        quote: 'The Bank will achieve the price stability target of 2 percent in terms of the year-on-year rate of change in the consumer price index (CPI) at the earliest possible time.',
+        quoteSource: 'Bank of Japan Price Stability Target'
+    },
     CN: {
         target: 3.0,
         description: 'China sets an annual CPI target, typically around 3%, as part of its government work report. The target is more of a ceiling than a strict objective.',
@@ -113,6 +119,12 @@ const DATA_SOURCES = {
         { label: 'Series ID', value: 'ZAFCPIALLMINMEI (OECD)', url: 'https://fred.stlouisfed.org/series/ZAFCPIALLMINMEI' },
         { label: 'Forecasts', value: 'SARB Monetary Policy Committee Statements', url: 'https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements' },
         { label: 'Target', value: 'SARB Inflation Targeting Framework', url: 'https://www.resbank.co.za/en/home/what-we-do/monetary-policy' }
+    ],
+    JP: [
+        { label: 'CPI Data', value: 'Statistics Bureau of Japan via FRED', url: 'https://fred.stlouisfed.org/series/JPNCPALTT01GYM659N' },
+        { label: 'Series ID', value: 'JPNCPALTT01GYM659N (OECD, COICOP 2018)', url: 'https://fred.stlouisfed.org/series/JPNCPALTT01GYM659N' },
+        { label: 'Forecasts', value: 'BoJ Outlook for Economic Activity and Prices', url: 'https://www.boj.or.jp/en/mopo/outlook/' },
+        { label: 'Target', value: 'BoJ Price Stability Target', url: 'https://www.boj.or.jp/en/mopo/outline/index.htm' }
     ],
     CN: [
         { label: 'CPI Data', value: 'NBS China via FRED', url: 'https://fred.stlouisfed.org/series/CHNCPIALLMINMEI' },
@@ -557,4 +569,4 @@ function showError(message) {
 }
 
 // Log version for debugging
-console.log('country.js loaded - Version 2026-01-26 (loads forecasts from JSON)');
+console.log('country.js loaded - Version 2026-01-26 (includes Japan)');
