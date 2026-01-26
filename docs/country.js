@@ -390,7 +390,7 @@ async function renderForecastTable(countryCode) {
 
     // If we have both CB and IMF, show comparison table
     if (cbForecast && imfForecast && imfForecast.forecasts) {
-        const imfYears = Object.keys(imfForecast.forecasts).sort();
+        const currentYear = new Date().getFullYear(); const imfYears = Object.keys(imfForecast.forecasts).filter(y => parseInt(y) >= currentYear - 1).sort();
         
         html = `
             <p style="margin-bottom: 1rem;">Comparison of inflation projections from official sources.</p>
@@ -480,7 +480,7 @@ async function renderForecastTable(countryCode) {
         `;
     } else if (imfForecast && imfForecast.forecasts) {
         // Only IMF forecast available
-        const years = Object.keys(imfForecast.forecasts).sort();
+        const currentYear = new Date().getFullYear(); const years = Object.keys(imfForecast.forecasts).filter(y => parseInt(y) >= currentYear - 1).sort();
         
         html = `
             <p style="margin-bottom: 1rem;">IMF World Economic Outlook from <a href="${imfData.url || 'https://www.imf.org/external/datamapper/PCPIPCH@WEO'}" target="_blank">IMF DataMapper</a></p>
