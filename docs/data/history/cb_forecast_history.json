@@ -1,0 +1,69 @@
+{
+  "metadata": {
+    "description": "Historical record of central bank inflation forecast revisions",
+    "frequency": "Updated after major monetary policy meetings",
+    "last_updated": "2026-01-26"
+  },
+  "snapshots": [
+    {
+      "date": "2026-01-26",
+      "note": "Initial snapshot - baseline for tracking revisions",
+      "forecasts": {
+        "US": {
+          "source": "FOMC Dec 2025",
+          "projections": { "2025": 2.4, "2026": 2.5, "2027": 2.1 },
+          "policy_rate": "4.25-4.50%"
+        },
+        "EA": {
+          "source": "ECB Dec 2025",
+          "projections": { "2025": 2.1, "2026": 1.9, "2027": 2.1 },
+          "policy_rate": "3.00%"
+        },
+        "UK": {
+          "source": "BoE Nov 2025",
+          "projections": { "2025": 2.6, "2026": 2.5, "2027": 1.9 },
+          "policy_rate": "4.50%"
+        },
+        "CA": {
+          "source": "BoC Oct 2025",
+          "projections": { "2025": 2.4, "2026": 2.0, "2027": 2.0 },
+          "policy_rate": "3.25%"
+        },
+        "AU": {
+          "source": "RBA Nov 2025",
+          "projections": { "2025": 2.8, "2026": 2.6, "2027": 2.5 },
+          "policy_rate": "4.10%"
+        },
+        "NZ": {
+          "source": "RBNZ Nov 2025",
+          "projections": { "2025": 2.2, "2026": 2.1, "2027": 2.0 },
+          "policy_rate": "3.75%"
+        },
+        "ZA": {
+          "source": "SARB Nov 2025",
+          "projections": { "2025": 3.4, "2026": 3.6, "2027": 3.0 },
+          "policy_rate": "6.75%",
+          "note": "New 3% target announced Nov 2025"
+        },
+        "JP": {
+          "source": "BoJ Jan 2026",
+          "projections": { "2025": 2.7, "2026": 2.0, "2027": 2.0 },
+          "policy_rate": "0.75%",
+          "note": "Fiscal year basis (Apr-Mar)"
+        },
+        "IN": {
+          "source": "RBI Dec 2025",
+          "projections": { "2025": 2.0, "2026": 4.0, "2027": 4.2 },
+          "policy_rate": "5.25%",
+          "note": "Fiscal year basis (Apr-Mar); record-low inflation in 2025"
+        },
+        "CN": {
+          "source": "IMF Oct 2025",
+          "projections": { "2025": 0.5, "2026": 1.2, "2027": 1.8 },
+          "policy_rate": "3.10%",
+          "note": "PBoC does not publish forecasts; IMF used"
+        }
+      }
+    }
+  ]
+}
