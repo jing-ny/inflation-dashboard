@@ -1,57 +1,62 @@
-# Inflation Monitor
+# Inflation, Officially
 
-A simple dashboard tracking official inflation data and central bank forecasts across major economies.
+**Official Data & Central Bank Expectations**
 
-**🔗 [View Live Dashboard](https://jing-ny.github.io/inflation-dashboard/)**
+A lightweight, source-first monitor of inflation trends and central bank expectations across major economies.
+
+**🔗 [View Dashboard](https://jing-ny.github.io/inflation-dashboard/)**
 
 ---
 
-## What This Shows
+## Why This Exists
 
-### Current Inflation Rates
-Year-over-year consumer price index (CPI) changes for:
-- 🇺🇸 United States
-- 🇨🇳 China
-- 🇯🇵 Japan
-- 🇪🇺 Euro Area
-- 🇬🇧 United Kingdom
-- 🇩🇪 Germany
-- 🇦🇺 Australia
-- 🇳🇿 New Zealand
-- 🇿🇦 South Africa
+Inflation data is everywhere, but finding clean, comparable, and verifiable numbers is harder than it should be.
 
-### 10-Year Historical Trends
-Interactive charts showing how inflation evolved through:
-- Pre-pandemic stability (2015-2019)
-- COVID-19 disruption (2020)
-- Post-pandemic inflation surge (2021-2022)
-- Current normalization period (2023-present)
+News headlines mix seasonally adjusted and non-adjusted figures. Commentary blends official statistics with private forecasts. Different sources use different base years, different price indices, and different reporting lags—often without saying so.
 
-### Central Bank Forecasts
-Official inflation projections from:
-- US Federal Reserve (FOMC projections)
-- Cleveland Fed (inflation expectations model)
-- European Central Bank (staff projections & survey)
-- Bank of Japan (Outlook Report)
-- Bank of England
-- Reserve Bank of Australia
+This project exists to cut through that noise. It aggregates official inflation statistics and central bank projections in one place, with clear source attribution for every number.
+
+**What this project does:**
+- Presents official CPI/HICP data from government statistics agencies
+- Shows central bank inflation forecasts and targets
+- Links directly to primary sources
+
+**What this project does not do:**
+- Provide analysis or commentary
+- Make predictions
+- Offer investment advice
+
+---
+
+## Scope
+
+This dashboard tracks headline consumer price inflation (year-over-year) for nine economies:
+
+| Country | Source | Frequency |
+|---------|--------|-----------|
+| 🇺🇸 United States | Bureau of Labor Statistics | Monthly |
+| 🇨🇳 China | National Bureau of Statistics | Monthly |
+| 🇯🇵 Japan | Statistics Bureau of Japan | Monthly |
+| 🇪🇺 Euro Area | Eurostat (via ECB) | Monthly |
+| 🇬🇧 United Kingdom | ONS (via OECD/FRED) | Monthly |
+| 🇩🇪 Germany | Destatis (via OECD/FRED) | Monthly |
+| 🇦🇺 Australia | Australian Bureau of Statistics | Quarterly |
+| 🇳🇿 New Zealand | Stats NZ | Quarterly |
+| 🇿🇦 South Africa | Statistics South Africa | Monthly |
+
+Central bank forecasts are sourced from official monetary policy publications (FOMC projections, ECB staff projections, BoJ Outlook Report, etc.).
 
 ---
 
 ## Data Sources
 
-All data comes from official government statistics and central bank publications:
+Different countries use different official sources. This is intentional.
 
-| Source | Data |
-|--------|------|
-| [Bureau of Labor Statistics](https://www.bls.gov/) | US CPI |
-| [FRED (St. Louis Fed)](https://fred.stlouisfed.org/) | International CPI, Fed forecasts |
-| [ECB Data Portal](https://data.ecb.europa.eu/) | Euro Area HICP, ECB forecasts |
-| [National Bureau of Statistics](https://www.stats.gov.cn/english/) | China CPI |
-| [Statistics Bureau of Japan](https://www.stat.go.jp/english/) | Japan CPI |
-| [Bank of England](https://www.bankofengland.co.uk/) | UK forecasts |
+For some countries (US, NZ), data is fetched directly from the primary statistics agency API. For others (UK, Germany, South Africa), data comes via FRED, which aggregates OECD-harmonized series from national sources.
 
-For detailed methodology, see [METHODOLOGY.md](METHODOLOGY.md).
+This approach prioritizes **stability and reproducibility** over uniformity. Each data point can be traced back to its official origin.
+
+For full technical details, see [METHODOLOGY.md](METHODOLOGY.md).
 
 ---
 
@@ -63,7 +68,9 @@ Data is updated weekly. The dashboard reflects the latest available official rel
 
 ## Disclaimer
 
-This is a personal research tool for informational purposes only. It is not financial advice. Always verify data with primary sources before making any decisions.
+This project does not provide analysis, predictions, or investment advice. It aggregates and presents official inflation statistics and central bank projections for informational purposes only.
+
+Always verify data with primary sources before making any decisions.
 
 ---
 
