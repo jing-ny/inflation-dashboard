@@ -1108,3 +1108,171 @@ body {
     color: #475569;
     margin: 0;
 }
+/* ============================================================
+   POLICY CHANGE STYLES - Add to styles.css
+   ============================================================ */
+
+/* Target change badge on index page */
+.target-new-badge {
+    display: inline-block;
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    margin-left: 0.25rem;
+    vertical-align: middle;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+/* Policy change alert box on country pages */
+.policy-change-alert {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #93c5fd;
+    border-left: 4px solid #2563eb;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin: 1.25rem 0;
+}
+
+.policy-change-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.policy-change-icon {
+    font-size: 1.1rem;
+}
+
+.policy-change-header strong {
+    color: #1e40af;
+    font-size: 0.95rem;
+}
+
+.policy-change-date {
+    background: #2563eb;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    margin-left: auto;
+}
+
+.policy-change-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.policy-change-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.policy-label {
+    color: #64748b;
+    font-size: 0.85rem;
+    min-width: 110px;
+}
+
+.policy-value {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.policy-value.previous {
+    color: #6b7280;
+    text-decoration: line-through;
+}
+
+.policy-value.current {
+    color: #059669;
+}
+
+.policy-change-note {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.8rem;
+    color: #475569;
+    font-style: italic;
+}
+
+/* Policy Updates section (Option 2) */
+.policy-updates-section {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-top: 1.5rem;
+}
+
+.policy-updates-section h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.policy-timeline {
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.policy-timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.35rem;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    width: 2px;
+    background: #cbd5e1;
+}
+
+.policy-event {
+    position: relative;
+    padding-bottom: 1rem;
+}
+
+.policy-event:last-child {
+    padding-bottom: 0;
+}
+
+.policy-event::before {
+    content: '';
+    position: absolute;
+    left: -1.15rem;
+    top: 0.35rem;
+    width: 8px;
+    height: 8px;
+    background: #2563eb;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px #2563eb;
+}
+
+.policy-event-date {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.policy-event-title {
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0.25rem 0;
+}
+
+.policy-event-description {
+    font-size: 0.85rem;
+    color: #475569;
+    margin: 0;
+}
