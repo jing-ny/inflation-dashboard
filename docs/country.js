@@ -377,7 +377,7 @@ async function renderForecastTable(countryCode) {
 
     // If we have both CB and IMF, show comparison table
     if (cbForecast && imfForecast && imfForecast.forecasts) {
-        const imfYears = Object.keys(imfForecast.forecasts).sort();
+        const imfYears = Object.keys(imfForecast.forecasts).filter(y => parseInt(y) >= 2025).sort();
         
         html = `
             <p style="margin-bottom: 1rem;">Comparison of inflation projections from official sources.</p>
