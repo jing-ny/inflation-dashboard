@@ -55,25 +55,43 @@ This dashboard tracks headline consumer price inflation (year-over-year) across 
 
 ## Known Issues & High Priority Items
 
-### 🔴 High Priority
+### 🔴 P0 — Critical (Data Accuracy)
 
 | Issue | Description | Status |
 |-------|-------------|--------|
-| **US data lag** | FRED OECD series shows April 2025 data (significant lag vs BLS direct) | To fix: Consider switching back to BLS API or alternative source |
+| **US data lag** | FRED OECD series shows April 2025 data (significant lag vs BLS direct) | To fix: Switch back to BLS API or find fresher source |
 | **AU/NZ data lag** | Quarterly data shows Jan 2025; may be inherent to quarterly release schedule | To verify: Check if this is expected quarterly lag |
 | **Japan excluded** | FRED COICOP 1999 series discontinued June 2021; COICOP 2018 not available via FRED | To fix: Direct integration with Japan Statistics Bureau e-Stat API |
-| **Central bank forecasts** | Currently hardcoded in `country.js`, updated manually | To fix: Automate scraping or schedule monthly manual updates |
-| **Historical forecasts** | No historical tracking of forecast changes over time | To fix: Implement Supabase backend to store forecast snapshots |
+| **Broken source links** | Some central bank PDF links return 404 (PDFs moved/renamed) | To fix: Link to directory pages instead of specific PDFs |
+| **Central bank forecasts stale** | Currently hardcoded in `country.js`, updated manually | To fix: Schedule monthly manual updates or automate |
 
-### 📋 Future Improvements
+### 🟡 P1 — Important (Infrastructure)
+
+| Issue | Description | Status |
+|-------|-------------|--------|
+| **No forecast history** | No historical tracking of forecast changes over time | To fix: Implement Supabase backend |
+| **No subscription system** | Users cannot subscribe to alerts | To fix: Build email subscription with Supabase + Resend |
+| **No data freshness check** | No warning when data is older than expected | To fix: Add staleness detection and display |
+| **No error monitoring** | GitHub Actions failures not reported | To fix: Add Slack/email notification on workflow failure |
+| **Manual forecast updates** | Central bank forecasts require manual code changes | To fix: Move to database, build admin interface or scraper |
+
+### 🟢 P2 — Enhancements
 
 | Feature | Description |
 |---------|-------------|
-| Supabase integration | Store historical snapshots, forecast history, enable time-series analysis |
 | Singapore | Add MAS / Department of Statistics data |
 | India, Brazil, Mexico | Expand coverage to major emerging markets |
-| Forecast automation | Scrape central bank forecasts on schedule (monthly) |
-| Data freshness alerts | Warn when data is older than expected |
+| Mobile optimization | Improve responsive design |
+| Historical chart improvements | Add target band visualization, event markers |
+| RSS feed | Alternative to email for updates |
+
+---
+
+## ⚠️ Important Notice
+
+**Source links**: Some links to central bank publications may become outdated as institutions update their websites. Links point to general publication pages where possible, but specific PDF URLs may change.
+
+**Users should always verify data against original sources before using for any official, research, or investment purposes.**
 
 ---
 

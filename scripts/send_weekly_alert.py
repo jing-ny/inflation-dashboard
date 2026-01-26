@@ -52,7 +52,7 @@ DASHBOARD_URL = "https://jing-ny.github.io/inflation-dashboard/"
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 ALERT_RECIPIENTS = os.environ.get("ALERT_RECIPIENTS", "").split(",")
 ALERT_RECIPIENTS = [r.strip() for r in ALERT_RECIPIENTS if r.strip()]
-SENDER_EMAIL = "alerts@inflation-dashboard.com"  # Must be verified in Resend
+SENDER_EMAIL = "onboarding@resend.dev"  # Resend test address (no domain verification needed)
 
 # -----------------------------------------------------------------------------
 # Material Change Rules (easily adjustable)
