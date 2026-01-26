@@ -1,0 +1,120 @@
+{
+  "source": "IMF World Economic Outlook",
+  "version": "October 2025",
+  "retrieved": "2026-01-25",
+  "indicator": "PCPIPCH",
+  "indicator_label": "Inflation rate, average consumer prices (% change)",
+  "url": "https://www.imf.org/external/datamapper/PCPIPCH@WEO",
+  "countries": {
+    "AU": {
+      "name": "Australia",
+      "imf_code": "AUS",
+      "forecasts": {
+        "2026": 3,
+        "2027": 2.6,
+        "2028": 2.5,
+        "2029": 2.5,
+        "2030": 2.5
+      }
+    },
+    "CA": {
+      "name": "Canada",
+      "imf_code": "CAN",
+      "forecasts": {
+        "2026": 2,
+        "2027": 2.1,
+        "2028": 2,
+        "2029": 1.9,
+        "2030": 1.9
+      }
+    },
+    "CN": {
+      "name": "China",
+      "imf_code": "CHN",
+      "forecasts": {
+        "2026": 0.7,
+        "2027": 1.4,
+        "2028": 1.8,
+        "2029": 1.9,
+        "2030": 2
+      }
+    },
+    "DE": {
+      "name": "Germany",
+      "imf_code": "DEU",
+      "forecasts": {
+        "2026": 1.8,
+        "2027": 2,
+        "2028": 2.1,
+        "2029": 2.2,
+        "2030": 2.2
+      }
+    },
+    "JP": {
+      "name": "Japan",
+      "imf_code": "JPN",
+      "forecasts": {
+        "2026": 2.1,
+        "2027": 2,
+        "2028": 2,
+        "2029": 2,
+        "2030": 2
+      }
+    },
+    "NZ": {
+      "name": "New Zealand",
+      "imf_code": "NZL",
+      "forecasts": {
+        "2026": 2.1,
+        "2027": 2,
+        "2028": 2,
+        "2029": 2,
+        "2030": 2
+      }
+    },
+    "ZA": {
+      "name": "South Africa",
+      "imf_code": "ZAF",
+      "forecasts": {
+        "2026": 3.7,
+        "2027": 3.2,
+        "2028": 3,
+        "2029": 3,
+        "2030": 3
+      }
+    },
+    "CH": {
+      "name": "Switzerland",
+      "imf_code": "CHE",
+      "forecasts": {
+        "2026": 0.6,
+        "2027": 0.7,
+        "2028": 0.7,
+        "2029": 0.7,
+        "2030": 0.7
+      }
+    },
+    "UK": {
+      "name": "United Kingdom",
+      "imf_code": "GBR",
+      "forecasts": {
+        "2026": 2.5,
+        "2027": 2,
+        "2028": 2,
+        "2029": 2,
+        "2030": 2
+      }
+    },
+    "US": {
+      "name": "United States",
+      "imf_code": "USA",
+      "forecasts": {
+        "2026": 2.4,
+        "2027": 2.2,
+        "2028": 2.2,
+        "2029": 2.2,
+        "2030": 2.2
+      }
+    }
+  }
+}
