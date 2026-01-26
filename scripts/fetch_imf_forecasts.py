@@ -43,8 +43,7 @@ COUNTRY_MAPPING = {
     "AU": "AUS",
     "NZ": "NZL",
     "ZA": "ZAF",
-    "CN": "CHN",
-    "JP": "JPN"
+    "CN": "CHN"
 }
 
 # Country names for output
@@ -58,8 +57,7 @@ COUNTRY_NAMES = {
     "AU": "Australia",
     "NZ": "New Zealand",
     "ZA": "South Africa",
-    "CN": "China",
-    "JP": "Japan"
+    "CN": "China"
 }
 
 

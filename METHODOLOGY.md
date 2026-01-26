@@ -23,7 +23,7 @@ This dashboard aggregates official inflation statistics from government agencies
 | 🇨🇭 Switzerland | `CHECPIALLMINMEI` | FSO via OECD | FRED API | Monthly | CPI, National Index |
 | 🇨🇳 China | `CHNCPIALLMINMEI` | NBS via OECD | FRED API | Monthly | CPI, All Items |
 | 🇩🇪 Germany | `DEUCPIALLMINMEI` | Destatis via OECD | FRED API | Monthly | CPI, All Items |
-| 🇯🇵 Japan | `JPNCPALTT01GYM659N` | Statistics Bureau via OECD | FRED API | Monthly | CPI YoY % change (COICOP 2018) |
+| 🇯🇵 Japan | `CPALTT01JPM659N` | Statistics Bureau via OECD | FRED API | Monthly | CPI YoY % change (Growth rate same period previous year) |
 | 🇳🇿 New Zealand | `NZLCPIALLQINMEI` | Stats NZ via OECD | FRED API | Quarterly | CPI, All Groups |
 | 🇬🇧 United Kingdom | `GBRCPIALLMINMEI` | ONS via OECD | FRED API | Monthly | CPI, All Items |
 | 🇿🇦 South Africa | `ZAFCPIALLMINMEI` | Stats SA via OECD | FRED API | Monthly | CPI, All Items |

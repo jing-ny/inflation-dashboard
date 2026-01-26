@@ -45,7 +45,7 @@
             <h2 class="section-title">About</h2>
             <p>A lightweight monitor of inflation trends across major economies. All data comes from official government statistics agencies and central bank publications—no commentary, no predictions, just the numbers with sources.</p>
             <p style="margin-top: 0.75rem; font-size: 0.875rem; color: #6b7280;">
-                Sources: Bureau of Labor Statistics, ONS, Destatis, Eurostat, ABS, Stats NZ, Stats SA, NBS China, Statistics Bureau of Japan, Federal Reserve, ECB, Bank of England, and other central banks.
+                Sources: Bureau of Labor Statistics, Statistics Canada, ONS, FSO, Destatis, Eurostat, ABS, Stats NZ, Stats SA, NBS China, Federal Reserve, ECB, Bank of England, and other central banks.
             </p>
         </section>
     </main>
@@ -67,8 +67,7 @@
             'AU': 'au.html',
             'NZ': 'nz.html',
             'ZA': 'za.html',
-            'CN': 'cn.html',
-            'JP': 'jp.html'
+            'CN': 'cn.html'
         };
 
         // Target display strings (for range targets)
@@ -76,7 +75,6 @@
             'US': '2.0%',
             'CA': '1–3%',
             'CN': '~3.0%',
-            'JP': '2.0%',
             'EA': '2.0%',
             'UK': '2.0%',
             'CH': '0–2%',
@@ -87,7 +85,7 @@
         };
 
         // Display order: US first, Euro Area second, then alphabetical
-        const DISPLAY_ORDER = ['US', 'EA', 'AU', 'CA', 'CH', 'CN', 'DE', 'JP', 'NZ', 'UK', 'ZA'];
+        const DISPLAY_ORDER = ['US', 'EA', 'AU', 'CA', 'CH', 'CN', 'DE', 'NZ', 'UK', 'ZA'];
 
         // Load and display data
         async function loadData() {

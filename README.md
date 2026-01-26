@@ -36,21 +36,34 @@ It aggregates official inflation statistics and central bank projections in one 
 
 ## Coverage
 
-This dashboard tracks headline consumer price inflation (year-over-year) across 11 major economies:
+This dashboard tracks headline consumer price inflation (year-over-year) across 10 major economies:
 
 | Economy | Inflation Measure | Primary Source | Frequency |
 |---------|------------------|----------------|-----------|
-| 🇺🇸 United States | CPI-U (All Urban Consumers) | Bureau of Labor Statistics | Monthly |
+| 🇺🇸 United States | CPI-U (All Urban Consumers) | Bureau of Labor Statistics via OECD/FRED | Monthly |
 | 🇪🇺 Euro Area | HICP (Harmonised Index) | Eurostat via ECB | Monthly |
 | 🇦🇺 Australia | CPI (All Groups) | Australian Bureau of Statistics | Quarterly |
 | 🇨🇦 Canada | CPI (All Items) | Statistics Canada via OECD/FRED | Monthly |
 | 🇨🇭 Switzerland | CPI (National Index) | FSO via OECD/FRED | Monthly |
 | 🇨🇳 China | CPI (All Items) | National Bureau of Statistics via OECD/FRED | Monthly |
 | 🇩🇪 Germany | CPI (All Items) | Destatis via OECD/FRED | Monthly |
-| 🇯🇵 Japan | CPI (All Items) | Statistics Bureau of Japan via OECD/FRED | Monthly |
 | 🇳🇿 New Zealand | CPI (All Groups) | Stats NZ | Quarterly |
 | 🇬🇧 United Kingdom | CPI (All Items) | ONS via OECD/FRED | Monthly |
 | 🇿🇦 South Africa | CPI (All Items) | Stats SA via OECD/FRED | Monthly |
+
+---
+
+## Future Additions
+
+The following economies are planned for future inclusion:
+
+| Economy | Status | Notes |
+|---------|--------|-------|
+| 🇯🇵 Japan | Data source issue | FRED's OECD COICOP 1999 series discontinued June 2021; awaiting COICOP 2018 series availability or alternative API integration |
+| 🇸🇬 Singapore | Planned | MAS (Monetary Authority of Singapore) / Department of Statistics |
+| 🇮🇳 India | Planned | Ministry of Statistics and Programme Implementation |
+| 🇧🇷 Brazil | Planned | IBGE (Brazilian Institute of Geography and Statistics) |
+| 🇲🇽 Mexico | Planned | INEGI / Banco de México |
 
 ---
 
@@ -62,7 +75,6 @@ The dashboard displays inflation forecasts from two types of sources:
 - Federal Reserve (FOMC SEP) — PCE inflation projections
 - European Central Bank — Staff macroeconomic projections
 - Bank of England — Monetary Policy Report
-- Bank of Japan — Outlook for Economic Activity and Prices
 - Reserve Bank of Australia — Statement on Monetary Policy
 - Reserve Bank of New Zealand — Monetary Policy Statement
 - Bank of Canada — Monetary Policy Report

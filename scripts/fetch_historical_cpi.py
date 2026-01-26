@@ -57,11 +57,11 @@ COUNTRIES = {
     "US": {
         "name": "United States",
         "flag": "🇺🇸",
-        "api": "BLS",
-        "series_id": "CUSR0000SA0",
+        "api": "FRED",
+        "series_id": "USACPIALLMINMEI",  # CPI All Items for US via OECD/FRED (more current than BLS API)
         "frequency": "monthly",
         "target": 2.0,
-        "source": "Bureau of Labor Statistics"
+        "source": "BLS via OECD/FRED"
     },
     "CA": {
         "name": "Canada",
@@ -143,17 +143,9 @@ COUNTRIES = {
         "frequency": "monthly",
         "target": 3.0,
         "source": "NBS via OECD/FRED"
-    },
-    "JP": {
-        "name": "Japan",
-        "flag": "🇯🇵",
-        "api": "FRED",
-        "series_id": "JPNCPALTT01GYM659N",  # COICOP 2018: Growth rate YoY, Monthly (active series)
-        "frequency": "monthly",
-        "data_type": "yoy",  # This series is already YoY percent change, not index
-        "target": 2.0,
-        "source": "Statistics Bureau via OECD/FRED"
     }
+    # Note: Japan temporarily removed - FRED's COICOP 1999 series discontinued June 2021,
+    # COICOP 2018 series not yet available via FRED. Will re-add when data source resolved.
 }
 
 
@@ -317,6 +309,133 @@ def fetch_ecb_series(series_id: str, start_date: str = "2015-01-01") -> List[Dic
     return observations
 
 
+def fetch_oecd_series(series_id: str, start_date: str = "2015-01-01") -> List[Dict]:
+    """
+    Fetch CPI series from OECD Data Explorer API.
+    
+    This is used for Japan since FRED's COICOP 1999 series was discontinued in 2021.
+    OECD provides COICOP 2018 data with current observations.
+    
+    Args:
+        series_id: OECD series filter (e.g., "JPN.CPI._T.GY.M")
+                   Format: REF_AREA.MEASURE.EXPENDITURE.TRANSFORMATION.FREQ
+        start_date: Start date in YYYY-MM-DD format
+        
+    Returns:
+        List of {"date": "YYYY-MM-DD", "value": float} observations
+    """
+    # OECD Data Explorer SDMX API for Consumer Prices
+    # Dataset: PRICES_CPI (Consumer Price Indices)
+    base_url = "https://sdmx.oecd.org/public/rest/data/OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0"
+    
+    # Parse series filter
+    # JPN.CPI._T.GY.M means:
+    # REF_AREA=JPN, MEASURE=CPI, EXPENDITURE=_T (Total), TRANSFORMATION=GY (YoY growth), FREQ=M (Monthly)
+    url = f"{base_url}/{series_id}"
+    params = {
+        "format": "csv",
+        "startPeriod": start_date[:7],  # YYYY-MM
+    }
+    
+    try:
+        resp = requests.get(url, params=params, timeout=30)
+        resp.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        # If main OECD API fails, try the simpler SDMX endpoint
+        # Alternative: use OECD stat data API
+        alt_url = "https://stats.oecd.org/SDMX-JSON/data/PRICES_CPI"
+        parts = series_id.split(".")
+        country = parts[0]  # JPN
+        
+        # Try OECD.Stat API format
+        filter_str = f"{country}.CPALTT01.GY.M"  # All items, YoY growth, Monthly
+        alt_full_url = f"{alt_url}/{filter_str}/all"
+        
+        try:
+            resp = requests.get(alt_full_url, params={"startTime": start_date[:4]}, timeout=30)
+            resp.raise_for_status()
+            # Parse SDMX-JSON format
+            return parse_oecd_json(resp.json(), start_date)
+        except Exception:
+            raise ValueError(f"OECD API failed for {series_id}: {e}")
+    
+    # Parse CSV response
+    observations = []
+    lines = resp.text.strip().split("\n")
+    
+    if len(lines) > 1:
+        header = lines[0].split(",")
+        try:
+            date_idx = header.index("TIME_PERIOD")
+            value_idx = header.index("OBS_VALUE")
+        except ValueError:
+            # Try finding columns with similar names
+            date_idx = next((i for i, h in enumerate(header) if "TIME" in h.upper() or "PERIOD" in h.upper()), None)
+            value_idx = next((i for i, h in enumerate(header) if "OBS" in h.upper() or "VALUE" in h.upper()), None)
+            if date_idx is None or value_idx is None:
+                raise ValueError(f"Cannot parse OECD response headers: {header}")
+        
+        for line in lines[1:]:
+            cols = line.split(",")
+            if len(cols) > max(date_idx, value_idx):
+                date_str = cols[date_idx].strip('"')
+                value_str = cols[value_idx].strip('"')
+                if value_str and value_str not in ("", "NaN"):
+                    # OECD dates are YYYY-MM for monthly data
+                    if len(date_str) == 7:
+                        date_str = f"{date_str}-01"
+                    observations.append({
+                        "date": date_str,
+                        "value": float(value_str)
+                    })
+    
+    observations.sort(key=lambda x: x["date"])
+    return observations
+
+
+def parse_oecd_json(data: dict, start_date: str) -> List[Dict]:
+    """Parse OECD SDMX-JSON format response."""
+    observations = []
+    
+    try:
+        # Navigate SDMX-JSON structure
+        datasets = data.get("dataSets", [{}])[0]
+        series_data = datasets.get("series", {})
+        
+        # Get time periods from structure
+        structure = data.get("structure", {})
+        dimensions = structure.get("dimensions", {})
+        observation_dims = dimensions.get("observation", [])
+        
+        time_periods = []
+        for dim in observation_dims:
+            if dim.get("id") == "TIME_PERIOD":
+                time_periods = [v.get("id") for v in dim.get("values", [])]
+                break
+        
+        # Extract values from first series
+        for series_key, series_vals in series_data.items():
+            obs_dict = series_vals.get("observations", {})
+            for idx_str, val_list in obs_dict.items():
+                idx = int(idx_str)
+                if idx < len(time_periods):
+                    date_str = time_periods[idx]
+                    value = val_list[0] if val_list else None
+                    if value is not None and date_str >= start_date[:7]:
+                        if len(date_str) == 7:
+                            date_str = f"{date_str}-01"
+                        observations.append({
+                            "date": date_str,
+                            "value": float(value)
+                        })
+            break  # Only need first series
+    except (KeyError, IndexError, TypeError) as e:
+        raise ValueError(f"Failed to parse OECD JSON response: {e}")
+    
+    observations.sort(key=lambda x: x["date"])
+    return observations
+
+
 # -----------------------------------------------------------------------------
 # YoY Calculation
 # -----------------------------------------------------------------------------
@@ -408,6 +527,13 @@ def fetch_country_data(country_code: str) -> Dict:
         elif config["api"] == "ECB":
             # ECB series already provides YoY rate
             raw_data = fetch_ecb_series(config["series_id"])
+            yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)} 
+                       for obs in raw_data]
+            
+        elif config["api"] == "OECD":
+            # OECD Data Explorer API - used for Japan (COICOP 2018)
+            raw_data = fetch_oecd_series(config["series_id"])
+            # OECD series provides YoY rate directly
             yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)} 
                        for obs in raw_data]
         else:

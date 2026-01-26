@@ -5,44 +5,44 @@
     "flag": "🇺🇸",
     "target": 2.0,
     "frequency": "monthly",
-    "source": "Bureau of Labor Statistics",
+    "source": "BLS via OECD/FRED",
     "last_updated": "2026-01-25",
     "latest": {
-      "date": "2024-12",
-      "value": 2.87
+      "date": "2025-04",
+      "value": 2.31
     },
     "previous": {
-      "date": "2024-11",
-      "value": 2.71
+      "date": "2025-03",
+      "value": 2.39
     },
     "history": [
       {
         "date": "2016-01",
-        "value": 1.24
+        "value": 1.37
       },
       {
         "date": "2016-02",
-        "value": 0.85
+        "value": 1.02
       },
       {
         "date": "2016-03",
-        "value": 0.89
+        "value": 0.85
       },
       {
         "date": "2016-04",
-        "value": 1.17
+        "value": 1.13
       },
       {
         "date": "2016-05",
-        "value": 1.08
+        "value": 1.02
       },
       {
         "date": "2016-06",
-        "value": 1.08
+        "value": 1.0
       },
       {
         "date": "2016-07",
-        "value": 0.87
+        "value": 0.83
       },
       {
         "date": "2016-08",
@@ -50,43 +50,43 @@
       },
       {
         "date": "2016-09",
-        "value": 1.55
+        "value": 1.46
       },
       {
         "date": "2016-10",
-        "value": 1.69
+        "value": 1.64
       },
       {
         "date": "2016-11",
-        "value": 1.68
+        "value": 1.69
       },
       {
         "date": "2016-12",
-        "value": 2.05
+        "value": 2.07
       },
       {
         "date": "2017-01",
-        "value": 2.51
+        "value": 2.5
       },
       {
         "date": "2017-02",
-        "value": 2.81
+        "value": 2.74
       },
       {
         "date": "2017-03",
-        "value": 2.44
+        "value": 2.38
       },
       {
         "date": "2017-04",
-        "value": 2.18
+        "value": 2.2
       },
       {
         "date": "2017-05",
-        "value": 1.86
+        "value": 1.87
       },
       {
         "date": "2017-06",
-        "value": 1.64
+        "value": 1.63
       },
       {
         "date": "2017-07",
@@ -94,75 +94,75 @@
       },
       {
         "date": "2017-08",
-        "value": 1.93
+        "value": 1.94
       },
       {
         "date": "2017-09",
-        "value": 2.18
+        "value": 2.23
       },
       {
         "date": "2017-10",
-        "value": 2.02
+        "value": 2.04
       },
       {
         "date": "2017-11",
-        "value": 2.17
+        "value": 2.2
       },
       {
         "date": "2017-12",
-        "value": 2.13
+        "value": 2.11
       },
       {
         "date": "2018-01",
-        "value": 2.15
+        "value": 2.07
       },
       {
         "date": "2018-02",
-        "value": 2.26
+        "value": 2.21
       },
       {
         "date": "2018-03",
-        "value": 2.33
+        "value": 2.36
       },
       {
         "date": "2018-04",
-        "value": 2.47
+        "value": 2.46
       },
       {
         "date": "2018-05",
-        "value": 2.78
+        "value": 2.8
       },
       {
         "date": "2018-06",
-        "value": 2.81
+        "value": 2.87
       },
       {
         "date": "2018-07",
-        "value": 2.85
+        "value": 2.95
       },
       {
         "date": "2018-08",
-        "value": 2.64
+        "value": 2.7
       },
       {
         "date": "2018-09",
-        "value": 2.33
+        "value": 2.28
       },
       {
         "date": "2018-10",
-        "value": 2.49
+        "value": 2.52
       },
       {
         "date": "2018-11",
-        "value": 2.15
+        "value": 2.18
       },
       {
         "date": "2018-12",
-        "value": 2.0
+        "value": 1.91
       },
       {
         "date": "2019-01",
-        "value": 1.49
+        "value": 1.55
       },
       {
         "date": "2019-02",
@@ -170,7 +170,7 @@
       },
       {
         "date": "2019-03",
-        "value": 1.88
+        "value": 1.86
       },
       {
         "date": "2019-04",
@@ -178,91 +178,91 @@
       },
       {
         "date": "2019-05",
-        "value": 1.8
+        "value": 1.79
       },
       {
         "date": "2019-06",
-        "value": 1.67
+        "value": 1.65
       },
       {
         "date": "2019-07",
-        "value": 1.83
+        "value": 1.81
       },
       {
         "date": "2019-08",
-        "value": 1.74
+        "value": 1.75
       },
       {
         "date": "2019-09",
-        "value": 1.68
+        "value": 1.71
       },
       {
         "date": "2019-10",
-        "value": 1.73
+        "value": 1.76
       },
       {
         "date": "2019-11",
-        "value": 2.09
+        "value": 2.05
       },
       {
         "date": "2019-12",
-        "value": 2.32
+        "value": 2.29
       },
       {
         "date": "2020-01",
-        "value": 2.6
+        "value": 2.49
       },
       {
         "date": "2020-02",
-        "value": 2.34
+        "value": 2.33
       },
       {
         "date": "2020-03",
-        "value": 1.49
+        "value": 1.54
       },
       {
         "date": "2020-04",
-        "value": 0.31
+        "value": 0.33
       },
       {
         "date": "2020-05",
-        "value": 0.2
+        "value": 0.12
       },
       {
         "date": "2020-06",
-        "value": 0.72
+        "value": 0.65
       },
       {
         "date": "2020-07",
-        "value": 1.0
+        "value": 0.99
       },
       {
         "date": "2020-08",
-        "value": 1.28
+        "value": 1.31
       },
       {
         "date": "2020-09",
-        "value": 1.39
+        "value": 1.37
       },
       {
         "date": "2020-10",
-        "value": 1.23
-      },
-      {
-        "date": "2020-11",
         "value": 1.18
       },
       {
-        "date": "2020-12",
-        "value": 1.32
+        "date": "2020-11",
+        "value": 1.17
       },
       {
-        "date": "2021-01",
+        "date": "2020-12",
         "value": 1.36
       },
       {
+        "date": "2021-01",
+        "value": 1.4
+      },
+      {
         "date": "2021-02",
-        "value": 1.67
+        "value": 1.68
       },
       {
         "date": "2021-03",
@@ -270,47 +270,47 @@
       },
       {
         "date": "2021-04",
-        "value": 4.14
+        "value": 4.16
       },
       {
         "date": "2021-05",
-        "value": 4.93
+        "value": 4.99
       },
       {
         "date": "2021-06",
-        "value": 5.32
+        "value": 5.39
       },
       {
         "date": "2021-07",
-        "value": 5.27
+        "value": 5.37
       },
       {
         "date": "2021-08",
-        "value": 5.18
+        "value": 5.25
       },
       {
         "date": "2021-09",
-        "value": 5.36
+        "value": 5.39
       },
       {
         "date": "2021-10",
-        "value": 6.23
+        "value": 6.22
       },
       {
         "date": "2021-11",
-        "value": 6.87
+        "value": 6.81
       },
       {
         "date": "2021-12",
-        "value": 7.16
+        "value": 7.04
       },
       {
         "date": "2022-01",
-        "value": 7.58
+        "value": 7.48
       },
       {
         "date": "2022-02",
-        "value": 7.95
+        "value": 7.87
       },
       {
         "date": "2022-03",
@@ -318,71 +318,71 @@
       },
       {
         "date": "2022-04",
-        "value": 8.24
+        "value": 8.26
       },
       {
         "date": "2022-05",
-        "value": 8.53
+        "value": 8.58
       },
       {
         "date": "2022-06",
-        "value": 9.0
+        "value": 9.06
       },
       {
         "date": "2022-07",
-        "value": 8.45
+        "value": 8.52
       },
       {
         "date": "2022-08",
-        "value": 8.22
+        "value": 8.26
       },
       {
         "date": "2022-09",
-        "value": 8.21
+        "value": 8.2
       },
       {
         "date": "2022-10",
-        "value": 7.76
+        "value": 7.75
       },
       {
         "date": "2022-11",
-        "value": 7.13
+        "value": 7.11
       },
       {
         "date": "2022-12",
-        "value": 6.41
+        "value": 6.45
       },
       {
         "date": "2023-01",
-        "value": 6.34
+        "value": 6.41
       },
       {
         "date": "2023-02",
-        "value": 5.96
+        "value": 6.04
       },
       {
         "date": "2023-03",
-        "value": 4.93
+        "value": 4.98
       },
       {
         "date": "2023-04",
-        "value": 4.95
+        "value": 4.93
       },
       {
         "date": "2023-05",
-        "value": 4.13
+        "value": 4.05
       },
       {
         "date": "2023-06",
-        "value": 3.06
+        "value": 2.97
       },
       {
         "date": "2023-07",
-        "value": 3.28
+        "value": 3.18
       },
       {
         "date": "2023-08",
-        "value": 3.72
+        "value": 3.67
       },
       {
         "date": "2023-09",
@@ -390,7 +390,7 @@
       },
       {
         "date": "2023-10",
-        "value": 3.25
+        "value": 3.24
       },
       {
         "date": "2023-11",
@@ -398,27 +398,27 @@
       },
       {
         "date": "2023-12",
-        "value": 3.32
-      },
-      {
-        "date": "2024-01",
-        "value": 3.11
-      },
-      {
-        "date": "2024-02",
-        "value": 3.17
-      },
-      {
-        "date": "2024-03",
-        "value": 3.47
-      },
-      {
-        "date": "2024-04",
         "value": 3.35
       },
       {
+        "date": "2024-01",
+        "value": 3.09
+      },
+      {
+        "date": "2024-02",
+        "value": 3.15
+      },
+      {
+        "date": "2024-03",
+        "value": 3.48
+      },
+      {
+        "date": "2024-04",
+        "value": 3.36
+      },
+      {
         "date": "2024-05",
-        "value": 3.24
+        "value": 3.27
       },
       {
         "date": "2024-06",
@@ -426,27 +426,43 @@
       },
       {
         "date": "2024-07",
-        "value": 2.94
+        "value": 2.89
       },
       {
         "date": "2024-08",
-        "value": 2.61
+        "value": 2.53
       },
       {
         "date": "2024-09",
-        "value": 2.43
+        "value": 2.44
       },
       {
         "date": "2024-10",
-        "value": 2.57
+        "value": 2.6
       },
       {
         "date": "2024-11",
-        "value": 2.71
+        "value": 2.75
       },
       {
         "date": "2024-12",
-        "value": 2.87
+        "value": 2.89
+      },
+      {
+        "date": "2025-01",
+        "value": 3.0
+      },
+      {
+        "date": "2025-02",
+        "value": 2.82
+      },
+      {
+        "date": "2025-03",
+        "value": 2.39
+      },
+      {
+        "date": "2025-04",
+        "value": 2.31
       }
     ]
   },
@@ -4108,16 +4124,5 @@
         "value": -0.07
       }
     ]
-  },
-  "JP": {
-    "code": "JP",
-    "name": "Japan",
-    "flag": "🇯🇵",
-    "target": 2.0,
-    "frequency": "monthly",
-    "source": "Statistics Bureau via OECD/FRED",
-    "last_updated": "2026-01-25",
-    "error": "400 Client Error: Bad Request for url: https://api.stlouisfed.org/fred/series/observations?series_id=JPNCPALTT01GYM659N&api_key=c61001ab2426c42a3583e4738770c3df&file_type=json&observation_start=2015-01-01&sort_order=asc",
-    "history": []
   }
 }

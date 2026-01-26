@@ -4,8 +4,9 @@
   "flag": "🇯🇵",
   "target": 2.0,
   "frequency": "monthly",
-  "source": "Statistics Bureau via OECD/FRED",
+  "source": "Statistics Bureau of Japan via OECD",
   "last_updated": "2026-01-25",
-  "error": "400 Client Error: Bad Request for url: https://api.stlouisfed.org/fred/series/observations?series_id=JPNCPALTT01GYM659N&api_key=c61001ab2426c42a3583e4738770c3df&file_type=json&observation_start=2015-01-01&sort_order=asc",
+  "latest": null,
+  "previous": null,
   "history": []
 }

@@ -50,17 +50,6 @@
         "2030": 2.2
       }
     },
-    "JP": {
-      "name": "Japan",
-      "imf_code": "JPN",
-      "forecasts": {
-        "2026": 2.1,
-        "2027": 2,
-        "2028": 2,
-        "2029": 2,
-        "2030": 2
-      }
-    },
     "NZ": {
       "name": "New Zealand",
       "imf_code": "NZL",
