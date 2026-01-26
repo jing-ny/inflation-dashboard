@@ -4,15 +4,15 @@
   "flag": "🇺🇸",
   "target": 2.0,
   "frequency": "monthly",
-  "source": "BLS via OECD/FRED",
+  "source": "Bureau of Labor Statistics via FRED",
   "last_updated": "2026-01-25",
   "latest": {
-    "date": "2025-04",
-    "value": 2.31
+    "date": "2025-12",
+    "value": 2.68
   },
   "previous": {
-    "date": "2025-03",
-    "value": 2.39
+    "date": "2025-11",
+    "value": 2.74
   },
   "history": [
     {
@@ -462,6 +462,34 @@
     {
       "date": "2025-04",
       "value": 2.31
+    },
+    {
+      "date": "2025-05",
+      "value": 2.35
+    },
+    {
+      "date": "2025-06",
+      "value": 2.67
+    },
+    {
+      "date": "2025-07",
+      "value": 2.7
+    },
+    {
+      "date": "2025-08",
+      "value": 2.92
+    },
+    {
+      "date": "2025-09",
+      "value": 3.01
+    },
+    {
+      "date": "2025-11",
+      "value": 2.74
+    },
+    {
+      "date": "2025-12",
+      "value": 2.68
     }
   ]
 }

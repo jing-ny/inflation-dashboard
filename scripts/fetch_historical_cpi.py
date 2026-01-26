@@ -58,10 +58,10 @@ COUNTRIES = {
         "name": "United States",
         "flag": "🇺🇸",
         "api": "FRED",
-        "series_id": "USACPIALLMINMEI",  # CPI All Items for US via OECD/FRED (more current than BLS API)
+        "series_id": "CPIAUCNS",  # CPI-U All Urban Consumers, Not Seasonally Adjusted (direct from BLS via FRED)
         "frequency": "monthly",
         "target": 2.0,
-        "source": "BLS via OECD/FRED"
+        "source": "Bureau of Labor Statistics via FRED"
     },
     "CA": {
         "name": "Canada",
