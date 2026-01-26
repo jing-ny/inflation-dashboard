@@ -6,7 +6,7 @@
     "target": 2.0,
     "frequency": "monthly",
     "source": "Bureau of Labor Statistics via FRED",
-    "last_updated": "2026-01-25",
+    "last_updated": "2026-01-26",
     "latest": {
       "date": "2025-12",
       "value": 2.68
@@ -501,7 +501,7 @@
     "target": 2.0,
     "frequency": "monthly",
     "source": "Statistics Canada via OECD/FRED",
-    "last_updated": "2026-01-25",
+    "last_updated": "2026-01-26",
     "latest": {
       "date": "2025-03",
       "value": 2.32
@@ -964,7 +964,7 @@
     "target": 2.0,
     "frequency": "monthly",
     "source": "ONS via OECD/FRED",
-    "last_updated": "2026-01-25",
+    "last_updated": "2026-01-26",
     "latest": {
       "date": "2025-03",
       "value": 3.42
@@ -1427,7 +1427,7 @@
     "target": 2.0,
     "frequency": "monthly",
     "source": "Eurostat via ECB",
-    "last_updated": "2026-01-25",
+    "last_updated": "2026-01-26",
     "latest": {
       "date": "2025-12",
       "value": 1.9
@@ -1974,7 +1974,7 @@
     "target": 2.5,
     "frequency": "monthly",
     "source": "Australian Bureau of Statistics",
-    "last_updated": "2026-01-25",
+    "last_updated": "2026-01-26",
     "latest": {
       "date": "2025-01",
       "value": 2.4
@@ -2141,7 +2141,7 @@
     "target": 2.0,
     "frequency": "quarterly",
     "source": "Stats NZ via OECD/FRED",
-    "last_updated": "2026-01-25",
+    "last_updated": "2026-01-26",
     "latest": {
       "date": "2025-01",
       "value": 2.53
@@ -2308,7 +2308,7 @@
     "target": 4.5,
     "frequency": "monthly",
     "source": "Stats SA via OECD/FRED",
-    "last_updated": "2026-01-25",
+    "last_updated": "2026-01-26",
     "latest": {
       "date": "2025-01",
       "value": 3.08
@@ -2763,7 +2763,7 @@
     "target": 3.0,
     "frequency": "monthly",
     "source": "NBS via OECD/FRED",
-    "last_updated": "2026-01-25",
+    "last_updated": "2026-01-26",
     "latest": {
       "date": "2025-04",
       "value": -0.07
