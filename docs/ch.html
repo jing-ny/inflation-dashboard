@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Switzerland | Inflation, Officially</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-brand">Inflation, Officially</a>
+            <a href="index.html" class="nav-back">← Overview</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <header class="page-header">
+            <h1><span class="flag">🇨🇭</span> Switzerland</h1>
+            <p class="page-subtitle">Consumer Price Index (CPI) · All Items · Monthly</p>
+        </header>
+
+        <!-- Key Metrics -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Current Inflation</div>
+                <div class="metric-value" id="currentValue">—</div>
+                <div class="metric-detail" id="currentDate">Loading...</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Previous Reading</div>
+                <div class="metric-value neutral" id="previousValue">—</div>
+                <div class="metric-detail" id="previousDate">—</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">SNB Target</div>
+                <div class="metric-value on-target" id="targetValue">0–2%</div>
+                <div class="metric-detail">Price stability</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">vs Target</div>
+                <div class="metric-value" id="statusValue">—</div>
+                <div class="metric-detail" id="statusDetail">—</div>
+            </div>
+        </div>
+
+        <!-- Historical Chart -->
+        <section class="section">
+            <h2 class="section-title">10-Year Inflation History</h2>
+            <div class="chart-container">
+                <canvas id="historyChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Forecasts -->
+        <section class="section">
+            <h2 class="section-title">SNB Inflation Forecasts</h2>
+            <div id="forecastTable">Loading...</div>
+        </section>
+
+        <!-- Inflation Target -->
+        <section class="section">
+            <h2 class="section-title">Inflation Target</h2>
+            <div id="targetInfo">Loading...</div>
+        </section>
+
+        <!-- Data Sources -->
+        <div class="sources" id="dataSources">
+            Loading...
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>All data from official government statistics and central bank publications</p>
+        <p><a href="https://github.com/jing-ny/inflation-dashboard" target="_blank">GitHub</a> · For informational purposes only · Not investment advice</p>
+    </footer>
+
+    <script src="country.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => initCountryPage('CH'));
+    </script>
+</body>
+</html>

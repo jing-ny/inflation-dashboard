@@ -19,6 +19,16 @@ const FORECASTS = {
         ],
         note: 'PCE inflation (Fed\'s preferred measure), median projections'
     },
+    CA: {
+        source: 'Bank of Canada',
+        sourceUrl: 'https://www.bankofcanada.ca/publications/mpr/',
+        type: 'MPR Projections',
+        data: [
+            { period: '2025', value: 2.0 },
+            { period: '2026', value: 2.0 }
+        ],
+        note: 'CPI inflation, from Monetary Policy Report'
+    },
     UK: {
         source: 'Bank of England',
         sourceUrl: 'https://www.bankofengland.co.uk/monetary-policy-report/2024/november-2024',
@@ -29,6 +39,17 @@ const FORECASTS = {
             { period: 'Q4 2027', value: 1.8 }
         ],
         note: 'CPI inflation, modal projections from November 2024 MPR'
+    },
+    CH: {
+        source: 'Swiss National Bank',
+        sourceUrl: 'https://www.snb.ch/en/the-snb/mandates-goals/monetary-policy/decisions',
+        type: 'Conditional Forecast',
+        data: [
+            { period: '2025', value: 0.3 },
+            { period: '2026', value: 0.8 },
+            { period: '2027', value: 0.8 }
+        ],
+        note: 'CPI inflation, conditional on policy rate remaining unchanged'
     },
     EA: {
         source: 'European Central Bank',
@@ -115,11 +136,25 @@ const TARGET_INFO = {
         quote: 'The Committee judges that inflation at the rate of 2 percent, as measured by the annual change in the price index for personal consumption expenditures, is most consistent over the longer run with the Federal Reserve\'s statutory mandate.',
         quoteSource: 'FOMC Statement on Longer-Run Goals, January 2024'
     },
+    CA: {
+        target: 2.0,
+        targetRange: '1-3%',
+        description: 'The Bank of Canada targets 2% CPI inflation, the midpoint of a 1-3% target range. The inflation-control target has been in place since 1991.',
+        quote: 'The target aims to keep total CPI inflation at the 2 per cent midpoint of a target range of 1 to 3 per cent over the medium term.',
+        quoteSource: 'Bank of Canada Inflation-Control Target'
+    },
     UK: {
         target: 2.0,
         description: 'The Bank of England has a 2% CPI inflation target set by the government. If inflation deviates by more than 1 percentage point, the Governor must write a letter to the Chancellor explaining why.',
         quote: 'The inflation target of 2% is expressed in terms of an annual rate of inflation based on the Consumer Prices Index (CPI).',
         quoteSource: 'Bank of England Monetary Policy Framework'
+    },
+    CH: {
+        target: 1.0,
+        targetRange: '0-2%',
+        description: 'The Swiss National Bank defines price stability as a rise in the Swiss consumer price index (CPI) of less than 2% per annum. Deflation also breaches the objective of price stability.',
+        quote: 'The SNB equates price stability with a rise in the Swiss consumer price index (CPI) of less than 2% per annum. Deflation, i.e. a sustained decrease in the price level, also breaches the objective of price stability.',
+        quoteSource: 'SNB Monetary Policy Strategy'
     },
     EA: {
         target: 2.0,
@@ -176,7 +211,25 @@ const DATA_SOURCES = {
         { label: 'Forecasts', value: 'FOMC Summary of Economic Projections', url: 'https://www.federalreserve.gov/monetarypolicy/fomcprojtable20241218.htm' },
         { label: 'Target', value: 'FOMC Statement on Longer-Run Goals', url: 'https://www.federalreserve.gov/monetarypolicy/files/FOMC_LongerRunGoals.pdf' }
     ],
+    CA: [
+        { label: 'CPI Data', value: 'Statistics Canada via FRED', url: 'https://fred.stlouisfed.org/series/CANCPIALLMINMEI' },
+        { label: 'Series ID', value: 'CANCPIALLMINMEI (OECD)', url: 'https://fred.stlouisfed.org/series/CANCPIALLMINMEI' },
+        { label: 'Forecasts', value: 'Bank of Canada Monetary Policy Report', url: 'https://www.bankofcanada.ca/publications/mpr/' },
+        { label: 'Target', value: 'BoC Inflation-Control Target', url: 'https://www.bankofcanada.ca/rates/indicators/key-variables/inflation-control-target/' }
+    ],
     UK: [
+        { label: 'CPI Data', value: 'Office for National Statistics via FRED', url: 'https://fred.stlouisfed.org/series/GBRCPIALLMINMEI' },
+        { label: 'Series ID', value: 'GBRCPIALLMINMEI (OECD)', url: 'https://fred.stlouisfed.org/series/GBRCPIALLMINMEI' },
+        { label: 'Forecasts', value: 'Bank of England Monetary Policy Report', url: 'https://www.bankofengland.co.uk/monetary-policy-report' },
+        { label: 'Target', value: 'BoE Monetary Policy Framework', url: 'https://www.bankofengland.co.uk/monetary-policy' }
+    ],
+    CH: [
+        { label: 'CPI Data', value: 'Federal Statistical Office via FRED', url: 'https://fred.stlouisfed.org/series/CHECPIALLMINMEI' },
+        { label: 'Series ID', value: 'CHECPIALLMINMEI (OECD)', url: 'https://fred.stlouisfed.org/series/CHECPIALLMINMEI' },
+        { label: 'Forecasts', value: 'SNB Conditional Inflation Forecast', url: 'https://www.snb.ch/en/the-snb/mandates-goals/monetary-policy/decisions' },
+        { label: 'Target', value: 'SNB Monetary Policy Strategy', url: 'https://www.snb.ch/en/the-snb/mandates-goals/monetary-policy/strategy' }
+    ],
+    EA: [
         { label: 'CPI Data', value: 'Office for National Statistics via FRED', url: 'https://fred.stlouisfed.org/series/GBRCPIALLMINMEI' },
         { label: 'Series ID', value: 'GBRCPIALLMINMEI (OECD)', url: 'https://fred.stlouisfed.org/series/GBRCPIALLMINMEI' },
         { label: 'Forecasts', value: 'Bank of England Monetary Policy Report', url: 'https://www.bankofengland.co.uk/monetary-policy-report' },

@@ -59,7 +59,9 @@
         // Country page mapping
         const COUNTRY_PAGES = {
             'US': 'us.html',
+            'CA': 'ca.html',
             'UK': 'uk.html',
+            'CH': 'ch.html',
             'DE': 'de.html',
             'EA': 'ea.html',
             'AU': 'au.html',
@@ -72,10 +74,12 @@
         // Target display strings (for range targets)
         const TARGET_DISPLAY = {
             'US': '2.0%',
+            'CA': '1–3%',
             'CN': '~3.0%',
             'JP': '2.0%',
             'EA': '2.0%',
             'UK': '2.0%',
+            'CH': '0–2%',
             'DE': '2.0%',
             'AU': '2–3%',
             'NZ': '1–3%',
@@ -83,7 +87,7 @@
         };
 
         // Display order
-        const DISPLAY_ORDER = ['US', 'CN', 'JP', 'EA', 'UK', 'DE', 'AU', 'NZ', 'ZA'];
+        const DISPLAY_ORDER = ['US', 'CA', 'CN', 'JP', 'EA', 'UK', 'CH', 'DE', 'AU', 'NZ', 'ZA'];
 
         // Load and display data
         async function loadData() {

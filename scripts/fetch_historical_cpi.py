@@ -63,6 +63,15 @@ COUNTRIES = {
         "target": 2.0,
         "source": "Bureau of Labor Statistics"
     },
+    "CA": {
+        "name": "Canada",
+        "flag": "🇨🇦",
+        "api": "FRED",
+        "series_id": "CANCPIALLMINMEI",
+        "frequency": "monthly",
+        "target": 2.0,  # midpoint of 1-3%
+        "source": "Statistics Canada via OECD/FRED"
+    },
     "UK": {
         "name": "United Kingdom",
         "flag": "🇬🇧",
@@ -71,6 +80,15 @@ COUNTRIES = {
         "frequency": "monthly",
         "target": 2.0,
         "source": "ONS via OECD/FRED"
+    },
+    "CH": {
+        "name": "Switzerland",
+        "flag": "🇨🇭",
+        "api": "FRED",
+        "series_id": "CHECPIALLMINMEI",
+        "frequency": "monthly",
+        "target": 1.0,  # midpoint of 0-2%
+        "source": "FSO via OECD/FRED"
     },
     "DE": {
         "name": "Germany",
