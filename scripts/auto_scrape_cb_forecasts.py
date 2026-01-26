@@ -1,915 +1,440 @@
 #!/usr/bin/env python3
 """
-Auto-Scrape Central Bank Forecasts
-===================================
+Auto-scrape Central Bank Forecasts
 
-Automatically detects new central bank publications and extracts inflation forecasts.
-Designed to run weekly via GitHub Actions.
-
-Supports:
-- RBA (Australia) - Statement on Monetary Policy
-- ECB (Euro Area) - Staff Macroeconomic Projections  
-- BoE (UK) - Monetary Policy Report
-- BoC (Canada) - Monetary Policy Report
-- RBNZ (New Zealand) - Monetary Policy Statement
-- SARB (South Africa) - Monetary Policy Statement
-- Fed (US) - FOMC SEP (via FRED API)
+Fetches forecast pages from central banks, extracts inflation projections
+using pattern matching, and outputs a draft JSON for review.
 
 Usage:
-    python auto_scrape_cb_forecasts.py              # Check all sources
-    python auto_scrape_cb_forecasts.py --dry-run    # Check only, don't update
-    python auto_scrape_cb_forecasts.py --country AU # Check specific country
-    python auto_scrape_cb_forecasts.py --force      # Force update even if no new publication
+    python scripts/auto_scrape_cb_forecasts.py
+
+Output:
+    - data/cb_forecasts_draft.json (new values found)
+    - data/cb_forecasts_changes.md (summary of changes for PR)
 """
 
-import argparse
-import hashlib
 import json
-import os
 import re
-import sys
-from dataclasses import dataclass, field
+import os
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import urljoin
+from urllib.request import urlopen, Request
+from urllib.error import URLError
+import ssl
 
-import requests
-from bs4 import BeautifulSoup
+# Disable SSL verification for some government sites
+ssl_context = ssl.create_default_context()
+ssl_context.check_hostname = False
+ssl_context.verify_mode = ssl.CERT_NONE
 
-# ============================================================
-# CONFIGURATION
-# ============================================================
-
-# File paths
-STATE_FILE = Path("data/scraper_state.json")
-OUTPUT_FILE = Path("data/cb_forecasts.json")
-DOCS_OUTPUT = Path("docs/data/cb_forecasts.json")
-
-# HTTP settings
-HEADERS = {
-    "User-Agent": "InflationDashboard/2.0 (https://github.com/jing-ny/inflation-dashboard)"
-}
-TIMEOUT = 30
-
-# Publication schedules (for reference)
-# RBA: Feb, May, Aug, Nov (quarterly)
-# ECB: Mar, Jun, Sep, Dec (quarterly)
-# BoE: Feb, May, Aug, Nov (quarterly)
-# BoC: Jan, Apr, Jul, Oct (quarterly)
-# RBNZ: Feb, May, Aug, Nov (quarterly)
-# SARB: Jan, Mar, May, Jul, Sep, Nov (bi-monthly)
-# Fed: Mar, Jun, Sep, Dec (quarterly)
+CURRENT_YEAR = datetime.now().year
+HEADERS = {'User-Agent': 'Mozilla/5.0 (compatible; InflationDashboard/1.0)'}
 
 
-@dataclass
-class CentralBankSource:
-    """Configuration for a central bank forecast source."""
-    code: str
-    name: str
-    full_name: str
-    index_url: str  # URL to check for new publications
-    publication_pattern: str  # Regex to find publication links/dates
-    forecast_url_template: Optional[str] = None  # Template for forecast page URL
-    extractor: str = "generic"  # Which extractor function to use
-    target: float = 2.0
-    target_range: Optional[Tuple[float, float]] = None
-    measure: str = "CPI"
-    notes: str = ""
-
-
-# Central bank source configurations
-SOURCES: Dict[str, CentralBankSource] = {
-    "AU": CentralBankSource(
-        code="AU",
-        name="RBA",
-        full_name="Reserve Bank of Australia",
-        index_url="https://www.rba.gov.au/publications/smp/",
-        publication_pattern=r"/publications/smp/(\d{4})/(feb|may|aug|nov)/",
-        forecast_url_template="https://www.rba.gov.au/publications/smp/{year}/{month}/outlook.html",
-        extractor="rba",
-        target=2.5,
-        target_range=(2.0, 3.0),
-        measure="Trimmed Mean CPI",
-        notes="Trimmed mean inflation, quarterly publication"
-    ),
-    "EA": CentralBankSource(
-        code="EA",
-        name="ECB",
-        full_name="European Central Bank",
-        index_url="https://www.ecb.europa.eu/press/projections/html/index.en.html",
-        publication_pattern=r"projections(\d{6})_eurosystemstaff",
-        forecast_url_template="https://www.ecb.europa.eu/press/projections/html/ecb.projections{date}_eurosystemstaff~{hash}.en.html",
-        extractor="ecb",
-        target=2.0,
-        measure="HICP",
-        notes="Staff macroeconomic projections, quarterly"
-    ),
-    "UK": CentralBankSource(
-        code="UK",
-        name="BoE",
-        full_name="Bank of England",
-        index_url="https://www.bankofengland.co.uk/monetary-policy-report",
-        publication_pattern=r"/monetary-policy-report/(\d{4})/(february|may|august|november)-\d{4}",
-        extractor="boe",
-        target=2.0,
-        measure="CPI",
-        notes="Modal CPI projections from MPR"
-    ),
-    "CA": CentralBankSource(
-        code="CA",
-        name="BoC",
-        full_name="Bank of Canada",
-        index_url="https://www.bankofcanada.ca/publications/mpr/",
-        publication_pattern=r"/mpr/mpr-(\d{4})-(\d{2})-(\d{2})/",
-        extractor="boc",
-        target=2.0,
-        target_range=(1.0, 3.0),
-        measure="CPI",
-        notes="Inflation expected to remain around 2%"
-    ),
-    "NZ": CentralBankSource(
-        code="NZ",
-        name="RBNZ",
-        full_name="Reserve Bank of New Zealand",
-        index_url="https://www.rbnz.govt.nz/hub/publications/monetary-policy-statement",
-        publication_pattern=r"/monetary-policy-statement/(\d{4})/(feb|may|aug|nov)",
-        extractor="rbnz",
-        target=2.0,
-        target_range=(1.0, 3.0),
-        measure="CPI",
-        notes="Target midpoint 2%, range 1-3%"
-    ),
-    "ZA": CentralBankSource(
-        code="ZA",
-        name="SARB",
-        full_name="South African Reserve Bank",
-        index_url="https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements",
-        publication_pattern=r"monetary-policy-statements/(\d{4})",
-        extractor="sarb",
-        target=4.5,
-        target_range=(3.0, 6.0),
-        measure="CPI",
-        notes="Target range 3-6%, midpoint 4.5%"
-    ),
-}
-
-# Fallback manual forecasts (used if scraping fails)
-MANUAL_FORECASTS = {
-    "US": {
-        "source": "FOMC Summary of Economic Projections",
-        "source_url": "https://www.federalreserve.gov/monetarypolicy/fomcprojtabl20251218.htm",
-        "last_updated": "December 2025",
-        "measure": "PCE inflation (median projection)",
-        "forecasts": [
-            {"year": 2025, "value": 2.8},
-            {"year": 2026, "value": 2.4},
-            {"year": 2027, "value": 2.1},
-        ]
-    },
-    "EA": {
-        "source": "ECB Staff Macroeconomic Projections",
-        "source_url": "https://www.ecb.europa.eu/press/projections/html/index.en.html",
-        "last_updated": "December 2025",
-        "measure": "HICP inflation",
-        "forecasts": [
-            {"year": 2025, "value": 2.1},
-            {"year": 2026, "value": 1.9},
-            {"year": 2027, "value": 1.8},
-            {"year": 2028, "value": 2.0},
-        ]
-    },
-    "UK": {
-        "source": "Bank of England Monetary Policy Report",
-        "source_url": "https://www.bankofengland.co.uk/monetary-policy-report/2025/november-2025",
-        "last_updated": "November 2025",
-        "measure": "CPI inflation (modal projection)",
-        "forecasts": [
-            {"year": 2025, "value": 3.5},
-            {"year": 2026, "value": 2.5},
-            {"year": 2027, "value": 2.0},
-        ]
-    },
-    "AU": {
-        "source": "RBA Statement on Monetary Policy",
-        "source_url": "https://www.rba.gov.au/publications/smp/2025/nov/outlook.html",
-        "last_updated": "November 2025",
-        "measure": "Trimmed mean inflation",
-        "forecasts": [
-            {"year": 2025, "value": 3.2},
-            {"year": 2026, "value": 2.7},
-            {"year": 2027, "value": 2.6},
-        ]
-    },
-    "CA": {
-        "source": "Bank of Canada Monetary Policy Report",
-        "source_url": "https://www.bankofcanada.ca/publications/mpr/mpr-2025-10-29/",
-        "last_updated": "October 2025",
-        "measure": "CPI inflation",
-        "forecasts": [
-            {"year": 2025, "value": 2.4},
-            {"year": 2026, "value": 2.0},
-            {"year": 2027, "value": 2.0},
-        ]
-    },
-    "NZ": {
-        "source": "RBNZ Monetary Policy Statement",
-        "source_url": "https://www.rbnz.govt.nz/hub/publications/monetary-policy-statement/2025/nov-1125/",
-        "last_updated": "November 2025",
-        "measure": "CPI inflation",
-        "forecasts": [
-            {"year": 2025, "value": 3.0},
-            {"year": 2026, "value": 2.0},
-            {"year": 2027, "value": 2.0},
-        ]
-    },
-    "ZA": {
-        "source": "SARB Monetary Policy Statement",
-        "source_url": "https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements",
-        "last_updated": "November 2025",
-        "measure": "CPI inflation",
-        "forecasts": [
-            {"year": 2025, "value": 3.3},
-            {"year": 2026, "value": 3.5},
-            {"year": 2027, "value": 3.1},
-        ]
-    },
-    "CN": {
-        "source": "IMF World Economic Outlook",
-        "source_url": "https://www.imf.org/en/Publications/WEO",
-        "last_updated": "October 2025",
-        "measure": "CPI inflation (IMF projection)",
-        "forecasts": [
-            {"year": 2025, "value": 0.5},
-            {"year": 2026, "value": 1.2},
-        ]
-    },
-}
-
-
-# ============================================================
-# UTILITY FUNCTIONS
-# ============================================================
-
-def fetch_page(url: str, timeout: int = TIMEOUT) -> Optional[str]:
-    """Fetch a web page and return its HTML content."""
+def fetch_url(url):
+    """Fetch URL content with error handling."""
     try:
-        response = requests.get(url, headers=HEADERS, timeout=timeout)
-        response.raise_for_status()
-        return response.text
-    except requests.RequestException as e:
-        print(f"    ⚠️ Error fetching {url}: {e}")
+        req = Request(url, headers=HEADERS)
+        with urlopen(req, timeout=30, context=ssl_context) as response:
+            return response.read().decode('utf-8', errors='ignore')
+    except URLError as e:
+        print(f"  ❌ Failed to fetch {url}: {e}")
         return None
 
 
-def get_content_hash(html: str) -> str:
-    """Generate a hash of page content (excluding dynamic elements)."""
-    # Remove scripts, styles, and common dynamic content
-    clean = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL | re.IGNORECASE)
-    clean = re.sub(r'<style[^>]*>.*?</style>', '', clean, flags=re.DOTALL | re.IGNORECASE)
-    clean = re.sub(r'<!--.*?-->', '', clean, flags=re.DOTALL)
-    clean = re.sub(r'\s+', ' ', clean)
-    return hashlib.md5(clean.encode()).hexdigest()[:16]
-
-
-def load_state() -> Dict:
-    """Load scraper state from file."""
-    if STATE_FILE.exists():
-        try:
-            return json.loads(STATE_FILE.read_text())
-        except json.JSONDecodeError:
-            return {}
-    return {}
-
-
-def save_state(state: Dict):
-    """Save scraper state to file."""
-    STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    STATE_FILE.write_text(json.dumps(state, indent=2))
-
-
-def load_existing_forecasts() -> Dict:
-    """Load existing cb_forecasts.json if it exists."""
-    if OUTPUT_FILE.exists():
-        try:
-            return json.loads(OUTPUT_FILE.read_text())
-        except json.JSONDecodeError:
-            pass
-    return {"generated_at": "", "forecasts": {}}
-
-
-def save_forecasts(data: Dict):
-    """Save forecasts to both data/ and docs/data/."""
-    data["generated_at"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+def extract_numbers(text, around_pattern, count=4):
+    """Extract decimal numbers near a pattern."""
+    # Find the pattern and get surrounding text
+    match = re.search(around_pattern, text, re.IGNORECASE)
+    if not match:
+        return []
     
-    # Save to data/
-    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_FILE.write_text(json.dumps(data, indent=2))
+    # Get text around the match
+    start = max(0, match.start() - 200)
+    end = min(len(text), match.end() + 500)
+    context = text[start:end]
     
-    # Save to docs/data/
-    DOCS_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    DOCS_OUTPUT.write_text(json.dumps(data, indent=2))
-    
-    print(f"\n✅ Saved forecasts to {OUTPUT_FILE} and {DOCS_OUTPUT}")
+    # Extract numbers that look like inflation rates (0.0 - 15.0)
+    numbers = re.findall(r'(\d{1,2}\.\d{1})', context)
+    # Filter to reasonable inflation values
+    values = [float(n) for n in numbers if 0.0 <= float(n) <= 15.0]
+    return values[:count]
 
 
-# ============================================================
-# PUBLICATION DETECTION
-# ============================================================
-
-def detect_new_publication(source: CentralBankSource, state: Dict) -> Optional[Dict]:
-    """
-    Check if there's a new publication for a central bank.
-    Returns publication info if new, None otherwise.
-    """
-    print(f"\n🔍 Checking {source.code} ({source.name})...")
+def scrape_ecb():
+    """Scrape ECB Staff Projections."""
+    print("📊 Scraping ECB...")
+    url = "https://www.ecb.europa.eu/pub/projections/html/ecb.projections202412_ecbstaff~14c709ec36.en.html"
     
-    html = fetch_page(source.index_url)
+    # Try to find the latest projections page
+    index_url = "https://www.ecb.europa.eu/pub/projections/html/index.en.html"
+    index_html = fetch_url(index_url)
+    
+    if index_html:
+        # Find latest projection link
+        links = re.findall(r'href="([^"]*projections\d{6}[^"]*\.en\.html)"', index_html)
+        if links:
+            url = "https://www.ecb.europa.eu" + links[0] if links[0].startswith('/') else links[0]
+    
+    html = fetch_url(url)
     if not html:
         return None
     
-    # Check content hash for changes
-    current_hash = get_content_hash(html)
-    prev_hash = state.get(source.code, {}).get("hash")
-    
-    if current_hash == prev_hash:
-        print(f"    📋 No changes detected")
-        return None
-    
-    # Find latest publication
-    matches = re.findall(source.publication_pattern, html, re.IGNORECASE)
-    if not matches:
-        print(f"    ⚠️ No publications found matching pattern")
-        return None
-    
-    # Get the most recent match
-    latest = matches[0] if isinstance(matches[0], str) else "/".join(matches[0])
-    prev_pub = state.get(source.code, {}).get("publication")
-    
-    if latest == prev_pub:
-        print(f"    📋 Same publication as before: {latest}")
-        # Update hash anyway
-        return {"hash": current_hash, "publication": latest, "is_new": False}
-    
-    print(f"    🆕 New publication detected: {latest}")
-    return {"hash": current_hash, "publication": latest, "is_new": True}
-
-
-# ============================================================
-# FORECAST EXTRACTORS
-# ============================================================
-
-def extract_rba_forecasts(html: str, source: CentralBankSource) -> Optional[Dict]:
-    """
-    Extract inflation forecasts from RBA Statement on Monetary Policy.
-    Looks for Table 3.1 with detailed forecasts.
-    """
-    soup = BeautifulSoup(html, 'html.parser')
-    forecasts = []
-    
-    # Look for forecast table (Table 3.1)
-    # RBA uses tables with specific headers
-    tables = soup.find_all('table')
-    
-    for table in tables:
-        text = table.get_text().lower()
-        
-        # Look for trimmed mean or CPI inflation rows
-        if 'trimmed mean' in text or 'underlying inflation' in text:
-            rows = table.find_all('tr')
-            
-            for row in rows:
-                cells = [c.get_text().strip() for c in row.find_all(['td', 'th'])]
-                row_text = ' '.join(cells).lower()
-                
-                # Look for inflation forecast row
-                if 'trimmed mean' in row_text or 'inflation' in row_text:
-                    # Extract year/quarter and value pairs
-                    for i, cell in enumerate(cells):
-                        # Look for year patterns
-                        year_match = re.search(r'(202[5-9]|203[0-9])', cell)
-                        if year_match and i + 1 < len(cells):
-                            try:
-                                value = float(re.search(r'(\d+\.?\d*)', cells[i+1]).group(1))
-                                forecasts.append({
-                                    "year": int(year_match.group(1)),
-                                    "value": value
-                                })
-                            except (ValueError, AttributeError):
-                                continue
-    
-    # Also try to extract from prose text
-    if not forecasts:
-        text = soup.get_text()
-        # Pattern: "underlying inflation is expected to be X% in YYYY"
-        pattern = r'(?:inflation|trimmed mean)[^.]*?(\d+\.?\d*)\s*(?:per\s*cent|%)[^.]*?(?:in|by)\s*(202[5-9]|203[0-9])'
-        matches = re.findall(pattern, text, re.IGNORECASE)
-        for value, year in matches:
-            forecasts.append({"year": int(year), "value": float(value)})
-    
-    if forecasts:
-        # Deduplicate and sort by year
-        seen = set()
-        unique_forecasts = []
-        for f in forecasts:
-            key = f["year"]
-            if key not in seen:
-                seen.add(key)
-                unique_forecasts.append(f)
-        unique_forecasts.sort(key=lambda x: x["year"])
-        
-        return {
-            "source": source.full_name,
-            "source_url": source.index_url,
-            "last_updated": datetime.now().strftime("%B %Y"),
-            "measure": source.measure,
-            "forecasts": unique_forecasts[:4]  # Limit to 4 years
-        }
-    
-    return None
-
-
-def extract_ecb_forecasts(html: str, source: CentralBankSource) -> Optional[Dict]:
-    """
-    Extract inflation forecasts from ECB staff projections page.
-    """
-    soup = BeautifulSoup(html, 'html.parser')
-    forecasts = []
-    
-    # ECB typically has projections in a table or structured text
-    text = soup.get_text()
-    
-    # Pattern: "HICP inflation averaging X% in YYYY"
-    # or "headline inflation is expected to be X.X% in YYYY"
-    patterns = [
-        r'(?:HICP|headline)\s*inflation[^.]*?(\d+\.?\d*)\s*(?:per\s*cent|%)[^.]*?(?:in|for)\s*(202[5-9]|203[0-9])',
-        r'(202[5-9]|203[0-9])[^,]*?(?:HICP|inflation)[^,]*?(\d+\.?\d*)\s*(?:per\s*cent|%)',
-        r'averaging\s*(\d+\.?\d*)\s*(?:per\s*cent|%)\s*in\s*(202[5-9]|203[0-9])',
-    ]
-    
-    for pattern in patterns:
-        matches = re.findall(pattern, text, re.IGNORECASE)
-        for match in matches:
-            try:
-                if match[0].startswith('20'):  # Year first
-                    year, value = int(match[0]), float(match[1])
-                else:
-                    value, year = float(match[0]), int(match[1])
-                forecasts.append({"year": year, "value": value})
-            except (ValueError, IndexError):
-                continue
-    
-    # Also check for the standard ECB projection format
-    # "2025: 2.1%, 2026: 1.9%, 2027: 1.8%"
-    year_value_pattern = r'(202[5-9])\s*[:\-]?\s*(\d+\.?\d*)\s*(?:per\s*cent|%)?'
-    matches = re.findall(year_value_pattern, text)
-    for year, value in matches:
-        try:
-            forecasts.append({"year": int(year), "value": float(value)})
-        except ValueError:
-            continue
-    
-    if forecasts:
-        # Deduplicate
-        seen = set()
-        unique = []
-        for f in forecasts:
-            if f["year"] not in seen and 1.0 <= f["value"] <= 10.0:  # Sanity check
-                seen.add(f["year"])
-                unique.append(f)
-        unique.sort(key=lambda x: x["year"])
-        
-        return {
-            "source": source.full_name,
-            "source_url": source.index_url,
-            "last_updated": datetime.now().strftime("%B %Y"),
-            "measure": source.measure,
-            "forecasts": unique[:4]
-        }
-    
-    return None
-
-
-def extract_boe_forecasts(html: str, source: CentralBankSource) -> Optional[Dict]:
-    """
-    Extract inflation forecasts from Bank of England Monetary Policy Report.
-    """
-    soup = BeautifulSoup(html, 'html.parser')
-    text = soup.get_text()
-    forecasts = []
-    
-    # BoE uses patterns like:
-    # "CPI inflation is projected to fall to X% by YYYY"
-    # "inflation to be around X% in YYYY"
-    patterns = [
-        r'(?:CPI\s*)?inflation[^.]*?(\d+\.?\d*)\s*(?:per\s*cent|%)[^.]*?(?:in|by|for)\s*(?:Q\d\s*)?(202[5-9]|203[0-9])',
-        r'(202[5-9]|203[0-9])[^,]*?(?:CPI|inflation)[^,]*?(\d+\.?\d*)\s*(?:per\s*cent|%)',
-    ]
-    
-    for pattern in patterns:
-        matches = re.findall(pattern, text, re.IGNORECASE)
-        for match in matches:
-            try:
-                if match[0].startswith('20'):
-                    year, value = int(match[0]), float(match[1])
-                else:
-                    value, year = float(match[0]), int(match[1])
-                if 0 <= value <= 10:  # Sanity check
-                    forecasts.append({"year": year, "value": value})
-            except (ValueError, IndexError):
-                continue
-    
-    if forecasts:
-        seen = set()
-        unique = []
-        for f in forecasts:
-            if f["year"] not in seen:
-                seen.add(f["year"])
-                unique.append(f)
-        unique.sort(key=lambda x: x["year"])
-        
-        return {
-            "source": source.full_name,
-            "source_url": source.index_url,
-            "last_updated": datetime.now().strftime("%B %Y"),
-            "measure": source.measure,
-            "forecasts": unique[:4]
-        }
-    
-    return None
-
-
-def extract_boc_forecasts(html: str, source: CentralBankSource) -> Optional[Dict]:
-    """
-    Extract inflation forecasts from Bank of Canada Monetary Policy Report.
-    """
-    soup = BeautifulSoup(html, 'html.parser')
-    text = soup.get_text()
-    forecasts = []
-    
-    # BoC patterns
-    patterns = [
-        r'(?:CPI\s*)?inflation[^.]*?(\d+\.?\d*)\s*(?:per\s*cent|%)[^.]*?(?:in|for|through)\s*(202[5-9]|203[0-9])',
-        r'inflation\s*(?:is\s*)?(?:expected|projected)[^.]*?(\d+\.?\d*)\s*(?:per\s*cent|%)',
-    ]
-    
-    for pattern in patterns:
-        matches = re.findall(pattern, text, re.IGNORECASE)
-        for match in matches:
-            try:
-                value = float(match[0])
-                year = int(match[1]) if len(match) > 1 else datetime.now().year
-                if 0 <= value <= 10:
-                    forecasts.append({"year": year, "value": value})
-            except (ValueError, IndexError):
-                continue
-    
-    if forecasts:
-        seen = set()
-        unique = []
-        for f in forecasts:
-            if f["year"] not in seen:
-                seen.add(f["year"])
-                unique.append(f)
-        unique.sort(key=lambda x: x["year"])
-        
-        return {
-            "source": source.full_name,
-            "source_url": source.index_url,
-            "last_updated": datetime.now().strftime("%B %Y"),
-            "measure": source.measure,
-            "forecasts": unique[:3]
-        }
-    
-    return None
-
-
-def extract_rbnz_forecasts(html: str, source: CentralBankSource) -> Optional[Dict]:
-    """
-    Extract inflation forecasts from RBNZ Monetary Policy Statement.
-    """
-    soup = BeautifulSoup(html, 'html.parser')
-    text = soup.get_text()
-    forecasts = []
-    
-    # RBNZ patterns
-    patterns = [
-        r'inflation[^.]*?(\d+\.?\d*)\s*(?:per\s*cent|%)[^.]*?(?:target|midpoint)',
-        r'(?:CPI\s*)?inflation[^.]*?(\d+\.?\d*)\s*(?:per\s*cent|%)[^.]*?(?:in|by)\s*(202[5-9]|203[0-9])',
-    ]
-    
-    for pattern in patterns:
-        matches = re.findall(pattern, text, re.IGNORECASE)
-        for match in matches:
-            try:
-                if isinstance(match, tuple):
-                    value = float(match[0])
-                    year = int(match[1]) if len(match) > 1 else datetime.now().year + 1
-                else:
-                    value = float(match)
-                    year = datetime.now().year + 1
-                if 0 <= value <= 10:
-                    forecasts.append({"year": year, "value": value})
-            except (ValueError, IndexError):
-                continue
-    
-    if forecasts:
-        seen = set()
-        unique = []
-        for f in forecasts:
-            if f["year"] not in seen:
-                seen.add(f["year"])
-                unique.append(f)
-        unique.sort(key=lambda x: x["year"])
-        
-        return {
-            "source": source.full_name,
-            "source_url": source.index_url,
-            "last_updated": datetime.now().strftime("%B %Y"),
-            "measure": source.measure,
-            "forecasts": unique[:3]
-        }
-    
-    return None
-
-
-def extract_sarb_forecasts(html: str, source: CentralBankSource) -> Optional[Dict]:
-    """
-    Extract inflation forecasts from SARB Monetary Policy Statement.
-    """
-    soup = BeautifulSoup(html, 'html.parser')
-    text = soup.get_text()
-    forecasts = []
-    
-    # SARB patterns
-    patterns = [
-        r'(?:CPI\s*)?inflation[^.]*?(\d+\.?\d*)\s*(?:per\s*cent|%)[^.]*?(?:in|for)\s*(202[5-9]|203[0-9])',
-        r'forecast[^.]*?inflation[^.]*?(\d+\.?\d*)\s*(?:per\s*cent|%)',
-    ]
-    
-    for pattern in patterns:
-        matches = re.findall(pattern, text, re.IGNORECASE)
-        for match in matches:
-            try:
-                if isinstance(match, tuple):
-                    value, year = float(match[0]), int(match[1])
-                else:
-                    value = float(match)
-                    year = datetime.now().year
-                if 0 <= value <= 15:  # SARB can have higher inflation
-                    forecasts.append({"year": year, "value": value})
-            except (ValueError, IndexError):
-                continue
-    
-    if forecasts:
-        seen = set()
-        unique = []
-        for f in forecasts:
-            if f["year"] not in seen:
-                seen.add(f["year"])
-                unique.append(f)
-        unique.sort(key=lambda x: x["year"])
-        
-        return {
-            "source": source.full_name,
-            "source_url": source.index_url,
-            "last_updated": datetime.now().strftime("%B %Y"),
-            "measure": source.measure,
-            "forecasts": unique[:3]
-        }
-    
-    return None
-
-
-# Extractor function mapping
-EXTRACTORS = {
-    "rba": extract_rba_forecasts,
-    "ecb": extract_ecb_forecasts,
-    "boe": extract_boe_forecasts,
-    "boc": extract_boc_forecasts,
-    "rbnz": extract_rbnz_forecasts,
-    "sarb": extract_sarb_forecasts,
-}
-
-
-def extract_forecasts(html: str, source: CentralBankSource) -> Optional[Dict]:
-    """Extract forecasts using the appropriate extractor."""
-    extractor = EXTRACTORS.get(source.extractor)
-    if extractor:
-        return extractor(html, source)
-    return None
-
-
-# ============================================================
-# MAIN SCRAPING LOGIC
-# ============================================================
-
-def scrape_source(source: CentralBankSource, state: Dict, force: bool = False, dry_run: bool = False) -> Optional[Dict]:
-    """
-    Scrape a single central bank source.
-    Returns forecast data if successful, None otherwise.
-    """
-    # Check for new publication
-    pub_info = detect_new_publication(source, state)
-    
-    if not pub_info:
-        print(f"    ⚠️ Could not check for updates")
-        return None
-    
-    # Update state hash
-    if not dry_run:
-        state.setdefault(source.code, {})["hash"] = pub_info["hash"]
-    
-    if not pub_info.get("is_new") and not force:
-        print(f"    ℹ️ No new publication, using cached data")
-        return None
-    
-    # Fetch and parse forecast page
-    if source.forecast_url_template and pub_info.get("publication"):
-        # Build URL from template
-        parts = pub_info["publication"].split("/")
-        if len(parts) >= 2:
-            forecast_url = source.forecast_url_template.format(
-                year=parts[0], 
-                month=parts[1].lower()
-            )
-        else:
-            forecast_url = source.index_url
-    else:
-        forecast_url = source.index_url
-    
-    print(f"    📄 Fetching: {forecast_url}")
-    html = fetch_page(forecast_url)
-    
-    if not html:
-        print(f"    ⚠️ Could not fetch forecast page")
-        return None
-    
-    # Extract forecasts
-    forecasts = extract_forecasts(html, source)
-    
-    if forecasts:
-        print(f"    ✅ Extracted {len(forecasts['forecasts'])} forecast(s)")
-        
-        # Update state
-        if not dry_run:
-            state[source.code]["publication"] = pub_info["publication"]
-            state[source.code]["last_scraped"] = datetime.now().isoformat()
-        
-        return forecasts
-    else:
-        print(f"    ⚠️ Could not extract forecasts from page")
-        return None
-
-
-def run_scraper(
-    countries: Optional[List[str]] = None,
-    force: bool = False,
-    dry_run: bool = False,
-    use_manual_fallback: bool = True
-) -> Dict:
-    """
-    Run the scraper for specified countries or all.
-    Returns a dictionary of forecasts.
-    """
-    print("=" * 60)
-    print("Central Bank Forecast Auto-Scraper")
-    print(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"Mode: {'DRY RUN' if dry_run else 'LIVE'}")
-    print("=" * 60)
-    
-    # Load state
-    state = load_state()
-    
-    # Load existing forecasts
-    existing = load_existing_forecasts()
+    # Look for HICP inflation table
+    # ECB format: years in header, HICP row with values
     result = {
-        "generated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "forecasts": existing.get("forecasts", {})
+        "bank": "European Central Bank",
+        "country": "EA",
+        "metric": "HICP Inflation",
+        "source": "ECB Staff Projections",
+        "source_url": url,
+        "projections": []
     }
     
-    # Determine which countries to process
-    if countries:
-        sources_to_check = {k: v for k, v in SOURCES.items() if k in countries}
+    # Try to extract from table structure
+    # Pattern: look for HICP followed by year values
+    hicp_match = re.search(r'HICP[^<]*</t[dh]>[^<]*(?:<t[dh][^>]*>[^<]*(\d\.\d)[^<]*</t[dh]>[^<]*){2,4}', html, re.IGNORECASE | re.DOTALL)
+    
+    if hicp_match:
+        values = re.findall(r'>(\d\.\d)<', hicp_match.group(0))
+        years = [str(CURRENT_YEAR + i) for i in range(len(values))]
+        result["projections"] = [{"year": y, "value": float(v)} for y, v in zip(years, values)]
     else:
-        sources_to_check = SOURCES
+        # Fallback: extract numbers near "HICP" or "inflation"
+        values = extract_numbers(html, r'HICP.*?inflation|inflation.*?HICP', 4)
+        if values:
+            years = [str(CURRENT_YEAR + i) for i in range(len(values))]
+            result["projections"] = [{"year": y, "value": v} for y, v in zip(years, values)]
     
-    # Process each source
-    updates = []
-    for code, source in sources_to_check.items():
-        try:
-            forecasts = scrape_source(source, state, force, dry_run)
+    # Extract date from URL or page
+    date_match = re.search(r'(\w+)\s+20\d{2}.*?projections', html, re.IGNORECASE)
+    if date_match:
+        result["source_date"] = date_match.group(0)[:20]
+    
+    return result if result["projections"] else None
+
+
+def scrape_boe():
+    """Scrape Bank of England Monetary Policy Report."""
+    print("📊 Scraping BoE...")
+    
+    # BoE MPR page
+    url = "https://www.bankofengland.co.uk/monetary-policy-report/2024/november-2024"
+    
+    # Try to find latest MPR
+    index_url = "https://www.bankofengland.co.uk/monetary-policy-report"
+    index_html = fetch_url(index_url)
+    
+    if index_html:
+        links = re.findall(r'href="(/monetary-policy-report/\d{4}/[^"]+)"', index_html)
+        if links:
+            url = "https://www.bankofengland.co.uk" + links[0]
+    
+    html = fetch_url(url)
+    if not html:
+        return None
+    
+    result = {
+        "bank": "Bank of England",
+        "country": "UK",
+        "metric": "CPI Inflation",
+        "source": "Monetary Policy Report",
+        "source_url": url,
+        "projections": []
+    }
+    
+    # BoE often shows projections in format like "2.5% in 2025"
+    pattern = r'(\d\.\d)%?\s*(?:in|for)?\s*(202[4-9])'
+    matches = re.findall(pattern, html)
+    
+    if matches:
+        seen_years = set()
+        for value, year in matches:
+            if year not in seen_years and 0 < float(value) < 10:
+                result["projections"].append({"year": year, "value": float(value)})
+                seen_years.add(year)
+    
+    # Extract date from URL
+    date_match = re.search(r'/(\w+-\d{4})/?$', url)
+    if date_match:
+        result["source_date"] = date_match.group(1).replace('-', ' ').title()
+    
+    return result if result["projections"] else None
+
+
+def scrape_rba():
+    """Scrape RBA Statement on Monetary Policy."""
+    print("📊 Scraping RBA...")
+    
+    url = "https://www.rba.gov.au/publications/smp/2024/nov/economic-outlook.html"
+    
+    # Try to find latest SoMP
+    index_url = "https://www.rba.gov.au/publications/smp/"
+    index_html = fetch_url(index_url)
+    
+    if index_html:
+        links = re.findall(r'href="(/publications/smp/\d{4}/\w+/)"', index_html)
+        if links:
+            url = "https://www.rba.gov.au" + links[0] + "economic-outlook.html"
+    
+    html = fetch_url(url)
+    if not html:
+        return None
+    
+    result = {
+        "bank": "Reserve Bank of Australia",
+        "country": "AU",
+        "metric": "CPI Inflation",
+        "source": "Statement on Monetary Policy",
+        "source_url": url,
+        "projections": []
+    }
+    
+    # RBA shows forecasts in tables, look for CPI/inflation rows
+    values = extract_numbers(html, r'trimmed.mean|underlying.*inflation|CPI', 4)
+    
+    if values:
+        # RBA typically shows Jun and Dec for each year
+        years = [str(CURRENT_YEAR), str(CURRENT_YEAR + 1), str(CURRENT_YEAR + 2)]
+        result["projections"] = [{"year": y, "value": v} for y, v in zip(years, values[:3])]
+    
+    return result if result["projections"] else None
+
+
+def scrape_boc():
+    """Scrape Bank of Canada Monetary Policy Report."""
+    print("📊 Scraping BoC...")
+    
+    url = "https://www.bankofcanada.ca/2024/10/mpr-2024-10-23/"
+    
+    # Try to find latest MPR
+    index_url = "https://www.bankofcanada.ca/publications/mpr/"
+    index_html = fetch_url(index_url)
+    
+    if index_html:
+        links = re.findall(r'href="(https://www\.bankofcanada\.ca/\d{4}/\d{2}/mpr-[^"]+)"', index_html)
+        if links:
+            url = links[0]
+    
+    html = fetch_url(url)
+    if not html:
+        return None
+    
+    result = {
+        "bank": "Bank of Canada",
+        "country": "CA",
+        "metric": "CPI Inflation",
+        "source": "Monetary Policy Report",
+        "source_url": url,
+        "projections": []
+    }
+    
+    # BoC format varies, look for projection tables
+    values = extract_numbers(html, r'CPI.*inflation|inflation.*projection', 4)
+    
+    if values:
+        years = [str(CURRENT_YEAR + i) for i in range(len(values))]
+        result["projections"] = [{"year": y, "value": v} for y, v in zip(years, values)]
+    
+    return result if result["projections"] else None
+
+
+def scrape_rbnz():
+    """Scrape RBNZ Monetary Policy Statement."""
+    print("📊 Scraping RBNZ...")
+    
+    url = "https://www.rbnz.govt.nz/monetary-policy/monetary-policy-statement/mps-november-2024"
+    
+    # Try to find latest MPS
+    index_url = "https://www.rbnz.govt.nz/monetary-policy/monetary-policy-statement"
+    index_html = fetch_url(index_url)
+    
+    if index_html:
+        links = re.findall(r'href="(/monetary-policy/monetary-policy-statement/mps-[^"]+)"', index_html)
+        if links:
+            url = "https://www.rbnz.govt.nz" + links[0]
+    
+    html = fetch_url(url)
+    if not html:
+        return None
+    
+    result = {
+        "bank": "Reserve Bank of New Zealand",
+        "country": "NZ",
+        "metric": "CPI Inflation",
+        "source": "Monetary Policy Statement",
+        "source_url": url,
+        "projections": []
+    }
+    
+    values = extract_numbers(html, r'CPI.*inflation|headline.*inflation', 4)
+    
+    if values:
+        years = [str(CURRENT_YEAR + i) for i in range(len(values))]
+        result["projections"] = [{"year": y, "value": v} for y, v in zip(years, values)]
+    
+    return result if result["projections"] else None
+
+
+def scrape_sarb():
+    """Scrape SARB MPC Statement."""
+    print("📊 Scraping SARB...")
+    
+    # SARB publishes forecasts in MPC statements (PDFs), harder to scrape
+    # Try the main monetary policy page for any HTML summaries
+    url = "https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements/2024"
+    
+    html = fetch_url(url)
+    if not html:
+        return None
+    
+    result = {
+        "bank": "South African Reserve Bank",
+        "country": "ZA",
+        "metric": "CPI Inflation",
+        "source": "MPC Statement",
+        "source_url": url,
+        "projections": []
+    }
+    
+    # SARB often mentions forecasts like "inflation is expected to average X% in 202Y"
+    pattern = r'(?:inflation|CPI).*?(\d\.\d)%?\s*(?:in|for|by)?\s*(202[4-9])'
+    matches = re.findall(pattern, html, re.IGNORECASE)
+    
+    if matches:
+        seen_years = set()
+        for value, year in matches:
+            if year not in seen_years:
+                result["projections"].append({"year": year, "value": float(value)})
+                seen_years.add(year)
+    
+    return result if result["projections"] else None
+
+
+def load_current_forecasts():
+    """Load current cb_forecasts.json for comparison."""
+    path = "data/cb_forecasts.json"
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            return json.load(f)
+    return {"forecasts": []}
+
+
+def compare_forecasts(current, new):
+    """Compare current and new forecasts, return changes."""
+    changes = []
+    
+    current_by_bank = {f["bank"]: f for f in current.get("forecasts", [])}
+    
+    for new_forecast in new:
+        bank = new_forecast["bank"]
+        if bank in current_by_bank:
+            old = current_by_bank[bank]
+            old_proj = {p["year"]: p["value"] for p in old.get("projections", [])}
+            new_proj = {p["year"]: p["value"] for p in new_forecast.get("projections", [])}
             
-            if forecasts:
-                result["forecasts"][code] = forecasts
-                updates.append(code)
-            elif use_manual_fallback and code in MANUAL_FORECASTS:
-                # Use manual fallback if scraping failed
-                if code not in result["forecasts"]:
-                    print(f"    📋 Using manual fallback for {code}")
-                    result["forecasts"][code] = MANUAL_FORECASTS[code]
-        except Exception as e:
-            print(f"    ❌ Error processing {code}: {e}")
-            if use_manual_fallback and code in MANUAL_FORECASTS:
-                result["forecasts"][code] = MANUAL_FORECASTS[code]
+            for year, value in new_proj.items():
+                old_value = old_proj.get(year)
+                if old_value != value:
+                    changes.append({
+                        "bank": bank,
+                        "year": year,
+                        "old": old_value,
+                        "new": value
+                    })
+        else:
+            changes.append({
+                "bank": bank,
+                "year": "all",
+                "old": None,
+                "new": new_forecast["projections"]
+            })
     
-    # Add US and CN from manual (no web scraping for these)
-    for code in ["US", "CN"]:
-        if code not in result["forecasts"] and code in MANUAL_FORECASTS:
-            result["forecasts"][code] = MANUAL_FORECASTS[code]
-    
-    # Save results
-    if not dry_run:
-        save_state(state)
-        save_forecasts(result)
-    
-    # Summary
-    print("\n" + "=" * 60)
-    print("SUMMARY")
-    print("=" * 60)
-    print(f"Sources checked: {len(sources_to_check)}")
-    print(f"Updates found: {len(updates)}")
-    if updates:
-        print(f"Updated: {', '.join(updates)}")
-    print(f"Total forecasts: {len(result['forecasts'])}")
-    
-    return result
+    return changes
 
-
-# ============================================================
-# ENTRY POINT
-# ============================================================
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Auto-scrape central bank inflation forecasts"
-    )
-    parser.add_argument(
-        "--country", "-c",
-        nargs="+",
-        choices=list(SOURCES.keys()) + ["US", "CN"],
-        help="Specific country codes to check"
-    )
-    parser.add_argument(
-        "--force", "-f",
-        action="store_true",
-        help="Force update even if no new publication detected"
-    )
-    parser.add_argument(
-        "--dry-run", "-n",
-        action="store_true",
-        help="Check for updates but don't save anything"
-    )
-    parser.add_argument(
-        "--no-fallback",
-        action="store_true",
-        help="Don't use manual fallback if scraping fails"
-    )
-    parser.add_argument(
-        "--list-sources",
-        action="store_true",
-        help="List all configured sources and exit"
-    )
+    print("🔄 Auto-scraping Central Bank Forecasts...")
+    print(f"   Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
     
-    args = parser.parse_args()
+    # Scrape each bank
+    scrapers = [
+        scrape_ecb,
+        scrape_boe,
+        scrape_rba,
+        scrape_boc,
+        scrape_rbnz,
+        scrape_sarb,
+    ]
     
-    if args.list_sources:
-        print("\nConfigured Central Bank Sources:")
-        print("-" * 60)
-        for code, source in SOURCES.items():
-            print(f"  {code}: {source.name} ({source.full_name})")
-            print(f"       URL: {source.index_url}")
-            print(f"       Measure: {source.measure}")
-            print()
-        print("Manual-only sources:")
-        print(f"  US: Federal Reserve (FOMC SEP)")
-        print(f"  CN: IMF World Economic Outlook")
+    new_forecasts = []
+    for scraper in scrapers:
+        try:
+            result = scraper()
+            if result and result.get("projections"):
+                print(f"  ✅ {result['bank']}: {len(result['projections'])} projections found")
+                for p in result["projections"]:
+                    print(f"      {p['year']}: {p['value']}%")
+                new_forecasts.append(result)
+            else:
+                print(f"  ⚠️  {scraper.__name__}: No projections extracted")
+        except Exception as e:
+            print(f"  ❌ {scraper.__name__}: Error - {e}")
+    
+    if not new_forecasts:
+        print("\n❌ No forecasts extracted. Check scraper patterns.")
         return
     
-    # Install dependencies check
-    try:
-        import requests
-        from bs4 import BeautifulSoup
-    except ImportError as e:
-        print(f"Missing dependency: {e}")
-        print("Install with: pip install requests beautifulsoup4")
-        sys.exit(1)
+    # Load current forecasts and compare
+    current = load_current_forecasts()
+    changes = compare_forecasts(current, new_forecasts)
     
-    # Run scraper
-    countries = [c.upper() for c in args.country] if args.country else None
+    # Create draft JSON
+    draft = {
+        "_metadata": {
+            "generated": datetime.now().isoformat(),
+            "status": "DRAFT - REVIEW REQUIRED",
+            "note": "Auto-extracted values may be incorrect. Verify against source URLs."
+        },
+        "forecasts": new_forecasts
+    }
     
-    result = run_scraper(
-        countries=countries,
-        force=args.force,
-        dry_run=args.dry_run,
-        use_manual_fallback=not args.no_fallback
-    )
+    os.makedirs("data", exist_ok=True)
     
-    # Exit code based on whether any updates were found
-    if result.get("forecasts"):
-        sys.exit(0)
+    with open("data/cb_forecasts_draft.json", 'w') as f:
+        json.dump(draft, f, indent=2)
+    print(f"\n📄 Draft saved to data/cb_forecasts_draft.json")
+    
+    # Create changes markdown for PR
+    md = f"# Central Bank Forecast Changes\n\n"
+    md += f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M UTC')}\n\n"
+    md += "## ⚠️ Review Required\n\n"
+    md += "The following values were auto-extracted and may need verification:\n\n"
+    
+    for forecast in new_forecasts:
+        md += f"### {forecast['bank']} ({forecast['country']})\n"
+        md += f"- **Source:** [{forecast['source']}]({forecast.get('source_url', '#')})\n"
+        md += f"- **Metric:** {forecast['metric']}\n"
+        md += "- **Projections:**\n"
+        for p in forecast["projections"]:
+            md += f"  - {p['year']}: **{p['value']}%**\n"
+        md += "\n"
+    
+    if changes:
+        md += "## Changes Detected\n\n"
+        for change in changes:
+            if change["old"] is None:
+                md += f"- **{change['bank']}**: New bank added\n"
+            else:
+                md += f"- **{change['bank']}** {change['year']}: {change['old']}% → {change['new']}%\n"
     else:
-        sys.exit(1)
+        md += "## No Changes Detected\n\n"
+        md += "Extracted values match current data.\n"
+    
+    with open("data/cb_forecasts_changes.md", 'w') as f:
+        f.write(md)
+    print(f"📄 Changes summary saved to data/cb_forecasts_changes.md")
+    
+    print("\n✅ Done! Review the draft and changes before merging.")
 
 
 if __name__ == "__main__":
