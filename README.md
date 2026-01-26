@@ -4,76 +4,74 @@
 
 A lightweight, source-first monitor of inflation trends and central bank expectations across major economies.
 
-**🔗 [View Dashboard](https://jing-ny.github.io/inflation-dashboard/)**
-
 ---
 
 ## Why This Exists
 
-Inflation data is everywhere, but finding clean, comparable, and verifiable numbers is harder than it should be.
+Inflation data is everywhere, but it is often difficult to interpret in a consistent way.  
+Figures are reported using different definitions, released on different schedules, and frequently mixed with commentary or opinion.
 
-News headlines mix seasonally adjusted and non-adjusted figures. Commentary blends official statistics with private forecasts. Different sources use different base years, different price indices, and different reporting lags—often without saying so.
+This project exists to cut through that noise.
 
-This project exists to cut through that noise. It aggregates official inflation statistics and central bank projections in one place, with clear source attribution for every number.
+It aggregates official inflation statistics and central bank projections in one place, with clear source attribution for every number, making cross-country comparison easier and more transparent.
+
+---
+
+## What This Project Does (and Does Not Do)
 
 **What this project does:**
-- Presents official CPI/HICP data from government statistics agencies
-- Shows central bank inflation forecasts and targets
-- Links directly to primary sources
+- Collects headline CPI inflation data from official government statistics agencies
+- Displays central bank inflation expectations and projections where available
+- Provides direct source links for every data point
 
 **What this project does not do:**
 - Provide analysis or commentary
 - Make predictions
-- Offer investment advice
+- Offer investment advice or policy recommendations
 
 ---
 
-## Scope
+## Coverage
 
-This dashboard tracks headline consumer price inflation (year-over-year) for nine economies:
+This dashboard tracks headline consumer price inflation (year-over-year) across a set of major economies:
 
-| Country | Source | Frequency |
-|---------|--------|-----------|
-| 🇺🇸 United States | Bureau of Labor Statistics | Monthly |
-| 🇨🇳 China | National Bureau of Statistics | Monthly |
-| 🇯🇵 Japan | Statistics Bureau of Japan | Monthly |
-| 🇪🇺 Euro Area | Eurostat (via ECB) | Monthly |
-| 🇬🇧 United Kingdom | ONS (via OECD/FRED) | Monthly |
-| 🇩🇪 Germany | Destatis (via OECD/FRED) | Monthly |
-| 🇦🇺 Australia | Australian Bureau of Statistics | Quarterly |
-| 🇳🇿 New Zealand | Stats NZ | Quarterly |
-| 🇿🇦 South Africa | Statistics South Africa | Monthly |
-
-Central bank forecasts are sourced from official monetary policy publications (FOMC projections, ECB staff projections, BoJ Outlook Report, etc.).
+| Economy | Inflation Measure | Source |
+|-------|------------------|--------|
+| United States | CPI (YoY) | U.S. Bureau of Labor Statistics (BLS) |
+| United Kingdom | CPI (YoY) | FRED (OECD / ONS) |
+| Euro Area (Germany) | CPI (YoY) | Eurostat |
+| Australia | CPI (YoY) | Australian Bureau of Statistics |
+| New Zealand | CPI (YoY) | Stats NZ |
+| South Africa | CPI (YoY) | Statistics South Africa |
+| Japan | CPI (YoY) | Statistics Bureau of Japan |
+| Canada | CPI (YoY) | Statistics Canada |
+| Switzerland | CPI (YoY) | Federal Statistical Office (FSO) |
 
 ---
 
-## Data Sources
+## Data Sources and Methodology
 
-Different countries use different official sources. This is intentional.
+All data comes directly from official government statistics agencies or central bank publications.
 
-For some countries (US, NZ), data is fetched directly from the primary statistics agency API. For others (UK, Germany, South Africa), data comes via FRED, which aggregates OECD-harmonized series from national sources.
+Data sources are not forced into a single uniform pipeline.  
+Instead, each economy uses the most stable and authoritative official source available.  
+This approach prioritizes **stability and reproducibility** over uniformity.
 
-This approach prioritizes **stability and reproducibility** over uniformity. Each data point can be traced back to its official origin.
-
-For full technical details, see [METHODOLOGY.md](METHODOLOGY.md).
+Every figure displayed can be traced back to its original source.
 
 ---
 
-## Updates
+## Update Frequency
 
-Data is updated weekly. The dashboard reflects the latest available official releases.
+Data is updated weekly, reflecting the most recent official releases available at the time of update.
+
+Values may be revised by the original statistical agencies after publication.
 
 ---
 
 ## Disclaimer
 
-This project does not provide analysis, predictions, or investment advice. It aggregates and presents official inflation statistics and central bank projections for informational purposes only.
+This project is provided for informational purposes only.
 
-Always verify data with primary sources before making any decisions.
-
----
-
-## Contact
-
-Questions or suggestions? [Open an issue](https://github.com/jing-ny/inflation-dashboard/issues) on GitHub.
+It does not offer analysis, predictions, investment advice, or policy recommendations.  
+Users should refer to the original sources for official data and methodological details.
