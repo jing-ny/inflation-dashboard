@@ -81,24 +81,6 @@ COUNTRIES = {
         "target": 2.0,
         "source": "ONS via OECD/FRED"
     },
-    "CH": {
-        "name": "Switzerland",
-        "flag": "🇨🇭",
-        "api": "FRED",
-        "series_id": "CHECPIALLMINMEI",
-        "frequency": "monthly",
-        "target": 1.0,  # midpoint of 0-2%
-        "source": "FSO via OECD/FRED"
-    },
-    "DE": {
-        "name": "Germany",
-        "flag": "🇩🇪",
-        "api": "FRED",
-        "series_id": "DEUCPIALLMINMEI",
-        "frequency": "monthly",
-        "target": 2.0,
-        "source": "Destatis via OECD/FRED"
-    },
     "EA": {
         "name": "Euro Area",
         "flag": "🇪🇺",
@@ -311,10 +293,12 @@ def fetch_ecb_series(series_id: str, start_date: str = "2015-01-01") -> List[Dic
 
 def fetch_abs_cpi(start_date: str = "2015-01-01") -> List[Dict]:
     """
-    Fetch CPI YoY inflation rate from ABS Data API.
+    Fetch CPI YoY inflation rate for Australia.
     
-    Since November 2025, Australia publishes a complete Monthly CPI.
-    This function fetches the YoY percentage change directly.
+    The ABS restructured their API in November 2025 with new dataflows.
+    This function uses FRED OECD data as the reliable source.
+    
+    Note: FRED OECD quarterly data has ~1-2 quarter lag, but is stable.
     
     Args:
         start_date: Start date in YYYY-MM-DD format
@@ -322,110 +306,17 @@ def fetch_abs_cpi(start_date: str = "2015-01-01") -> List[Dict]:
     Returns:
         List of {"date": "YYYY-MM-DD", "value": float} YoY inflation rates
     """
-    # ABS Data API endpoint for CPI
-    # CPI dataflow: ABS,CPI,1.1.0
-    # Key structure: MEASURE.REGION.TSEST.FREQ
-    # For YoY % change (MEASURE=3), All groups, Australia (10001), Original (10), Monthly (M)
-    
-    # The datakey for YoY inflation rate:
-    # 3 = Percentage Change from Corresponding Quarter of Previous Year
-    # 10001 = Australia (all capital cities)  
-    # 10 = Original
-    # M = Monthly (or Q for quarterly historical)
-    
-    base_url = "https://data.api.abs.gov.au/rest/data"
-    
-    # Try monthly data first (available from April 2024)
-    # Key: MEASURE.INDEX.REGION.TSEST.FREQ
-    # 3 = YoY % change, 10001 = All groups CPI, 10001 = Australia, 10 = Original, M = Monthly
-    dataflow = "ABS,CPI,1.1.0"
-    datakey = "3.10001.10001.10.M"  # YoY change, All groups, Australia, Original, Monthly
-    
-    url = f"{base_url}/{dataflow}/{datakey}"
-    params = {
-        "format": "csv",
-        "startPeriod": start_date[:7],
-        "detail": "dataonly"
-    }
-    
-    observations = []
+    # Use FRED OECD series - reliable but quarterly with some lag
+    # AUSCPIALLQINMEI = Australia CPI All Items (Quarterly, Index)
+    print(f"  Using FRED OECD quarterly series for Australia...")
     
     try:
-        resp = requests.get(url, params=params, timeout=30)
-        resp.raise_for_status()
-        
-        # Parse CSV
-        lines = resp.text.strip().split("\n")
-        if len(lines) > 1:
-            header = lines[0].split(",")
-            date_idx = next((i for i, h in enumerate(header) if "TIME" in h.upper() or "PERIOD" in h.upper()), None)
-            value_idx = next((i for i, h in enumerate(header) if "OBS" in h.upper() or "VALUE" in h.upper()), None)
-            
-            if date_idx is not None and value_idx is not None:
-                for line in lines[1:]:
-                    cols = line.split(",")
-                    if len(cols) > max(date_idx, value_idx):
-                        date_str = cols[date_idx].strip('"')
-                        value_str = cols[value_idx].strip('"')
-                        if value_str and value_str not in ("", "NaN", "."):
-                            # Convert YYYY-MM to YYYY-MM-01
-                            if len(date_str) == 7:
-                                date_str = f"{date_str}-01"
-                            observations.append({
-                                "date": date_str,
-                                "value": float(value_str)
-                            })
+        raw_data = fetch_fred_series("AUSCPIALLQINMEI", start_date)
+        observations = calculate_yoy_from_index(raw_data, "quarterly")
+        return observations
     except Exception as e:
-        print(f"  Warning: Monthly CPI fetch failed ({e}), trying quarterly...")
-    
-    # If monthly data insufficient, also get quarterly data for historical coverage
-    if len(observations) < 12:
-        try:
-            # Quarterly key
-            datakey_q = "3.10001.10001.10.Q"
-            url_q = f"{base_url}/{dataflow}/{datakey_q}"
-            params_q = {
-                "format": "csv",
-                "startPeriod": start_date[:4],
-                "detail": "dataonly"
-            }
-            
-            resp = requests.get(url_q, params=params_q, timeout=30)
-            resp.raise_for_status()
-            
-            lines = resp.text.strip().split("\n")
-            if len(lines) > 1:
-                header = lines[0].split(",")
-                date_idx = next((i for i, h in enumerate(header) if "TIME" in h.upper() or "PERIOD" in h.upper()), None)
-                value_idx = next((i for i, h in enumerate(header) if "OBS" in h.upper() or "VALUE" in h.upper()), None)
-                
-                if date_idx is not None and value_idx is not None:
-                    for line in lines[1:]:
-                        cols = line.split(",")
-                        if len(cols) > max(date_idx, value_idx):
-                            date_str = cols[date_idx].strip('"')
-                            value_str = cols[value_idx].strip('"')
-                            if value_str and value_str not in ("", "NaN", "."):
-                                # Convert quarterly dates (YYYY-Q1) to YYYY-MM-01
-                                if "-Q" in date_str:
-                                    year, quarter = date_str.split("-Q")
-                                    month = {"1": "03", "2": "06", "3": "09", "4": "12"}[quarter]
-                                    date_str = f"{year}-{month}-01"
-                                elif len(date_str) == 7:
-                                    date_str = f"{date_str}-01"
-                                    
-                                # Only add if not already in monthly data
-                                existing_dates = {o["date"] for o in observations}
-                                if date_str not in existing_dates:
-                                    observations.append({
-                                        "date": date_str,
-                                        "value": float(value_str)
-                                    })
-        except Exception as e:
-            print(f"  Warning: Quarterly CPI fetch also failed: {e}")
-    
-    observations.sort(key=lambda x: x["date"])
-    return observations
+        print(f"  Warning: FRED fetch failed: {e}")
+        return []
 
 
 def fetch_oecd_series(series_id: str, start_date: str = "2015-01-01") -> List[Dict]:
