@@ -1,0 +1,62 @@
+# Weekly Inflation Alert
+# Runs every Monday at 8:00 AM EST (13:00 UTC)
+# Compares current data with previous week, sends email if material changes detected
+
+name: Weekly Alert
+
+on:
+  schedule:
+    # Monday 8:00 AM EST = 13:00 UTC
+    - cron: '0 13 * * 1'
+  
+  # Allow manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (no email, no snapshot save)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  send-alert:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install requests python-dotenv
+      
+      - name: Run weekly alert
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_RECIPIENTS: ${{ secrets.ALERT_RECIPIENTS }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            python scripts/send_weekly_alert.py --dry-run
+          else
+            python scripts/send_weekly_alert.py
+          fi
+      
+      - name: Commit snapshot if changed
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # Check if snapshot file changed
+          if git diff --quiet data/weekly_snapshots.json 2>/dev/null; then
+            echo "No changes to snapshot"
+          else
+            git add data/weekly_snapshots.json
+            git commit -m "Update weekly snapshot [automated]"
+            git push
+          fi

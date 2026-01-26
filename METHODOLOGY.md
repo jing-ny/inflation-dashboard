@@ -6,7 +6,7 @@ Technical documentation for the Inflation Dashboard data pipeline.
 
 ## Overview
 
-This dashboard aggregates official inflation statistics from government agencies and central banks across 11 economies. Data is fetched via APIs, processed into a consistent format, and displayed with full source attribution.
+This dashboard aggregates official inflation statistics from government agencies and central banks across 10 economies. Data is fetched via APIs, processed into a consistent format, and displayed with full source attribution.
 
 ---
 
@@ -16,19 +16,18 @@ This dashboard aggregates official inflation statistics from government agencies
 
 | Economy | Series ID | Source | API | Frequency | Notes |
 |---------|-----------|--------|-----|-----------|-------|
-| 🇺🇸 United States | `CUSR0000SA0` | Bureau of Labor Statistics | BLS API v2 | Monthly | CPI-U, All Urban Consumers, Not Seasonally Adjusted |
+| 🇺🇸 United States | `USACPIALLMINMEI` | BLS via OECD | FRED API | Monthly | CPI, All Urban Consumers |
 | 🇪🇺 Euro Area | `ICP.M.U2.N.000000.4.ANR` | European Central Bank | ECB SDMX | Monthly | HICP, Annual rate of change |
 | 🇦🇺 Australia | `AUSCPIALLQINMEI` | ABS via OECD | FRED API | Quarterly | CPI, All Groups |
 | 🇨🇦 Canada | `CANCPIALLMINMEI` | Statistics Canada via OECD | FRED API | Monthly | CPI, All Items |
 | 🇨🇭 Switzerland | `CHECPIALLMINMEI` | FSO via OECD | FRED API | Monthly | CPI, National Index |
 | 🇨🇳 China | `CHNCPIALLMINMEI` | NBS via OECD | FRED API | Monthly | CPI, All Items |
 | 🇩🇪 Germany | `DEUCPIALLMINMEI` | Destatis via OECD | FRED API | Monthly | CPI, All Items |
-| 🇯🇵 Japan | `CPALTT01JPM659N` | Statistics Bureau via OECD | FRED API | Monthly | CPI YoY % change (Growth rate same period previous year) |
 | 🇳🇿 New Zealand | `NZLCPIALLQINMEI` | Stats NZ via OECD | FRED API | Quarterly | CPI, All Groups |
 | 🇬🇧 United Kingdom | `GBRCPIALLMINMEI` | ONS via OECD | FRED API | Monthly | CPI, All Items |
 | 🇿🇦 South Africa | `ZAFCPIALLMINMEI` | Stats SA via OECD | FRED API | Monthly | CPI, All Items |
 
-**Note on Japan**: The original series `JPNCPIALLMINMEI` (COICOP 1999) was discontinued in June 2021. The dashboard now uses `JPNCPALTT01GYM659N` (COICOP 2018), which provides YoY percent change directly rather than an index value.
+**Note on Japan**: Japan is temporarily excluded. The original FRED series `JPNCPIALLMINMEI` (COICOP 1999 classification) was discontinued in June 2021, and the replacement COICOP 2018 series is not yet available via FRED. Will be re-added when a reliable data source is identified.
 
 ### IMF World Economic Outlook Forecasts
 
@@ -40,7 +39,7 @@ This dashboard aggregates official inflation statistics from government agencies
 | Forecast Horizon | Current year + 5 years |
 
 **Country Codes (ISO 3166-1 alpha-3)**:
-- USA, CAN, GBR, CHE, DEU, EMU (Euro Area), AUS, NZL, ZAF, CHN, JPN
+- USA, CAN, GBR, CHE, DEU, EMU (Euro Area), AUS, NZL, ZAF, CHN
 
 ---
 
@@ -206,6 +205,93 @@ Get free at: https://fred.stlouisfed.org/docs/api/api_key.html
 
 ---
 
+## Weekly Alert System
+
+### Overview
+
+A research-style email alert sent every Monday if material changes are detected.
+
+**No analysis. No predictions. Just the data.**
+
+### Material Change Rules
+
+A change is considered **material** if:
+
+```
+1. |delta_pp| >= 0.3  (absolute change >= 0.3 percentage points)
+   OR
+2. Direction reversal (rising → falling OR falling → rising)
+```
+
+Direction is determined as:
+- **Rising (↑)**: delta > +0.05 pp
+- **Falling (↓)**: delta < -0.05 pp
+- **Stable (→)**: -0.05 ≤ delta ≤ +0.05 pp
+
+### Snapshot Schema
+
+```json
+{
+  "week_start": "2026-01-27",
+  "created_at": "2026-01-27T08:00:00.000Z",
+  "countries": {
+    "US": {
+      "code": "US",
+      "name": "United States",
+      "yoy_inflation": 2.9,
+      "reference_period": "2025-01",
+      "data_date": "2026-01-27"
+    }
+  }
+}
+```
+
+### Change Detection Output
+
+```json
+{
+  "code": "US",
+  "name": "United States",
+  "current_yoy": 3.2,
+  "previous_yoy": 2.9,
+  "delta_pp": 0.3,
+  "direction": "rising",
+  "direction_symbol": "↑",
+  "is_material": true,
+  "current_period": "2025-02",
+  "previous_period": "2025-01"
+}
+```
+
+### Workflow
+
+1. Load current `historical_cpi.json`
+2. Create snapshot for current week
+3. Load previous week's snapshot from `weekly_snapshots.json`
+4. Compare: calculate delta for each country
+5. Apply material change rules
+6. Generate email content
+7. Send email via Resend API
+8. Save new snapshot
+
+### Environment Variables
+
+```bash
+# Required for email sending
+RESEND_API_KEY=your_resend_api_key
+
+# Comma-separated recipient list
+ALERT_RECIPIENTS=user1@example.com,user2@example.com
+```
+
+### GitHub Actions
+
+- **Workflow**: `.github/workflows/weekly-alert.yml`
+- **Schedule**: Mondays 8:00 AM EST (13:00 UTC)
+- **Manual trigger**: Supports `--dry-run` for testing
+
+---
+
 ## File Structure
 
 ```
@@ -214,10 +300,12 @@ inflation-dashboard/
 ├── METHODOLOGY.md               # This file
 ├── scripts/
 │   ├── fetch_historical_cpi.py  # Main CPI data fetcher
-│   └── fetch_imf_forecasts.py   # IMF WEO forecasts fetcher
+│   ├── fetch_imf_forecasts.py   # IMF WEO forecasts fetcher
+│   └── send_weekly_alert.py     # Weekly email alert
 ├── data/
 │   ├── historical_cpi.json      # Combined CPI data
-│   └── imf_forecasts.json       # IMF forecasts
+│   ├── imf_forecasts.json       # IMF forecasts
+│   └── weekly_snapshots.json    # Historical weekly snapshots
 ├── docs/                        # GitHub Pages root
 │   ├── index.html               # Overview page
 │   ├── styles.css               # Shared styles
@@ -228,7 +316,8 @@ inflation-dashboard/
 │       └── imf_forecasts.json
 └── .github/
     └── workflows/
-        └── update-data.yml      # Automated weekly updates
+        ├── update-data.yml      # Weekly data updates (Mon 7am EST)
+        └── weekly-alert.yml     # Weekly email alert (Mon 8am EST)
 ```
 
 ---
@@ -240,6 +329,7 @@ inflation-dashboard/
 3. **Central Bank Forecasts**: Currently maintained manually in `country.js`
 4. **IMF Forecasts**: Only updated twice yearly (April, October)
 5. **Revisions**: Historical data may be revised by source agencies
+6. **Japan**: Temporarily excluded due to FRED COICOP 1999 discontinuation
 
 ---
 
@@ -251,6 +341,10 @@ FRED_API_KEY=your_key_here
 
 # Optional (increases BLS rate limits)
 BLS_API_KEY=your_key_here
+
+# Required for weekly alerts
+RESEND_API_KEY=your_resend_api_key
+ALERT_RECIPIENTS=email1@example.com,email2@example.com
 ```
 
 ---
@@ -259,9 +353,11 @@ BLS_API_KEY=your_key_here
 
 | Date | Change |
 |------|--------|
+| Jan 2026 | Added weekly email alert system |
+| Jan 2026 | Removed Japan temporarily (COICOP 1999 discontinued) |
+| Jan 2026 | Switched US to FRED source |
 | Jan 2026 | Added IMF WEO forecasts integration |
 | Jan 2026 | Added Canada and Switzerland |
-| Jan 2026 | Fixed Japan data source (switched to COICOP 2018 series) |
 | Jan 2026 | Added GitHub Actions automation |
 | Jan 2026 | Initial release with 9 economies |
 

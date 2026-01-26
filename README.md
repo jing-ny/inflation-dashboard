@@ -107,10 +107,33 @@ For full technical details including API endpoints, series IDs, and calculation 
 ## Update Frequency
 
 - **Historical CPI data**: Updated weekly (Mondays 7:00 AM EST) via GitHub Actions
+- **Weekly alerts**: Sent Mondays 8:00 AM EST if material changes detected
 - **IMF forecasts**: Updated when new WEO releases are published (April and October)
 - **Central bank forecasts**: Updated manually following major monetary policy publications
 
 Values may be revised by the original statistical agencies after publication.
+
+---
+
+## Weekly Alert
+
+An optional email alert that notifies subscribers of material inflation changes.
+
+**What triggers an alert:**
+- YoY inflation change ≥ 0.3 percentage points, OR
+- Direction reversal (rising → falling or falling → rising)
+
+**What the alert contains:**
+- Which economies had material changes
+- Current YoY rate and change from previous week
+- Link to the full dashboard
+
+**What it does NOT contain:**
+- Analysis or interpretation
+- Predictions or forecasts
+- Investment recommendations
+
+*No analysis. No predictions. Just the data.*
 
 ---
 
