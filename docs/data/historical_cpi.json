@@ -435,5 +435,55 @@
       {"date": "2025-11", "value": 0.2},
       {"date": "2025-12", "value": 0.1}
     ]
+  },
+  "IN": {
+    "name": "India",
+    "flag": "🇮🇳",
+    "target": 4.0,
+    "fred_series": "INDCPIALLMINMEI",
+    "frequency": "monthly",
+    "latest": {
+      "date": "2025-12",
+      "value": 1.33
+    },
+    "previous": {
+      "date": "2025-11",
+      "value": 0.71
+    },
+    "history": [
+      {"date": "2015-01", "value": 5.2},
+      {"date": "2015-06", "value": 5.4},
+      {"date": "2015-12", "value": 5.6},
+      {"date": "2016-06", "value": 5.8},
+      {"date": "2016-12", "value": 3.4},
+      {"date": "2017-06", "value": 1.5},
+      {"date": "2017-12", "value": 5.2},
+      {"date": "2018-06", "value": 5.0},
+      {"date": "2018-12", "value": 2.1},
+      {"date": "2019-06", "value": 3.2},
+      {"date": "2019-12", "value": 7.4},
+      {"date": "2020-06", "value": 6.1},
+      {"date": "2020-12", "value": 4.6},
+      {"date": "2021-06", "value": 6.3},
+      {"date": "2021-12", "value": 5.6},
+      {"date": "2022-06", "value": 7.0},
+      {"date": "2022-12", "value": 5.7},
+      {"date": "2023-06", "value": 4.8},
+      {"date": "2023-12", "value": 5.7},
+      {"date": "2024-06", "value": 5.1},
+      {"date": "2024-12", "value": 5.2},
+      {"date": "2025-01", "value": 4.3},
+      {"date": "2025-02", "value": 3.6},
+      {"date": "2025-03", "value": 3.3},
+      {"date": "2025-04", "value": 3.2},
+      {"date": "2025-05", "value": 2.4},
+      {"date": "2025-06", "value": 2.2},
+      {"date": "2025-07", "value": 1.6},
+      {"date": "2025-08", "value": 2.1},
+      {"date": "2025-09", "value": 1.5},
+      {"date": "2025-10", "value": 0.25},
+      {"date": "2025-11", "value": 0.71},
+      {"date": "2025-12", "value": 1.33}
+    ]
   }
 }

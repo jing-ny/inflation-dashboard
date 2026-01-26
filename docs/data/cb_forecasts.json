@@ -3,7 +3,7 @@
     "last_updated": "January 2026",
     "notes": "Central bank inflation forecasts and policy rates"
   },
-  "display_order": ["US", "EA", "UK", "CA", "AU", "NZ", "ZA", "JP", "CN"],
+  "display_order": ["US", "EA", "UK", "CA", "AU", "NZ", "ZA", "JP", "IN", "CN"],
   "forecasts": {
     "US": {
       "flag": "🇺🇸",
@@ -156,6 +156,25 @@
       "policy_rate": {
         "rate": "0.75%",
         "last_change": "↑ Dec 2025"
+      }
+    },
+    "IN": {
+      "flag": "🇮🇳",
+      "source": "RBI",
+      "source_full": "Reserve Bank of India - Monetary Policy Statement",
+      "source_url": "https://www.rbi.org.in/Scripts/PublicationsView.aspx",
+      "publication_date": "December 2025",
+      "forecast_type": "MPC projection (CPI)",
+      "note": "RBI uses fiscal year (April-March). Record-low inflation in 2025 due to falling food prices.",
+      "projections": {
+        "2025": 2.0,
+        "2026": 4.0,
+        "2027": 4.2
+      },
+      "key_quote": "Inflation outlook benign; food supply prospects improved",
+      "policy_rate": {
+        "rate": "5.25%",
+        "last_change": "↓ Dec 2025"
       }
     },
     "CN": {

@@ -74,6 +74,13 @@ const TARGET_INFO = {
         quote: 'The Bank will achieve the price stability target of 2 percent in terms of the year-on-year rate of change in the consumer price index (CPI) at the earliest possible time.',
         quoteSource: 'Bank of Japan Price Stability Target'
     },
+    IN: {
+        target: 4.0,
+        targetRange: '2-6%',
+        description: 'The Reserve Bank of India targets 4% CPI inflation with a ±2 percentage point tolerance band (2-6%). The flexible inflation targeting framework was adopted in 2016. India experienced record-low inflation below 2% in late 2025 due to falling food prices.',
+        quote: 'The primary objective of monetary policy is to maintain price stability while keeping in mind the objective of growth. The inflation target is set at 4 per cent with a tolerance band of +/- 2 per cent.',
+        quoteSource: 'RBI Monetary Policy Framework'
+    },
     CN: {
         target: 3.0,
         description: 'China sets an annual CPI target, typically around 3%, as part of its government work report. The target is more of a ceiling than a strict objective.',
@@ -131,6 +138,12 @@ const DATA_SOURCES = {
         { label: 'Series ID', value: 'JPNCPALTT01GYM659N (OECD, COICOP 2018)', url: 'https://fred.stlouisfed.org/series/JPNCPALTT01GYM659N' },
         { label: 'Forecasts', value: 'BoJ Outlook for Economic Activity and Prices', url: 'https://www.boj.or.jp/en/mopo/outlook/' },
         { label: 'Target', value: 'BoJ Price Stability Target', url: 'https://www.boj.or.jp/en/mopo/outline/index.htm' }
+    ],
+    IN: [
+        { label: 'CPI Data', value: 'Ministry of Statistics and Programme Implementation', url: 'https://www.mospi.gov.in/' },
+        { label: 'FRED Series', value: 'INDCPIALLMINMEI', url: 'https://fred.stlouisfed.org/series/INDCPIALLMINMEI' },
+        { label: 'Forecasts', value: 'RBI Monetary Policy Statement', url: 'https://www.rbi.org.in/Scripts/PublicationsView.aspx' },
+        { label: 'Target', value: 'RBI Monetary Policy Framework', url: 'https://www.rbi.org.in/' }
     ],
     CN: [
         { label: 'CPI Data', value: 'NBS China via FRED', url: 'https://fred.stlouisfed.org/series/CHNCPIALLMINMEI' },
@@ -377,7 +390,7 @@ async function renderForecastTable(countryCode) {
 
     // If we have both CB and IMF, show comparison table
     if (cbForecast && imfForecast && imfForecast.forecasts) {
-        const imfYears = Object.keys(imfForecast.forecasts).filter(y => parseInt(y) >= 2025).sort();
+        const imfYears = Object.keys(imfForecast.forecasts).sort();
         
         html = `
             <p style="margin-bottom: 1rem;">Comparison of inflation projections from official sources.</p>
