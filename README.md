@@ -73,6 +73,18 @@ Switching to direct national APIs would provide current data:
 - Could automate with PDF parsing or official APIs where available
 - Priority: Fed, ECB, BoE, RBA
 
+**Forecast Publication Schedule:**
+
+| Central Bank | Frequency | Months | Source |
+|--------------|-----------|--------|--------|
+| 🇺🇸 Fed (FOMC) | Quarterly | Mar, Jun, Sep, Dec | [SEP Projections](https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm) |
+| 🇪🇺 ECB | Quarterly | Mar, Jun, Sep, Dec | [Staff Projections](https://www.ecb.europa.eu/pub/projections/html/index.en.html) |
+| 🇬🇧 BoE | Quarterly | Feb, May, Aug, Nov | [Monetary Policy Report](https://www.bankofengland.co.uk/monetary-policy-report) |
+| 🇦🇺 RBA | Quarterly | Feb, May, Aug, Nov | [Statement on Monetary Policy](https://www.rba.gov.au/publications/smp/) |
+| 🇳🇿 RBNZ | Quarterly | Feb, May, Aug, Nov | [Monetary Policy Statement](https://www.rbnz.govt.nz/monetary-policy/monetary-policy-statement) |
+| 🇿🇦 SARB | Bi-monthly | 6x per year | [MPC Statements](https://www.resbank.co.za/en/home/publications/statements/monetary-policy-statements) |
+| 🇨🇦 BoC | Quarterly | Jan, Apr, Jul, Oct | [Monetary Policy Report](https://www.bankofcanada.ca/publications/mpr/) |
+
 ### P2: Infrastructure
 - Supabase backend for forecast history tracking
 - Email subscription for material changes (≥0.3pp moves)
