@@ -273,9 +273,9 @@ function updateMetrics(countryCode, data) {
     const statusEl = document.getElementById('statusValue');
     const statusDetailEl = document.getElementById('statusDetail');
     if (statusEl && current) {
-        const diff = current.value - target;
-        statusEl.textContent = (diff >= 0 ? '+' : '') + diff.toFixed(1) + 'pp';
-        statusEl.className = 'metric-value ' + getValueClass(current.value, target);
+        const diff = target !== null ? current.value - target : null;
+        statusEl.textContent = diff !== null ? ((diff >= 0 ? '+' : '') + diff.toFixed(1) + 'pp') : 'N/A';
+        statusEl.className = 'metric-value ' + (target !== null ? getValueClass(current.value, target) : 'neutral');
         
         if (statusDetailEl) {
             if (diff > 2) statusDetailEl.textContent = 'Well above target';
