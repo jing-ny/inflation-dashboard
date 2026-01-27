@@ -266,7 +266,7 @@ function updateMetrics(countryCode, data) {
     // Target
     const targetEl = document.getElementById('targetValue');
     if (targetEl && targetInfo) {
-        targetEl.textContent = targetInfo.targetRange || (target.toFixed(1) + '%');
+        targetEl.textContent = targetInfo.targetRange || (target !== null ? target.toFixed(1) + '%' : 'N/A');
     }
 
     // Status vs target
