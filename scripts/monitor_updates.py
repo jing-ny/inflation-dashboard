@@ -134,7 +134,19 @@ class DataMonitor:
                 updated = True
             
             # Check for stale data (more than 2 months old)
-            latest_date = datetime.strptime(current_date, '%Y-%m')
+            # Handle both monthly (2025-12) and quarterly (2025-Q4) formats
+            try:
+                if '-Q' in current_date:
+                    # Quarterly format: 2025-Q4 -> 2025-12
+                    year, quarter = current_date.split('-Q')
+                    month = int(quarter) * 3
+                    latest_date = datetime(int(year), month, 1)
+                else:
+                    latest_date = datetime.strptime(current_date, '%Y-%m')
+            except ValueError:
+                # Skip stale check if date format is unexpected
+                continue
+                
             if (today - latest_date) > timedelta(days=75):
                 self.alerts.append({
                     'type': 'STALE_DATA',
