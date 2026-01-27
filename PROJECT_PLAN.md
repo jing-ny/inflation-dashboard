@@ -1,6 +1,6 @@
 # Inflation Dashboard - Project Plan & Architecture
 
-**Last Updated:** January 26, 2026  
+**Last Updated:** January 27, 2026  
 **Purpose:** Reference document to maintain consistency across sessions and recover from any disruptions.
 
 ---
@@ -9,14 +9,14 @@
 
 1. [Project Overview](#project-overview)
 2. [Current State](#current-state)
-3. [Architecture](#architecture)
-4. [Data Flow](#data-flow)
-5. [File Structure](#file-structure)
-6. [Scripts & Automation](#scripts--automation)
-7. [Data Sources & Known Limitations](#data-sources--known-limitations)
-8. [Priority List](#priority-list)
-9. [Session Recovery Guide](#session-recovery-guide)
-10. [README Template](#readme-template)
+3. [Open Issues](#open-issues)
+4. [Architecture](#architecture)
+5. [Data Flow](#data-flow)
+6. [File Structure](#file-structure)
+7. [Automation](#automation)
+8. [Manual Maintenance Tasks](#manual-maintenance-tasks)
+9. [Data Sources & Known Limitations](#data-sources--known-limitations)
+10. [Session Recovery Guide](#session-recovery-guide)
 
 ---
 
@@ -26,7 +26,7 @@
 **URL:** https://jing-ny.github.io/inflation-dashboard/  
 **Repo:** https://github.com/jing-ny/inflation-dashboard  
 
-**Purpose:** A source-first dashboard tracking official CPI inflation data and central bank forecasts across 8 major economies.
+**Purpose:** A source-first dashboard tracking official CPI inflation data and central bank forecasts across 13 economies.
 
 **Countries Covered:**
 | Code | Country | CPI Source | Central Bank | Frequency |
@@ -38,29 +38,68 @@
 | AU | Australia | ABS | RBA | Monthly (new) / Quarterly (historical) |
 | NZ | New Zealand | Stats NZ | RBNZ | Quarterly |
 | ZA | South Africa | Stats SA | SARB | Monthly |
+| JP | Japan | Statistics Bureau | Bank of Japan | Monthly |
+| KR | South Korea | KOSTAT | Bank of Korea | Monthly |
+| SG | Singapore | DOS | MAS | Monthly |
+| IN | India | MOSPI | RBI | Monthly |
 | CN | China | NBS | PBOC | Monthly |
+| VE | Venezuela | BCV | BCV | Monthly |
 
 ---
 
-## Current State (as of Jan 26, 2026)
+## Current State (as of Jan 27, 2026)
 
 ### ✅ What Works
 - Overview page (`index.html`) with summary table and Central Bank Outlook
-- Individual country pages (us.html, uk.html, ea.html, ca.html, au.html, nz.html, za.html, cn.html)
-- All pages load CPI data from `data/historical_cpi.json`
-- All pages load CB forecasts from `data/cb_forecasts.json`
-- All pages load IMF forecasts from `data/imf_forecasts.json`
-- `fetch_historical_cpi.py` fetches CPI from FRED API
-- `fetch_imf_forecasts.py` fetches IMF WEO projections
-- `fetch_cb_forecasts.py` with hybrid API + manual data approach
-- GitHub Actions workflow for weekly automated updates
-- CPI supplements system for countries where FRED lags official releases
+- Individual country pages (13 total)
+- All pages load data from JSON files (single source of truth)
+- GitHub Actions automation runs Mon & Thu at 9am UTC
+- Email notifications via Resend (delivery issues - see Open Issues)
+- Forecast history tracking system
 
-### ⚠️ Known Limitations
-- **FRED data lag:** Some countries (especially ZA, UK, CA) have FRED data that lags official releases
-- **Solution:** `cpi_supplements.json` provides manual overrides; `historical_cpi.json` updated directly
-- **CB forecasts:** Most require manual updates after monetary policy meetings
-- **AU transition:** Australia moved from quarterly to monthly CPI in Oct 2025
+### ⚠️ Recent Changes
+- **Jan 27, 2026:** Added Japan, India, South Korea, Singapore, Venezuela (5 new countries)
+- **Jan 27, 2026:** South Africa target updated from 4.5% to 3% (±1pp)
+- **Jan 27, 2026:** Venezuela null target handling fixed
+- **Jan 27, 2026:** Automation system deployed with Resend email
+
+---
+
+## Open Issues
+
+### 🔴 Active Issues
+
+#### 1. Email notifications not arriving
+- **Status:** Resend shows "Delivered" but emails not received in inbox
+- **To investigate:**
+  - Check Resend "To" field for correct recipient
+  - Check spam/junk folder
+  - Verify `NOTIFICATION_EMAIL` GitHub secret
+  - Consider switching from `@resend.dev` to verified domain
+- **Workaround:** Check Resend dashboard directly for notification content
+
+#### 2. FRED API errors for Japan & Singapore
+- **Error:** `400 Bad Request` for series JPNCPALTT01GYM659N and SGPCPIALLMINMEI
+- **Cause:** These series don't support `units=pc1` parameter
+- **Impact:** Low - dashboard still works, just can't auto-update these countries
+- **Fix needed:** Update `monitor_updates.py` to handle these series differently
+
+#### 3. Venezuela data stale (301 days)
+- **Status:** Expected - FRED doesn't update VE frequently
+- **Impact:** Low - VE page works, just shows older data
+- **Fix:** Manual update from BCV/IMF sources when available
+
+### ✅ Recently Fixed
+
+- **Venezuela page "Error loading data"** (Jan 27): Fixed null target handling in country.js
+- **Quarterly date format crash** (Jan 27): Fixed AU/NZ `2025-Q4` format in monitor script
+
+### 📋 Future Enhancements (Low Priority)
+
+- Auto-scrape CB forecasts from official websites
+- Forecast revision visualization on country pages
+- Historical forecast accuracy charts
+- Fix FRED API errors for JP/SG series
 
 ---
 
@@ -82,22 +121,11 @@ Python Scripts (fetch/update data)
 
 | File | Contents | Updated By |
 |------|----------|------------|
-| `historical_cpi.json` | 10-year CPI history + latest/previous readings | `fetch_historical_cpi.py` + manual supplements |
-| `imf_forecasts.json` | IMF WEO inflation projections | `fetch_imf_forecasts.py` |
-| `cb_forecasts.json` | Central bank forecasts | `fetch_cb_forecasts.py` (hybrid) |
-
-### JavaScript Architecture
-
-**`country.js`** contains:
-- Country metadata (names, flags, targets) — hardcoded, rarely changes
-- Target descriptions and policy quotes — hardcoded
-- Data source links — hardcoded
-- Functions that LOAD data from JSON files — dynamic
-
-**`index.html`** contains:
-- Inline JS that loads all JSON files
-- Dynamically renders overview table
-- Dynamically renders Central Bank Outlook table
+| `historical_cpi.json` | 10-year CPI history + latest/previous readings | Automation + manual |
+| `imf_forecasts.json` | IMF WEO inflation projections | Manual (2x/year) |
+| `cb_forecasts.json` | Central bank forecasts | Manual (after MPC meetings) |
+| `history/cb_forecast_history.json` | CB forecast snapshots | Manual (optional) |
+| `history/imf_forecast_history.json` | IMF forecast snapshots | Manual (optional) |
 
 ---
 
@@ -105,14 +133,14 @@ Python Scripts (fetch/update data)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Python Scripts                                │
-│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐   │
-│  │fetch_historical_│ │fetch_imf_       │ │fetch_cb_        │   │
-│  │cpi.py           │ │forecasts.py     │ │forecasts.py     │   │
-│  └────────┬────────┘ └────────┬────────┘ └────────┬────────┘   │
-└───────────┼────────────────────┼────────────────────┼───────────┘
-            ↓                    ↓                    ↓
-┌───────────┴────────────────────┴────────────────────┴───────────┐
+│                    Automation (GitHub Actions)                   │
+│  ┌─────────────────┐ ┌─────────────────┐                        │
+│  │monitor_updates. │ │send_notification│                        │
+│  │py               │ │.py (Resend)     │                        │
+│  └────────┬────────┘ └────────┬────────┘                        │
+└───────────┼────────────────────┼────────────────────────────────┘
+            ↓                    ↓
+┌───────────┴────────────────────┴────────────────────────────────┐
 │                    docs/data/                                    │
 │  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐   │
 │  │historical_cpi.  │ │imf_forecasts.   │ │cb_forecasts.    │   │
@@ -123,8 +151,8 @@ Python Scripts (fetch/update data)
 ┌───────────┴────────────────────┴────────────────────┴───────────┐
 │                    Web Pages                                     │
 │  ┌─────────────────┐ ┌──────────────────────────────────────┐  │
-│  │index.html       │ │us.html, uk.html, ea.html, ca.html,   │  │
-│  │(overview)       │ │au.html, nz.html, za.html, cn.html    │  │
+│  │index.html       │ │us.html, uk.html, ... ve.html         │  │
+│  │(overview)       │ │(13 country pages)                    │  │
 │  └─────────────────┘ └──────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -138,60 +166,85 @@ inflation-dashboard/
 ├── README.md                    # Project overview (user-facing)
 ├── METHODOLOGY.md               # Technical documentation
 ├── PROJECT_PLAN.md              # This file (internal reference)
+├── MAINTENANCE.md               # Manual update guide
 ├── scripts/
-│   ├── fetch_historical_cpi.py  # ✅ Fetches CPI from FRED
-│   ├── fetch_imf_forecasts.py   # ✅ Fetches IMF WEO
-│   └── fetch_cb_forecasts.py    # ✅ Hybrid API + manual CB forecasts
-├── data/
-│   ├── historical_cpi.json      # CPI data (source for docs/)
-│   ├── imf_forecasts.json       # IMF data (source for docs/)
-│   ├── cb_forecasts.json        # CB forecasts (source for docs/)
-│   └── cpi_supplements.json     # Manual supplements for FRED lag
+│   ├── monitor_updates.py       # ✅ Checks FRED for new data
+│   └── send_notification.py     # ✅ Sends email via Resend
 ├── docs/                        # GitHub Pages root
 │   ├── index.html               # Overview page
-│   ├── us.html, uk.html, ...    # Country pages (8 total)
+│   ├── *.html                   # Country pages (13 total)
 │   ├── styles.css               # Shared styles
 │   ├── country.js               # Shared JS for country pages
 │   └── data/                    # Data files served to browser
 │       ├── historical_cpi.json
 │       ├── imf_forecasts.json
-│       └── cb_forecasts.json
+│       ├── cb_forecasts.json
+│       └── history/             # Forecast revision tracking
 └── .github/
     └── workflows/
-        └── update-data.yml      # ✅ Weekly automation
+        └── monitor-updates.yml  # ✅ Twice-weekly automation
 ```
 
 ---
 
-## Scripts & Automation
-
-### `fetch_historical_cpi.py`
-- **Status:** ✅ Working
-- **Function:** Fetches 10-year CPI data from FRED API for all countries
-- **Output:** `data/historical_cpi.json`
-- **Requires:** `FRED_API_KEY` environment variable
-- **Note:** FRED data lags for some countries; use supplements
-
-### `fetch_imf_forecasts.py`
-- **Status:** ✅ Working
-- **Function:** Fetches IMF World Economic Outlook inflation projections
-- **Output:** `data/imf_forecasts.json`
-- **Requires:** No API key (public API)
-
-### `fetch_cb_forecasts.py`
-- **Status:** ✅ Working (hybrid approach)
-- **Function:** Fetches Fed/Cleveland Fed from FRED API; other CBs from manual data
-- **Output:** `data/cb_forecasts.json`
-- **Sources:**
-  - US Fed: FRED API (PCECTPIMD series)
-  - Cleveland Fed: FRED API (EXPINF1YR series)
-  - ECB, BoE, RBA, BoC, RBNZ, SARB: Manual data in script
+## Automation
 
 ### GitHub Actions Workflow
-- **Status:** ✅ Configured
-- **Location:** `.github/workflows/update-data.yml`
-- **Schedule:** Weekly (Mondays at 9 AM UTC)
-- **Function:** Runs all fetch scripts, copies to docs/data/, commits changes
+
+**File:** `.github/workflows/monitor-updates.yml`  
+**Schedule:** Monday & Thursday at 9 AM UTC  
+**Manual trigger:** GitHub repo → Actions → Run workflow
+
+**What it does:**
+1. Checks FRED API for new CPI data for all 13 countries
+2. If new data found → auto-commits to repo
+3. Checks for stale data (>75 days old) → alerts
+4. Checks CB meeting schedule → alerts if forecasts may need updating
+5. Checks if IMF WEO month (Apr/Oct) → alerts
+6. Sends email summary via Resend
+
+### GitHub Secrets Required
+
+| Secret | Purpose |
+|--------|---------|
+| `FRED_API_KEY` | FRED API access |
+| `RESEND_API_KEY` | Email notifications |
+| `NOTIFICATION_EMAIL` | Recipient email |
+
+### What's Automated vs Manual
+
+| Task | Automated | Manual |
+|------|-----------|--------|
+| CPI data updates | ✅ (FRED fetch) | Supplement if FRED lags |
+| Stale data alerts | ✅ | — |
+| CB meeting reminders | ✅ | Update forecasts |
+| IMF WEO reminders | ✅ | Update forecasts |
+| CB forecast updates | — | After MPC meetings |
+| IMF forecast updates | — | April & October |
+
+---
+
+## Manual Maintenance Tasks
+
+### Central Bank Forecast Updates
+
+**When:** After major MPC meetings (varies by country)  
+**What:** Edit `docs/data/cb_forecasts.json`  
+**Key meetings:**
+- US FOMC: Mar, Jun, Sep, Dec
+- ECB: Mar, Jun, Sep, Dec
+- BoE: Feb, May, Aug, Nov
+- Others: See MAINTENANCE.md
+
+### IMF Forecast Updates
+
+**When:** April and October (WEO releases)  
+**What:** Edit `docs/data/imf_forecasts.json`  
+**Source:** https://www.imf.org/external/datamapper/PCPIPCH@WEO
+
+### Full Details
+
+See `MAINTENANCE.md` for step-by-step instructions.
 
 ---
 
@@ -206,55 +259,22 @@ FRED OECD series for international countries often lag official releases:
 | ZA | ZAFCPIALLMINMEI | 6-12 months | Manual supplement from Stats SA |
 | UK | GBRCPIALLMINMEI | 1-2 months | Manual supplement from ONS |
 | CA | CANCPIALLMINMEI | 1-2 months | Manual supplement from StatCan |
-| AU | AUSCPIALLQINMEI | 1-2 quarters | New monthly series available |
-| NZ | NZLCPIALLQINMEI | 1-2 quarters | Quarterly only (no monthly) |
+| AU | AUSCPIALLQINMEI | 1-2 quarters | Quarterly data |
+| NZ | NZLCPIALLQINMEI | 1-2 quarters | Quarterly only |
+| VE | FPCPITOTLZGVEN | 6-12 months | IMF data preferred |
 
-**Workaround:** 
-1. `cpi_supplements.json` stores manual data for lagging countries
-2. After running `fetch_historical_cpi.py`, manually update or run patch script
-3. Alternatively, directly update `historical_cpi.json` with latest official data
+### FRED API Compatibility Issues
 
-### Central Bank Forecast Update Schedule
+| Country | Series | Issue |
+|---------|--------|-------|
+| JP | JPNCPALTT01GYM659N | Doesn't support `units=pc1` |
+| SG | SGPCPIALLMINMEI | Doesn't support `units=pc1` |
 
-| Bank | Forecast Release | Frequency |
-|------|------------------|-----------|
-| Fed (FOMC) | Summary of Economic Projections | 4x/year (Mar, Jun, Sep, Dec) |
-| Cleveland Fed | Inflation Expectations | Monthly |
-| ECB | Staff Projections | 4x/year (Mar, Jun, Sep, Dec) |
-| BoE | Monetary Policy Report | 4x/year (Feb, May, Aug, Nov) |
-| RBA | Statement on Monetary Policy | 4x/year |
-| BoC | Monetary Policy Report | 4x/year (Jan, Apr, Jul, Oct) |
-| RBNZ | Monetary Policy Statement | 7x/year |
-| SARB | MPC Statement | 6x/year |
+### Special Cases
 
----
-
-## Priority List
-
-### ✅ Completed (P0/P1)
-| Task | Description | Status |
-|------|-------------|--------|
-| Single source of truth | All pages read from JSON | ✅ |
-| CB forecasts JSON | cb_forecasts.json with all banks | ✅ |
-| IMF forecasts | imf_forecasts.json working | ✅ |
-| GitHub Actions | Weekly automation configured | ✅ |
-| Fix ZA data lag | Manual supplement system | ✅ |
-| Fix UK/CA data lag | Updated historical_cpi.json | ✅ |
-
-### 🔄 Ongoing Maintenance
-| Task | Description | Frequency |
-|------|-------------|-----------|
-| Update CPI supplements | When FRED lags official releases | As needed |
-| Update CB forecasts | After monetary policy meetings | ~Monthly |
-| Update IMF forecasts | After WEO releases | 2x/year |
-
-### 📋 Future Enhancements (P2)
-| Task | Description | Priority |
-|------|-------------|----------|
-| Auto-scrape CB forecasts | Replace manual data entry | Medium |
-| Add more countries | Japan, India, Singapore | Low |
-| Email alerts | Notify on significant changes | Low |
-| Historical forecast tracking | Store past forecasts | Low |
+- **Venezuela:** No inflation target; `target: null` in data files
+- **Singapore:** MAS uses exchange rate policy, not interest rates
+- **Australia:** Transitioned from quarterly to monthly CPI in Oct 2025
 
 ---
 
@@ -266,135 +286,39 @@ If starting a new session or recovering from a crash:
 ```bash
 cd ~/Projects/inflation-dashboard
 
-# What branch are we on?
-git branch
-
 # What's the latest commit?
 git log --oneline -5
 
 # What files exist?
 ls -la docs/data/
-ls -la scripts/
 ```
 
 ### 2. Check Data Freshness
 ```bash
-# Check CPI data date
+# Check last update date
 head -5 docs/data/historical_cpi.json
-
-# Check CB forecasts date
-head -10 docs/data/cb_forecasts.json
 ```
 
 ### 3. Test the Site
 - Open https://jing-ny.github.io/inflation-dashboard/
-- Check overview table loads with current data
-- Check Central Bank Outlook table
-- Click into country pages, verify data matches
+- Check overview table loads
+- Click Venezuela page (tests null target handling)
 
-### 4. Common Issues
-- **Stale data:** Run fetch scripts or manually update JSON
-- **FRED lag:** Use cpi_supplements.json approach
-- **Page not updating:** Check GitHub Pages deployment status
-
----
-
-## README Template
-
-**IMPORTANT:** This is the original README style that Jing likes. Use this template when updating README.md — keep the tone and structure, just update the details.
-
-```markdown
-# Inflation, Officially
-
-**Official Data & Central Bank Expectations**
-
-A lightweight, source-first monitor of inflation trends and central bank expectations across major economies.
+### 4. Check Automation
+- GitHub repo → Actions tab
+- Check latest workflow run status
+- Check Resend dashboard for email delivery
 
 ---
 
-## Why This Exists
+## Useful Links
 
-Inflation data is everywhere, but it is often difficult to interpret in a consistent way.  
-Figures are reported using different definitions, released on different schedules, and frequently mixed with commentary or opinion.
-
-This project exists to cut through that noise.
-
-It aggregates official inflation statistics and central bank projections in one place, with clear source attribution for every number, making cross-country comparison easier and more transparent.
-
----
-
-## What This Project Does (and Does Not Do)
-
-**What this project does:**
-
-- Collects headline CPI inflation data from official government statistics agencies
-- Displays central bank inflation expectations and projections where available
-- Compares central bank forecasts with IMF World Economic Outlook projections
-- Provides direct source links for every data point
-
-**What this project does not do:**
-
-- Provide analysis or commentary
-- Make predictions
-- Offer investment advice or policy recommendations
-
----
-
-## Coverage
-
-This dashboard tracks headline consumer price inflation (year-over-year) across 8 major economies:
-
-| Economy | Inflation Measure | Source | Central Bank |
-|---------|-------------------|--------|--------------|
-| United States | CPI (YoY) | Bureau of Labor Statistics | Federal Reserve |
-| Euro Area | HICP (YoY) | Eurostat | ECB |
-| United Kingdom | CPI (YoY) | ONS | Bank of England |
-| Canada | CPI (YoY) | Statistics Canada | Bank of Canada |
-| Australia | CPI (YoY) | ABS | RBA |
-| New Zealand | CPI (YoY) | Stats NZ | RBNZ |
-| South Africa | CPI (YoY) | Stats SA | SARB |
-| China | CPI (YoY) | NBS | PBOC |
-
----
-
-## Data Sources and Methodology
-
-All data comes directly from official government statistics agencies or central bank publications.
-
-Data sources are not forced into a single uniform pipeline.  
-Instead, each economy uses the most stable and authoritative official source available.  
-This approach prioritizes **stability and reproducibility** over uniformity.
-
-Every figure displayed can be traced back to its original source.
-
-For detailed methodology, see [METHODOLOGY.md](METHODOLOGY.md).
-
----
-
-## Update Frequency
-
-- **CPI Data:** Updated weekly, reflecting the most recent official releases
-- **Central Bank Forecasts:** Updated after major monetary policy meetings
-- **IMF Forecasts:** Updated twice yearly (April and October WEO releases)
-
-Values may be revised by the original statistical agencies after publication.
-
----
-
-## Disclaimer
-
-This project is provided for informational purposes only.
-
-It does not offer analysis, predictions, investment advice, or policy recommendations.  
-Users should refer to the original sources for official data and methodological details.
-```
-
-**Key principles:**
-1. Clean, minimal formatting
-2. Clear "what it does / doesn't do" section
-3. Source-first philosophy emphasized
-4. No hype, no predictions, just facts
-5. Disclaimer at the end
+- **Dashboard:** https://jing-ny.github.io/inflation-dashboard/
+- **GitHub repo:** https://github.com/jing-ny/inflation-dashboard
+- **Actions:** https://github.com/jing-ny/inflation-dashboard/actions
+- **Resend:** https://resend.com/emails
+- **FRED:** https://fred.stlouisfed.org/
+- **IMF DataMapper:** https://www.imf.org/external/datamapper/PCPIPCH@WEO
 
 ---
 
