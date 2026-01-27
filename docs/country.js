@@ -426,7 +426,7 @@ async function renderForecastTable(countryCode) {
 
     // If we have both CB and IMF, show comparison table
     if (cbForecast && imfForecast && imfForecast.forecasts) {
-        const currentYear = new Date().getFullYear(); const imfYears = Object.keys(imfForecast.forecasts).filter(y => parseInt(y) >= currentYear - 1).sort();
+        const imfYears = Object.keys(imfForecast.forecasts).sort();
         
         html = `
             <p style="margin-bottom: 1rem;">Comparison of inflation projections from official sources.</p>
@@ -516,7 +516,7 @@ async function renderForecastTable(countryCode) {
         `;
     } else if (imfForecast && imfForecast.forecasts) {
         // Only IMF forecast available
-        const currentYear = new Date().getFullYear(); const years = Object.keys(imfForecast.forecasts).filter(y => parseInt(y) >= currentYear - 1).sort();
+        const years = Object.keys(imfForecast.forecasts).sort();
         
         html = `
             <p style="margin-bottom: 1rem;">IMF World Economic Outlook from <a href="${imfData.url || 'https://www.imf.org/external/datamapper/PCPIPCH@WEO'}" target="_blank">IMF DataMapper</a></p>
@@ -636,6 +636,7 @@ function formatDate(dateStr) {
 }
 
 function getValueClass(value, target) {
+    if (target === null || target === undefined) return "neutral";
     const diff = value - target;
     if (diff > 2) return 'high';
     if (diff > 0.5) return 'elevated';
