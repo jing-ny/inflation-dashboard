@@ -38,7 +38,7 @@ It aggregates official inflation statistics and central bank projections in one 
 
 ## Coverage
 
-This dashboard tracks headline consumer price inflation (year-over-year) across 8 major economies:
+This dashboard tracks headline consumer price inflation (year-over-year) across 13 economies:
 
 | Economy | Inflation Measure | Source | Central Bank |
 |---------|-------------------|--------|--------------|
@@ -49,7 +49,12 @@ This dashboard tracks headline consumer price inflation (year-over-year) across 
 | 🇦🇺 Australia | CPI (YoY) | ABS | RBA |
 | 🇳🇿 New Zealand | CPI (YoY) | Stats NZ | RBNZ |
 | 🇿🇦 South Africa | CPI (YoY) | Stats SA | SARB |
+| 🇯🇵 Japan | CPI (YoY) | Statistics Bureau | Bank of Japan |
+| 🇰🇷 South Korea | CPI (YoY) | KOSTAT | Bank of Korea |
+| 🇸🇬 Singapore | CPI (YoY) | DOS | MAS |
+| 🇮🇳 India | CPI (YoY) | MOSPI | RBI |
 | 🇨🇳 China | CPI (YoY) | NBS | PBOC |
+| 🇻🇪 Venezuela | CPI (YoY) | BCV | BCV |
 
 ---
 
@@ -121,7 +126,7 @@ Get a free FRED API key at: https://fred.stlouisfed.org/docs/api/api_key.html
 inflation-dashboard/
 ├── docs/                    # GitHub Pages site
 │   ├── index.html           # Overview dashboard
-│   ├── us.html, uk.html...  # Country pages
+│   ├── us.html, uk.html...  # Country pages (13 total)
 │   ├── styles.css           # Styles
 │   ├── country.js           # Shared JavaScript
 │   └── data/                # JSON data files

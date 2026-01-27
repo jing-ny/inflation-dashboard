@@ -25,7 +25,12 @@ This project fetches official inflation statistics and central bank forecasts fr
 | 🇦🇺 Australia | AUSCPIALLQINMEI | Quarterly* | ABS via OECD | FRED API |
 | 🇳🇿 New Zealand | NZLCPIALLQINMEI | Quarterly | Stats NZ via OECD | FRED API |
 | 🇿🇦 South Africa | ZAFCPIALLMINMEI | Monthly | Stats SA via OECD | FRED API |
+| 🇯🇵 Japan | JPNCPALTT01GYM659N | Monthly | Statistics Bureau via OECD | FRED API |
+| 🇰🇷 South Korea | KORCPIALLMINMEI | Monthly | KOSTAT via OECD | FRED API |
+| 🇸🇬 Singapore | SGPCPIALLMINMEI | Monthly | DOS via OECD | FRED API |
+| 🇮🇳 India | INDCPIALLMINMEI | Monthly | MOSPI via OECD | FRED API |
 | 🇨🇳 China | CHNCPIALLMINMEI | Monthly | NBS via OECD | FRED API |
+| 🇻🇪 Venezuela | FPCPITOTLZGVEN | Monthly | BCV / World Bank | FRED API |
 
 *Australia transitioned to monthly CPI in October 2025. Historical data is quarterly.
 
@@ -33,6 +38,8 @@ This project fetches official inflation statistics and central bank forecasts fr
 - All series measure **headline CPI (All Items)** year-over-year percentage change
 - FRED OECD series use base year 2015=100
 - US BLS series uses base year 1982-84=100
+- Japan series changed from JPNCPIALLMINMEI (discontinued Jun 2021) to JPNCPALTT01GYM659N (COICOP 2018)
+- Venezuela data reliability varies; post-hyperinflation period only (2022+)
 
 ### FRED Data Lag Issue
 
@@ -65,9 +72,17 @@ When FRED data is stale, we supplement with official data from:
 | Bank of Canada | BoC Website | CPI Inflation | 4x/year (MPR) |
 | Reserve Bank of New Zealand | RBNZ Website | CPI Inflation | 7x/year (MPS) |
 | South African Reserve Bank | SARB Website | CPI Inflation | 6x/year (MPC) |
+| Bank of Japan | BoJ Website | CPI Inflation | 4x/year (Outlook Report) |
+| Bank of Korea | BOK Website | CPI Inflation | 4x/year |
+| Monetary Authority of Singapore | MAS Website | CPI Inflation | 4x/year (SPF) |
+| Reserve Bank of India | RBI Website | CPI Inflation | 6x/year (MPC) |
 | China (PBOC) | IMF WEO | CPI Inflation | 2x/year |
+| Venezuela (BCV) | IMF WEO | CPI Inflation | 2x/year |
 
-**Note:** China's PBOC does not publish multi-year inflation forecasts. We use IMF projections instead.
+**Notes:** 
+- China's PBOC does not publish multi-year inflation forecasts. We use IMF projections instead.
+- Venezuela's BCV does not publish reliable forecasts. We use IMF projections instead.
+- Singapore's MAS uses exchange rate policy (S$NEER), not interest rates.
 
 ### Forecast Data Sources
 
@@ -82,6 +97,10 @@ When FRED data is stale, we supplement with official data from:
 - BoC Monetary Policy Report
 - RBNZ Monetary Policy Statement
 - SARB MPC Statement
+- BoJ Outlook for Economic Activity and Prices
+- BOK Economic Outlook
+- MAS Survey of Professional Forecasters
+- RBI Monetary Policy Statement
 
 ---
 
@@ -94,7 +113,20 @@ When FRED data is stale, we supplement with official data from:
 The IMF publishes comprehensive inflation forecasts for all countries in our coverage as part of the World Economic Outlook. We fetch:
 - Current year projection
 - Next year projection
-- 2-year ahead projection (where available)
+- 2-4 year ahead projections (where available)
+
+---
+
+## Forecast History Tracking
+
+Starting January 2026, we maintain historical records of forecast revisions:
+
+| File | Contents | Update Frequency |
+|------|----------|------------------|
+| `cb_forecast_history.json` | Central bank forecast snapshots | After MPC meetings |
+| `imf_forecast_history.json` | IMF WEO forecast snapshots | After WEO releases (Apr/Oct) |
+
+This enables tracking how forecasts change over time and comparing forecast accuracy.
 
 ---
 
@@ -113,7 +145,7 @@ Most FRED series already provide YoY percentage change directly.
 ### Data Validation
 
 Before displaying data:
-1. Check that values are within reasonable bounds (-5% to +20% for most countries)
+1. Check that values are within reasonable bounds (-5% to +20% for most countries; higher for Venezuela)
 2. Verify dates are sequential with no gaps
 3. Cross-reference latest values with official sources
 
@@ -128,6 +160,7 @@ Before displaying data:
 | CB Forecasts (Fed) | Yes (GitHub Actions) | Weekly |
 | CB Forecasts (Others) | No | After policy meetings |
 | CPI Supplements | No | As needed when FRED lags |
+| Forecast History | No | After forecast updates |
 
 ### GitHub Actions Workflow
 
@@ -144,9 +177,12 @@ The automated workflow runs weekly:
 
 ```
 docs/data/
-├── historical_cpi.json    # 10-year CPI history per country
-├── cb_forecasts.json      # Central bank forecasts
-└── imf_forecasts.json     # IMF WEO projections
+├── historical_cpi.json       # 10-year CPI history per country
+├── cb_forecasts.json         # Central bank forecasts
+├── imf_forecasts.json        # IMF WEO projections
+└── history/
+    ├── cb_forecast_history.json   # CB forecast revision history
+    └── imf_forecast_history.json  # IMF forecast revision history
 
 scripts/
 ├── fetch_historical_cpi.py   # FRED API → historical_cpi.json
@@ -166,7 +202,7 @@ data/
 
 ```json
 {
-  "_metadata": {
+  "metadata": {
     "last_updated": "2026-01-26",
     "description": "Historical CPI inflation data"
   },
@@ -188,23 +224,19 @@ data/
 
 ```json
 {
-  "_metadata": {
+  "metadata": {
     "last_updated": "2026-01-26"
   },
-  "forecasts": [
-    {
-      "bank": "Federal Reserve (FOMC)",
-      "country": "US",
-      "metric": "PCE Inflation",
-      "source": "Summary of Economic Projections",
-      "source_date": "Dec 2025",
-      "projections": [
-        {"year": "2025", "value": 2.8},
-        {"year": "2026", "value": 2.4},
-        {"year": "2027", "value": 2.1}
-      ]
+  "display_order": ["US", "EA", "UK", "CA", "AU", "NZ", "ZA", "JP", "KR", "SG", "IN", "CN", "VE"],
+  "forecasts": {
+    "US": {
+      "flag": "🇺🇸",
+      "source": "FOMC",
+      "source_full": "Federal Reserve - Summary of Economic Projections",
+      "projections": {"2025": 2.4, "2026": 2.5, "2027": 2.1},
+      "policy_rate": {"rate": "4.25-4.50%", "last_change": "↓ Dec 2025"}
     }
-  ]
+  }
 }
 ```
 
@@ -212,18 +244,46 @@ data/
 
 ```json
 {
-  "_metadata": {
+  "metadata": {
     "source": "IMF World Economic Outlook",
-    "release": "October 2025",
+    "version": "October 2025",
     "last_updated": "2026-01-26"
   },
-  "US": {
-    "2025": 2.8,
-    "2026": 2.3,
-    "2027": 2.1
+  "countries": {
+    "US": {
+      "name": "United States",
+      "imf_code": "USA",
+      "forecasts": {"2025": 2.4, "2026": 2.3, "2027": 2.1}
+    }
   }
 }
 ```
+
+---
+
+## Country-Specific Notes
+
+### South Africa (ZA)
+- **Target Change (Nov 2025):** SARB changed inflation target from 3-6% range (4.5% midpoint) to 3% ±1pp (2-4% range)
+- This is the first target change in 25 years
+
+### Japan (JP)
+- **FRED Series Change:** Original series JPNCPIALLMINMEI discontinued June 2021
+- Now using JPNCPALTT01GYM659N (COICOP 2018 classification)
+- BoJ uses fiscal year (April-March) for forecasts
+
+### India (IN)
+- RBI uses fiscal year (April-March) for forecasts
+- Record-low inflation in late 2025 due to falling food prices
+
+### Singapore (SG)
+- MAS uses exchange rate policy (S$NEER band), not interest rates
+- No explicit inflation target; implied ~2% for price stability
+
+### Venezuela (VE)
+- Post-hyperinflation period only (2022+)
+- Hyperinflation 2016-2021 peaked at 1,000,000%+ in 2018
+- Data reliability uncertain; IMF projections used for forecasts
 
 ---
 
@@ -233,6 +293,7 @@ data/
 2. **Central Bank Forecasts:** Most require manual updates; not all banks provide multi-year projections
 3. **Methodology Differences:** Countries use slightly different CPI baskets and methodologies
 4. **Revisions:** Historical data may be revised by statistical agencies after initial release
+5. **Venezuela:** Data reliability uncertain due to economic instability
 
 ---
 
@@ -246,7 +307,12 @@ data/
 - **Australia ABS:** https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation
 - **Stats NZ:** https://www.stats.govt.nz/indicators/consumers-price-index-cpi/
 - **Stats SA:** https://www.statssa.gov.za/?cat=33
+- **Japan Statistics Bureau:** https://www.stat.go.jp/english/data/cpi/
+- **Korea KOSTAT:** https://kostat.go.kr/en/
+- **Singapore DOS:** https://www.singstat.gov.sg/
+- **India MOSPI:** https://www.mospi.gov.in/
 - **China NBS:** http://www.stats.gov.cn/english/
+- **Venezuela BCV:** https://www.bcv.org.ve/
 
 ### Central Banks
 - **Federal Reserve:** https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm
@@ -256,6 +322,10 @@ data/
 - **Bank of Canada:** https://www.bankofcanada.ca/publications/mpr/
 - **RBNZ:** https://www.rbnz.govt.nz/monetary-policy/monetary-policy-statement
 - **SARB:** https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements
+- **Bank of Japan:** https://www.boj.or.jp/en/mopo/outlook/
+- **Bank of Korea:** https://www.bok.or.kr/eng/main/main.do
+- **MAS:** https://www.mas.gov.sg/monetary-policy
+- **RBI:** https://www.rbi.org.in/
 
 ### APIs
 - **FRED API:** https://fred.stlouisfed.org/docs/api/
