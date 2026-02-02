@@ -35,6 +35,11 @@ jobs:
           python scripts/fetch_historical_cpi.py
           python scripts/fetch_imf_forecasts.py
 
+      - name: Copy data to docs folder
+        run: |
+          cp data/historical_cpi.json docs/data/
+          cp data/imf_forecasts.json docs/data/ 2>/dev/null || echo "IMF forecasts not generated"
+
       - name: Check for changes
         id: changes
         run: |

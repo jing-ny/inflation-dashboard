@@ -1,0 +1,63 @@
+# Inflation Dashboard - Automated Data Monitoring
+# Runs twice weekly to check for data updates and notify via email
+
+name: Monitor & Update Data
+
+on:
+  schedule:
+    # Run every Monday and Thursday at 9 AM UTC
+    - cron: '0 9 * * 1,4'
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+  RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+  NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
+
+jobs:
+  check-and-update:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install requests python-dateutil
+
+      - name: Run monitoring script
+        id: monitor
+        run: |
+          python scripts/monitor_updates.py
+        continue-on-error: true
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet docs/data/; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push updates
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add docs/data/
+          git commit -m "Auto-update: $(date +'%Y-%m-%d') data refresh"
+          git push
+
+      - name: Send notification email
+        if: always()
+        run: |
+          python scripts/send_notification.py \
+            --status "${{ steps.monitor.outcome }}" \
+            --changes "${{ steps.changes.outputs.has_changes }}"
