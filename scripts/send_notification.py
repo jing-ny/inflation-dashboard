@@ -20,7 +20,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def load_summary():
     """Load the monitor summary from the last run"""
-    summary_path = os.path.join(BASE_DIR, 'data/monitor_summary.json')
+    summary_path = os.path.join(BASE_DIR, 'docs/data/monitor_summary.json')
     if os.path.exists(summary_path):
         with open(summary_path, 'r') as f:
             return json.load(f)

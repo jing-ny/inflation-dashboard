@@ -40,7 +40,7 @@ import urllib.error
 # CONFIGURATION
 # ============================================================
 
-OUTPUT_FILE = "data/cb_forecasts.json"
+OUTPUT_FILE = "docs/data/cb_forecasts.json"
 FRED_API_KEY = os.environ.get("FRED_API_KEY", "")
 
 # FRED Series IDs for FOMC SEP

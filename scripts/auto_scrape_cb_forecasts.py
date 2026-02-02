@@ -312,7 +312,7 @@ def scrape_sarb():
 
 def load_current_forecasts():
     """Load current cb_forecasts.json for comparison."""
-    path = "data/cb_forecasts.json"
+    path = "docs/data/cb_forecasts.json"
     if os.path.exists(path):
         with open(path, 'r') as f:
             return json.load(f)
@@ -398,11 +398,11 @@ def main():
         "forecasts": new_forecasts
     }
     
-    os.makedirs("data", exist_ok=True)
+    os.makedirs("docs/data", exist_ok=True)
     
-    with open("data/cb_forecasts_draft.json", 'w') as f:
+    with open("docs/data/cb_forecasts_draft.json", 'w') as f:
         json.dump(draft, f, indent=2)
-    print(f"\n📄 Draft saved to data/cb_forecasts_draft.json")
+    print(f"\n📄 Draft saved to docs/data/cb_forecasts_draft.json")
     
     # Create changes markdown for PR
     md = f"# Central Bank Forecast Changes\n\n"
@@ -430,9 +430,9 @@ def main():
         md += "## No Changes Detected\n\n"
         md += "Extracted values match current data.\n"
     
-    with open("data/cb_forecasts_changes.md", 'w') as f:
+    with open("docs/data/cb_forecasts_changes.md", 'w') as f:
         f.write(md)
-    print(f"📄 Changes summary saved to data/cb_forecasts_changes.md")
+    print(f"📄 Changes summary saved to docs/data/cb_forecasts_changes.md")
     
     print("\n✅ Done! Review the draft and changes before merging.")
 

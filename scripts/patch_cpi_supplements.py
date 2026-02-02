@@ -16,9 +16,9 @@ import os
 from datetime import date
 
 # Paths
-HISTORICAL_CPI_FILE = "data/historical_cpi.json"
-SUPPLEMENTS_FILE = "data/cpi_supplements.json"
-OUTPUT_FILE = "data/historical_cpi.json"
+HISTORICAL_CPI_FILE = "docs/data/historical_cpi.json"
+SUPPLEMENTS_FILE = "docs/data/cpi_supplements.json"
+OUTPUT_FILE = "docs/data/historical_cpi.json"
 
 def load_json(filepath):
     """Load JSON file if it exists."""

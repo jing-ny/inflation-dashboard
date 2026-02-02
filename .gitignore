@@ -25,3 +25,4 @@ data/scraper_state.json
 
 # Node
 node_modules/
+data_backup_*/
