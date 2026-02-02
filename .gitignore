@@ -1,4 +1,27 @@
-
-# Environment variables
+# Environment variables & secrets
 .env
 .env.*
+.env.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Draft/temp files from scrapers
+data/cb_forecasts_draft.json
+data/cb_forecasts_changes.md
+data/monitor_summary.json
+data/scraper_state.json
+
+# Node
+node_modules/

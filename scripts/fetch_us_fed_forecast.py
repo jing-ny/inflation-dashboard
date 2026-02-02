@@ -20,7 +20,7 @@ try:
 except ImportError:
     pass
 
-FRED_API_KEY = os.getenv('FRED_API_KEY', 'c61001ab2426c42a3583e4738770c3df')
+FRED_API_KEY = os.getenv('FRED_API_KEY')
 FRED_BASE_URL = 'https://api.stlouisfed.org/fred/series/observations'
 
 

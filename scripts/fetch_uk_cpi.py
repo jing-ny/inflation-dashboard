@@ -36,7 +36,7 @@ except ImportError:
 # Configuration
 # ============================================================
 
-FRED_API_KEY = os.environ.get("FRED_API_KEY", "c61001ab2426c42a3583e4738770c3df")
+FRED_API_KEY = os.environ.get("FRED_API_KEY")
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
