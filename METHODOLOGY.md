@@ -2,7 +2,7 @@
 
 Technical documentation for the Inflation Monitor dashboard.
 
-**Last Updated:** January 27, 2026
+**Last Updated:** February 3, 2026
 
 ---
 
@@ -10,29 +10,31 @@ Technical documentation for the Inflation Monitor dashboard.
 
 This project fetches official inflation statistics and central bank forecasts from public APIs and official sources, stores them in JSON files, and displays them on a static dashboard hosted via GitHub Pages.
 
+All data is stored in `docs/data/` as the single source of truth.
+
 ---
 
 ## Data Collection
 
 ### Actual Inflation (CPI)
 
-| Country | Series ID | Frequency | Original Source | API Used |
-|---------|-----------|-----------|-----------------|----------|
-| 🇺🇸 United States | CPIAUCSL | Monthly | Bureau of Labor Statistics | FRED API |
-| 🇪🇺 Euro Area | CP0000EZ19M086NEST | Monthly | Eurostat | FRED API |
-| 🇬🇧 United Kingdom | GBRCPIALLMINMEI | Monthly | ONS via OECD | FRED API |
-| 🇨🇦 Canada | CANCPIALLMINMEI | Monthly | Statistics Canada via OECD | FRED API |
-| 🇦🇺 Australia | AUSCPIALLQINMEI | Quarterly* | ABS via OECD | FRED API |
-| 🇳🇿 New Zealand | NZLCPIALLQINMEI | Quarterly | Stats NZ via OECD | FRED API |
-| 🇿🇦 South Africa | ZAFCPIALLMINMEI | Monthly | Stats SA via OECD | FRED API |
-| 🇯🇵 Japan | JPNCPALTT01GYM659N | Monthly | Statistics Bureau via OECD | FRED API |
-| 🇰🇷 South Korea | KORCPIALLMINMEI | Monthly | KOSTAT via OECD | FRED API |
-| 🇸🇬 Singapore | SGPCPIALLMINMEI | Monthly | DOS via OECD | FRED API |
-| 🇮🇳 India | INDCPIALLMINMEI | Monthly | MOSPI via OECD | FRED API |
-| 🇨🇳 China | CHNCPIALLMINMEI | Monthly | NBS via OECD | FRED API |
-| 🇻🇪 Venezuela | FPCPITOTLZGVEN | Annual | BCV / World Bank | FRED API |
+| Country | Primary Source | Verification Source | Frequency |
+|---------|----------------|---------------------|-----------|
+| 🇺🇸 United States | FRED (CPIAUCNS) | [BLS](https://www.bls.gov/cpi/) | Monthly |
+| 🇪🇺 Euro Area | FRED (CP0000EZ19M086NEST) | [Eurostat](https://ec.europa.eu/eurostat/web/hicp) | Monthly |
+| 🇬🇧 United Kingdom | FRED (GBRCPIALLMINMEI) | [ONS](https://www.ons.gov.uk/economy/inflationandpriceindices) | Monthly |
+| 🇨🇦 Canada | FRED (CANCPIALLMINMEI) | [StatCan](https://www.statcan.gc.ca/) | Monthly |
+| 🇦🇺 Australia | FRED (AUSCPIALLQINMEI) | [ABS](https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/) | Monthly* |
+| 🇳🇿 New Zealand | FRED (NZLCPIALLQINMEI) | [Stats NZ](https://www.stats.govt.nz/indicators/consumers-price-index-cpi/) | Quarterly |
+| 🇿🇦 South Africa | FRED (ZAFCPIALLMINMEI) | [Stats SA](https://www.statssa.gov.za/) | Monthly |
+| 🇯🇵 Japan | FRED (JPNCPALTT01GYM659N) | [MIC](https://www.stat.go.jp/english/data/cpi/) | Monthly |
+| 🇨🇳 China | FRED (CHNCPIALLMINMEI) | [NBS](https://www.stats.gov.cn/english/) | Monthly |
+| 🇮🇳 India | FRED (INDCPIALLMINMEI) | [MOSPI](https://www.mospi.gov.in/) | Monthly |
+| 🇰🇷 South Korea | FRED (KORCPIALLMINMEI) | [KOSTAT](https://kostat.go.kr/) | Monthly |
+| 🇸🇬 Singapore | FRED (SGPCPIALLMINMEI) | [SingStat](https://www.singstat.gov.sg/) | Monthly |
+| 🇻🇪 Venezuela | FRED (FPCPITOTLZGVEN) | [BCV](https://www.bcv.org.ve/) | Monthly |
 
-*Australia transitioned to monthly CPI in October 2025. Historical data is quarterly.
+*Australia transitioned to monthly CPI in late 2025. Historical data is quarterly.
 
 **Notes:**
 - All series measure **headline CPI (All Items)** year-over-year percentage change
@@ -40,6 +42,29 @@ This project fetches official inflation statistics and central bank forecasts fr
 - US BLS series uses base year 1982-84=100
 - Japan series changed from JPNCPIALLMINMEI (discontinued Jun 2021) to JPNCPALTT01GYM659N (COICOP 2018)
 - Venezuela data reliability varies; post-hyperinflation period only (2022+)
+
+---
+
+## Data Verification Process
+
+As of February 2026, all CPI values are verified against official government sources before publication.
+
+### Typical Release Schedule
+
+| Country | Typical Release Day | Notes |
+|---------|---------------------|-------|
+| 🇰🇷 South Korea | 1st of month | First major release |
+| 🇨🇳 China | 9th of month | |
+| 🇮🇳 India | 12th of month | |
+| 🇺🇸 United States | 13th of month | BLS CPI report |
+| 🇬🇧 United Kingdom | 15th of month | |
+| 🇨🇦 Canada | 17th of month | |
+| 🇪🇺 Euro Area | 17th of month | Flash estimate earlier |
+| 🇿🇦 South Africa | 19th of month | |
+| 🇯🇵 Japan | 19th of month | |
+| 🇸🇬 Singapore | 23rd of month | |
+| 🇦🇺 Australia | 28th of month | Quarterly: late Jan/Apr/Jul/Oct |
+| 🇳🇿 New Zealand | Quarterly | Mid-month of Jan/Apr/Jul/Oct |
 
 ### FRED Data Lag Issue
 
@@ -53,11 +78,7 @@ FRED's OECD series for international countries often lag official releases by 1-
 | New Zealand | 1-2 quarters | Quarterly release schedule |
 | Venezuela | 6-12 months | IMF data used |
 
-When FRED data is stale, we supplement with official data from:
-- **Stats SA:** https://www.statssa.gov.za/?cat=33
-- **ONS:** https://www.ons.gov.uk/economy/inflationandpriceindices
-- **Statistics Canada:** https://www150.statcan.gc.ca/n1/daily-quotidien/
-- **ABS:** https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/
+When FRED data is stale, we verify and supplement with official data from the sources listed above.
 
 ---
 
@@ -82,7 +103,7 @@ When FRED data is stale, we supplement with official data from:
 **Notes:** 
 - China's PBOC does not publish multi-year inflation forecasts. We use IMF projections instead.
 - Venezuela's BCV does not publish reliable forecasts. We use IMF projections instead.
-- Singapore's MAS uses exchange rate policy (S$NEER), not interest rates.
+- Singapore's MAS uses exchange rate policy (S$NEER band), not interest rates.
 
 ---
 
@@ -111,38 +132,39 @@ This enables tracking how forecasts change over time and comparing forecast accu
 
 ## Automation
 
-### GitHub Actions Workflow
+### GitHub Actions Workflows
 
-**Schedule:** Monday & Thursday at 9 AM UTC
-
-**What it does:**
-1. Checks FRED API for new CPI data
-2. Auto-commits updates if new data found
-3. Sends email alerts via Resend for:
-   - New data updates
-   - Stale data warnings (>75 days old)
-   - CB meeting reminders
-   - IMF WEO release reminders (Apr/Oct)
+| Workflow | Schedule | Purpose |
+|----------|----------|---------|
+| Monitor & Update Data | Mon/Thu 9 AM UTC | Check FRED for new CPI data |
+| Auto-Scrape CB Forecasts | Mon/Thu 10 AM UTC | Check central bank publications |
+| Weekly Alert | Mon 1 PM UTC | Summary notifications |
 
 ### Manual Updates Required
 
-- **Central bank forecasts:** After MPC meetings
+- **Central bank forecasts:** After MPC meetings (see MAINTENANCE.md)
 - **IMF forecasts:** April and October
-
-See `MAINTENANCE.md` for detailed instructions.
+- **CPI verification:** Monthly, using `update_cpi.py`
 
 ---
 
 ## Country-Specific Notes
 
+### United States (US)
+- **Oct 2025 data missing:** US government shutdown prevented BLS release
+
 ### South Africa (ZA)
-- **Target Change (Nov 2025):** SARB changed inflation target from 3-6% range (4.5% midpoint) to 3% ±1pp (2-4% range)
+- **Target Change (Nov 2025):** SARB changed inflation target from 3-6% range (4.5% midpoint) to 3% point target
 - This is the first target change in 25 years
 
 ### Japan (JP)
 - **FRED Series Change:** Original series JPNCPIALLMINMEI discontinued June 2021
 - Now using JPNCPALTT01GYM659N (COICOP 2018 classification)
 - BoJ uses fiscal year (April-March) for forecasts
+
+### Australia (AU)
+- **Monthly CPI Transition:** ABS began publishing complete monthly CPI in late 2025
+- Historical data remains quarterly
 
 ### India (IN)
 - RBI uses fiscal year (April-March) for forecasts
@@ -165,17 +187,27 @@ See `MAINTENANCE.md` for detailed instructions.
 ## File Structure
 
 ```
-docs/data/
-├── historical_cpi.json       # 10-year CPI history per country
-├── cb_forecasts.json         # Central bank forecasts
-├── imf_forecasts.json        # IMF WEO projections
+docs/data/                        # Single source of truth
+├── historical_cpi.json           # CPI history for all 13 countries
+├── cb_forecasts.json             # Central bank forecasts
+├── imf_forecasts.json            # IMF WEO projections
+├── cpi_supplements.json          # Manual supplements for FRED lag
+├── weekly_snapshots.json         # Weekly data snapshots
 └── history/
-    ├── cb_forecast_history.json   # CB forecast revision history
-    └── imf_forecast_history.json  # IMF forecast revision history
+    ├── cb_forecast_history.json  # CB forecast revision history
+    └── imf_forecast_history.json # IMF forecast revision history
 
-scripts/
-├── monitor_updates.py        # Automated FRED checker
-└── send_notification.py      # Email notifications via Resend
+scripts/                          # Data collection scripts
+├── fetch_historical_cpi.py       # FRED API fetcher
+├── fetch_imf_forecasts.py        # IMF API fetcher
+├── auto_scrape_cb_forecasts.py   # CB publication scraper
+├── monitor_updates.py            # Automated checker
+└── send_notification.py          # Email notifications
+
+# Manual update tools (repo root)
+├── update_cpi.py                 # Single-value CPI updates
+├── batch_update_cpi.py           # Multi-country batch updates
+└── CPI_UPDATE_GUIDE.md           # Update procedures and sources
 ```
 
 ---
@@ -187,7 +219,6 @@ scripts/
 3. **Methodology Differences:** Countries use slightly different CPI baskets and methodologies
 4. **Revisions:** Historical data may be revised by statistical agencies after initial release
 5. **Venezuela:** Data reliability uncertain due to economic instability
-6. **FRED API Compatibility:** Japan and Singapore series don't support automated percent-change calculation
 
 ---
 
@@ -198,33 +229,16 @@ scripts/
 - **Eurostat:** https://ec.europa.eu/eurostat/web/hicp
 - **UK ONS:** https://www.ons.gov.uk/economy/inflationandpriceindices
 - **Statistics Canada:** https://www.statcan.gc.ca/en/subjects-start/prices_and_price_indexes
-- **Australia ABS:** https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation
+- **ABS:** https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/
 - **Stats NZ:** https://www.stats.govt.nz/indicators/consumers-price-index-cpi/
-- **Stats SA:** https://www.statssa.gov.za/?cat=33
-- **Japan Statistics Bureau:** https://www.stat.go.jp/english/data/cpi/
-- **Korea KOSTAT:** https://kostat.go.kr/en/
-- **Singapore DOS:** https://www.singstat.gov.sg/
+- **Stats SA:** https://www.statssa.gov.za/
+- **Japan MIC:** https://www.stat.go.jp/english/data/cpi/
+- **China NBS:** https://www.stats.gov.cn/english/
 - **India MOSPI:** https://www.mospi.gov.in/
-- **China NBS:** http://www.stats.gov.cn/english/
+- **KOSTAT:** https://kostat.go.kr/
+- **SingStat:** https://www.singstat.gov.sg/
 - **Venezuela BCV:** https://www.bcv.org.ve/
 
-### Central Banks
-- **Federal Reserve:** https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm
-- **ECB:** https://www.ecb.europa.eu/pub/projections/html/index.en.html
-- **Bank of England:** https://www.bankofengland.co.uk/monetary-policy-report
-- **RBA:** https://www.rba.gov.au/publications/smp/
-- **Bank of Canada:** https://www.bankofcanada.ca/publications/mpr/
-- **RBNZ:** https://www.rbnz.govt.nz/monetary-policy/monetary-policy-statement
-- **SARB:** https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements
-- **Bank of Japan:** https://www.boj.or.jp/en/mopo/outlook/
-- **Bank of Korea:** https://www.bok.or.kr/eng/main/main.do
-- **MAS:** https://www.mas.gov.sg/monetary-policy
-- **RBI:** https://www.rbi.org.in/
-
-### APIs & Data
-- **FRED API:** https://fred.stlouisfed.org/docs/api/
-- **IMF WEO:** https://www.imf.org/external/datamapper/PCPIPCH@WEO
-
----
-
-*For architecture and maintenance details, see PROJECT_PLAN.md and MAINTENANCE.md*
+### Data APIs
+- **FRED:** https://fred.stlouisfed.org/
+- **IMF WEO:** https://www.imf.org/en/Publications/WEO

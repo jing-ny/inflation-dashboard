@@ -82,13 +82,44 @@ Values may be revised by the original statistical agencies after publication.
 
 ---
 
+## Data Architecture
+
+All data is stored in `docs/data/` as the single source of truth:
+
+```
+docs/data/
+├── historical_cpi.json       # CPI history for all 13 countries
+├── cb_forecasts.json         # Central bank inflation forecasts
+├── imf_forecasts.json        # IMF WEO projections
+├── cpi_supplements.json      # Manual supplements for lagging FRED data
+└── history/                  # Forecast revision tracking
+```
+
+### Manual Update Tools
+
+For monthly CPI updates:
+```bash
+# Update a single country
+python3 update_cpi.py -c US -d 2026-01 -v 2.8
+
+# View current data
+python3 update_cpi.py --show-all
+
+# Batch update multiple countries
+python3 batch_update_cpi.py --dry-run
+```
+
+See [CPI_UPDATE_GUIDE.md](CPI_UPDATE_GUIDE.md) for detailed update procedures.
+
+---
+
 ## Tech Stack
 
 - **Frontend:** Static HTML/CSS/JavaScript (vanilla, no framework)
 - **Hosting:** GitHub Pages
-- **Data Fetching:** Python scripts using FRED API, IMF API
-- **Automation:** GitHub Actions (weekly updates)
-- **Data Storage:** JSON files
+- **Data Fetching:** Python scripts using FRED API
+- **Automation:** GitHub Actions (twice weekly checks)
+- **Data Storage:** JSON files in `docs/data/`
 
 ---
 
@@ -99,60 +130,38 @@ Values may be revised by the original statistical agencies after publication.
 git clone https://github.com/jing-ny/inflation-dashboard.git
 cd inflation-dashboard
 
-# Set up environment
-cp .env.example .env.local
-# Add your FRED API key to .env.local
+# View current CPI data
+python3 update_cpi.py --show-all
 
-# Fetch latest data
-python scripts/fetch_historical_cpi.py
-python scripts/fetch_imf_forecasts.py
-python scripts/fetch_cb_forecasts.py
-
-# Copy data to docs
-cp data/*.json docs/data/
-
-# Serve locally
-cd docs && python -m http.server 8000
+# Start a local server
+python3 -m http.server 8000 --directory docs
 # Open http://localhost:8000
 ```
 
-Get a free FRED API key at: https://fred.stlouisfed.org/docs/api/api_key.html
-
 ---
 
-## Project Structure
+## Changelog
 
-```
-inflation-dashboard/
-├── docs/                    # GitHub Pages site
-│   ├── index.html           # Overview dashboard
-│   ├── us.html, uk.html...  # Country pages (13 total)
-│   ├── styles.css           # Styles
-│   ├── country.js           # Shared JavaScript
-│   └── data/                # JSON data files
-├── scripts/                 # Python data fetchers
-├── data/                    # Raw data output
-├── METHODOLOGY.md           # Technical documentation
-└── PROJECT_PLAN.md          # Architecture reference
-```
+### February 2026
+- **Data Quality Fix:** Corrected Dec 2025 CPI values for 8 countries using verified official sources
+- **Architecture:** Consolidated all data to `docs/data/` (single source of truth)
+- **Tooling:** Added `update_cpi.py` and `batch_update_cpi.py` for manual updates
+- **Documentation:** Added `CPI_UPDATE_GUIDE.md` with official source URLs and release schedules
 
----
-
-## Disclaimer
-
-This project is provided for informational purposes only.
-
-It does not offer analysis, predictions, investment advice, or policy recommendations.  
-Users should refer to the original sources for official data and methodological details.
+### January 2026
+- Added 5 new countries: South Korea, Singapore, India, China, Venezuela
+- Implemented central bank forecast tracking
+- Added IMF WEO forecast comparison
+- Set up automated monitoring via GitHub Actions
 
 ---
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+MIT License - See [LICENSE](LICENSE) for details.
 
 ---
 
-## Contact
+## Contributing
 
-Questions or suggestions? [Open an issue](https://github.com/jing-ny/inflation-dashboard/issues) on GitHub.
+Contributions welcome! Please open an issue first to discuss proposed changes.
