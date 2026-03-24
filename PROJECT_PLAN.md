@@ -115,10 +115,10 @@
 
 | # | Task | Details | Status |
 |---|------|---------|--------|
-| 3.1 | Build change detection script | Compare current `historical_cpi.json` with previous snapshot. Detect material changes (≥0.3pp or direction reversal). Reuse logic from `send_weekly_alert.py` (after fixing its bugs). | To Do |
-| 3.2 | Claude API draft generation | Use Anthropic SDK to generate structured English newsletter draft from change data. ~300-500 words covering key changes, trends, CB implications, upcoming releases. | To Do |
-| 3.3 | GitHub Actions integration | Trigger on `historical_cpi.json` changes. Generate draft, save to `drafts/`, email notification for review. | To Do |
-| 3.4 | Wire weekly alert workflow | Connect `send_weekly_alert.py` to `weekly-alert.yml`. Currently a stub that just prints data. | To Do |
+| 3.1 | Build change detection script | Already working in `send_weekly_alert.py` (fixed in Phase 2). Detects material changes (≥0.3pp or direction reversal) via snapshot comparison. | **Done** (Mar 24) |
+| 3.2 | Claude API draft generation | New `scripts/generate_newsletter.py`. Uses Anthropic SDK (`claude-sonnet-4-20250514`) to generate 300-500 word drafts from CPI changes + CB/IMF forecast context. Supports `--dry-run` and `--output`. | **Done** (Mar 24) |
+| 3.3 | GitHub Actions integration | New `newsletter-draft.yml`. Triggers on `historical_cpi.json` changes or manual dispatch. Generates draft, commits to `docs/drafts/`, optional email notification. Requires `ANTHROPIC_API_KEY` secret. | **Done** (Mar 24) |
+| 3.4 | Wire weekly alert workflow | Rewired `weekly-alert.yml` to call `send_weekly_alert.py`. Added snapshot commit step, proper env vars, permissions. | **Done** (Mar 24) |
 
 ### Phase 4: Expansion & Polish (Priority: Low)
 
