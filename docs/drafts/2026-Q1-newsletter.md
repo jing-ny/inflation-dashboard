@@ -24,7 +24,7 @@ Then the Iran war erupted in March. Oil spiked to $120/bbl. The Strait of Hormuz
 | Euro Area | 1.9% (Feb) | Stable | 2.00% | 2.6% | 1.9% |
 | UK | 3.0% (Jan) | Falling | 3.75% | 2.3% | 2.5% |
 | Canada | 1.8% (Feb) | Falling fast | 2.25% | 2.0% | 2.0% |
-| Australia | 3.8% (Jan) | Rising | 3.85% | 3.7% | 3.0% |
+| Australia | 3.8% (Jan) | Rising | 4.10% | 3.7% | 3.0% |
 | Japan | 1.3% (Feb) | Below target | 0.75% | 2.0% | 2.3% |
 | China | 1.3% (Feb) | Turning positive | 3.00% | 1.2% | 0.7% |
 | India | 3.2% (Feb) | Rebounding | 5.25% | 4.0% | 4.2% |
@@ -43,9 +43,9 @@ Then the Iran war erupted in March. Oil spiked to $120/bbl. The Strait of Hormuz
 
 Everyone else held or stood pat. The RBA raised rates.
 
-Australian trimmed mean inflation hit 3.4% in the December quarter — substantially above the 2-3% target band and well above the RBA's own forecast. The Board hiked 25bp to 3.85% in February, projecting inflation won't return to the target band until early 2027.
+Australian trimmed mean inflation hit 3.4% in the December quarter — substantially above the 2-3% target band and well above the RBA's own forecast. The Board hiked 25bp to 3.85% in February, then again to 4.10% in March — projecting inflation won't return to the target band until early 2027.
 
-**Why it matters:** Australia is now the only major economy tightening. With headline CPI at 3.8% in January — the highest among advanced economies — the RBA may not be done.
+**Why it matters:** Australia is now the only major economy tightening, with two consecutive hikes. With headline CPI at 3.8% in January — the highest among advanced economies — the RBA may not be done.
 
 ### 2. The Canada Surprise
 
@@ -81,11 +81,11 @@ Oil settled around $90/bbl after Trump declared operations "very complete." But 
 | ECB | 3.00% | 2.00% | -100bp |
 | BoE | 4.50% | 3.75% | -75bp |
 | BoC | 3.25% | 2.25% | -100bp |
-| RBA | 4.10% | 3.85% | Cut then hiked |
+| RBA | 3.60% | 4.10% | +50bp (two hikes) |
 | RBNZ | 3.75% | 2.25% | -150bp |
 | BoJ | 0.75% | 0.75% | Hold |
 
-**The theme:** Most central banks arrived at Q1 in cutting mode, then froze. The Iran war gave every hawk a reason to pause. Only the RBA moved — upward.
+**The theme:** Most central banks arrived at Q1 in cutting mode, then froze. The Iran war gave every hawk a reason to pause. Only the RBA moved — upward, twice.
 
 ---
 
