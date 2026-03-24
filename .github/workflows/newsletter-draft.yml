@@ -1,0 +1,86 @@
+name: Newsletter Draft
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/data/historical_cpi.json'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (no commit, no email)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  newsletter-draft:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install anthropic requests python-dotenv
+
+      - name: Generate newsletter draft
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          CMD="python scripts/generate_newsletter.py"
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            CMD="$CMD --dry-run"
+          fi
+          echo "Running: $CMD"
+          $CMD
+
+      - name: Commit draft if generated
+        if: inputs.dry_run != true
+        run: |
+          if [ -z "$(git status --porcelain docs/drafts/)" ]; then
+            echo "No new draft files"
+          else
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            git add docs/drafts/
+            git commit -m "Add newsletter draft $(date +'%Y-%m-%d')"
+            git push
+          fi
+
+      - name: Send email notification
+        if: inputs.dry_run != true && env.RESEND_API_KEY != ''
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
+        run: |
+          if [ -n "$NOTIFICATION_EMAIL" ]; then
+            echo "Sending notification to $NOTIFICATION_EMAIL"
+            python -c "
+          import resend, os
+          resend.api_key = os.environ['RESEND_API_KEY']
+          resend.Emails.send({
+              'from': 'Inflation Dashboard <onboarding@resend.dev>',
+              'to': os.environ['NOTIFICATION_EMAIL'],
+              'subject': 'Newsletter draft generated',
+              'text': 'A new newsletter draft has been committed to docs/drafts/.'
+          })
+          "
+          else
+            echo "No NOTIFICATION_EMAIL set, skipping"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## Newsletter Draft Results" >> $GITHUB_STEP_SUMMARY
+          echo "**Run time:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "**Mode:** ${{ inputs.dry_run == true && 'Dry Run' || 'Live' }}" >> $GITHUB_STEP_SUMMARY
