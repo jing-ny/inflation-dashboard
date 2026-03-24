@@ -103,13 +103,13 @@
 
 | # | Task | Details | Status |
 |---|------|---------|--------|
-| 2.1 | Clean up `styles.css` duplication | Policy change CSS block is duplicated 5 times (~680 lines of redundancy). Deduplicate to a single instance. | To Do |
-| 2.2 | Remove `test` text from `index.html` | Line 397 has a bare `test` string visible at page bottom. | To Do |
-| 2.3 | Fix `send_weekly_alert.py` data path | Uses `data/historical_cpi.json` instead of `docs/data/historical_cpi.json`. Also reads `data.get("countries", {})` but top-level keys are country codes directly. Script is completely non-functional. | To Do |
-| 2.4 | Add argparse to `auto_scrape_cb_forecasts.py` | Workflow passes `--force`, `--country`, `--dry-run` but the script ignores all CLI arguments. | To Do |
-| 2.5 | Unify FRED series between scripts | `monitor_updates.py` and `fetch_historical_cpi.py` use different FRED series for US (CPIAUCSL vs CPIAUCNS), EA (FRED vs ECB API), JP (different series). Can produce inconsistent data. | To Do |
-| 2.6 | Implement `update_forecast_history()` | In `monitor_updates.py` — currently a placeholder (`pass`). Forecast revision tracking never works. | To Do |
-| 2.7 | Rotate leaked API keys | Commit `c681654` removed hardcoded API keys, but they remain in git history. Rotate FRED, Supabase, and Resend keys. | To Do |
+| 2.1 | Clean up `styles.css` duplication | Deduplicated from 1279 → 604 lines. Removed 4 redundant copies of policy change CSS block. | **Done** (Mar 24) |
+| 2.2 | Remove `test` text from `index.html` | Removed bare `test` string. | **Done** (Mar 24) |
+| 2.3 | Fix `send_weekly_alert.py` data path | Fixed path to `docs/data/historical_cpi.json` and changed key access to read country codes directly from top level. | **Done** (Mar 24) |
+| 2.4 | Add argparse to `auto_scrape_cb_forecasts.py` | Added argparse for `--force`, `--country`, `--dry-run`. Wired into scraper logic. | **Done** (Mar 24) |
+| 2.5 | Unify FRED series between scripts | Updated `monitor_updates.py` to use same series as `fetch_historical_cpi.py` (US: CPIAUCNS, JP: JPNCPIALLMINMEI). | **Done** (Mar 24) |
+| 2.6 | Implement `update_forecast_history()` | Implemented in `monitor_updates.py`. Reads CB forecasts, appends timestamped snapshot to `docs/data/history/cb_forecast_history.json`. | **Done** (Mar 24) |
+| 2.7 | Rotate leaked API keys | Commit `c681654` removed hardcoded API keys, but they remain in git history. Rotate FRED, Supabase, and Resend keys. | **Manual** — requires key regeneration on provider dashboards + GitHub Secrets update |
 
 ### Phase 3: Newsletter Automation (Priority: Medium)
 
@@ -139,12 +139,6 @@
 
 | # | Bug | Impact | File |
 |---|-----|--------|------|
-| B1 | `styles.css` has policy change CSS duplicated 5x | Page loads ~4x more CSS than needed (1279 lines, ~840 redundant) | `docs/styles.css` |
-| B2 | `index.html` has bare `test` text at line 397 | Visible text at page bottom | `docs/index.html` |
-| B3 | `send_weekly_alert.py` reads wrong path and wrong key | Script is completely non-functional | `scripts/send_weekly_alert.py` |
-| B4 | `auto_scrape_cb_forecasts.py` ignores CLI args | `--force`, `--country`, `--dry-run` from workflow are silently ignored | `scripts/auto_scrape_cb_forecasts.py` |
-| B5 | `monitor_updates.py` uses different FRED series than `fetch_historical_cpi.py` | Potential data inconsistency (e.g., US: CPIAUCSL vs CPIAUCNS) | `scripts/monitor_updates.py` |
-| B6 | `monitor_updates.py` forecast history is placeholder | `update_forecast_history()` body is just `pass` | `scripts/monitor_updates.py` |
 | B7 | Monitor workflow fails on commit step | Attempts git commit when there are no changes | `.github/workflows/monitor-updates.yml` |
 | B8 | SSL verification disabled in CB scraper | `ssl_context.verify_mode = ssl.CERT_NONE` — security risk | `scripts/auto_scrape_cb_forecasts.py` |
 | B9 | CB scraper has hardcoded 2024 fallback URLs | ECB, BoE, RBA, BoC, RBNZ fallback URLs point to 2024 pages | `scripts/auto_scrape_cb_forecasts.py` |
@@ -154,6 +148,12 @@
 
 | Bug | Resolution | Date |
 |-----|-----------|------|
+| B1 | CSS deduplicated (1279 → 604 lines) | Mar 2026 |
+| B2 | Removed bare `test` text from index.html | Mar 2026 |
+| B3 | Fixed send_weekly_alert.py path + key structure | Mar 2026 |
+| B4 | Added argparse to auto_scrape_cb_forecasts.py | Mar 2026 |
+| B5 | Unified FRED series in monitor_updates.py | Mar 2026 |
+| B6 | Implemented update_forecast_history() | Mar 2026 |
 | Live site out of sync (2 commits, 8 countries) | Full codebase pushed to GitHub | Feb 2026 |
 | Venezuela page "Error loading data" | Null target handling fixed in country.js | Jan 2026 |
 | Quarterly date format crash in monitor | Fixed AU/NZ `2025-Q4` format | Jan 2026 |
