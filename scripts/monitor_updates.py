@@ -23,9 +23,9 @@ FRED_SERIES = {
     'AU': 'AUSCPIALLQINMEI',
     'NZ': 'NZLCPIALLQINMEI',
     'ZA': 'ZAFCPIALLMINMEI',
-    'JP': 'JPNCPALTT01GYM659N',
-    'KR': 'KORCPIALLMINMEI',
-    'SG': 'SGPCPIALLMINMEI',
+    'JP': 'FPCPITOTLZGJPN',            # World Bank annual (OECD series broken)
+    'KR': 'KORCPIALLMINMEI',       # COICOP 1999 - discontinued Nov 2023, monitor anyway
+    'SG': 'FPCPITOTLZGSGP',        # World Bank annual (OECD series broken)
     'IN': 'INDCPIALLMINMEI',
     'CN': 'CHNCPIALLMINMEI',
     'VE': 'FPCPITOTLZGVEN'
