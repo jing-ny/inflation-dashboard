@@ -51,6 +51,26 @@
             padding-top: 1rem;
             border-top: 1px solid #e2e8f0;
         }
+
+        /* Sortable table headers */
+        .data-table thead th.sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            padding-right: 1.2em;
+            transition: background-color 0.15s ease;
+        }
+        .data-table thead th.sortable:hover {
+            background-color: #e2e8f0;
+        }
+        .data-table thead th.sortable .sort-indicator {
+            font-size: 0.7em;
+            margin-left: 0.3em;
+            opacity: 0.35;
+        }
+        .data-table thead th.sortable.sort-active .sort-indicator {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -407,11 +427,91 @@
         return `${months[parseInt(month) - 1]} ${year}`;
     }
 
+    /**
+     * Click-to-sort for data tables.
+     * Stores original row order so the default can be restored.
+     */
+    function makeSortable(table) {
+        const thead = table.querySelector('thead');
+        const tbody = table.querySelector('tbody');
+        if (!thead || !tbody) return;
+
+        const ths = Array.from(thead.querySelectorAll('th'));
+        let currentCol = -1;
+        let ascending = true;
+        let originalRows = null; // captured on first sort
+
+        ths.forEach((th, colIndex) => {
+            th.classList.add('sortable');
+            th.innerHTML += ' <span class="sort-indicator">▲</span>';
+
+            th.addEventListener('click', () => {
+                // Capture original order once (after data has loaded)
+                if (!originalRows) {
+                    originalRows = Array.from(tbody.querySelectorAll('tr'));
+                }
+
+                // Toggle direction or switch column
+                if (currentCol === colIndex) {
+                    ascending = !ascending;
+                } else {
+                    currentCol = colIndex;
+                    ascending = true;
+                }
+
+                // Update header indicators
+                ths.forEach(h => {
+                    h.classList.remove('sort-active');
+                    const ind = h.querySelector('.sort-indicator');
+                    if (ind) ind.textContent = '▲';
+                });
+                th.classList.add('sort-active');
+                th.querySelector('.sort-indicator').textContent = ascending ? '▲' : '▼';
+
+                // Get rows and sort
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                rows.sort((a, b) => {
+                    const cellA = a.children[colIndex];
+                    const cellB = b.children[colIndex];
+                    if (!cellA || !cellB) return 0;
+
+                    let valA = cellA.textContent.trim();
+                    let valB = cellB.textContent.trim();
+
+                    // Extract numeric value (handle %, ▲, ▼, —, N/A)
+                    const numA = parseFloat(valA.replace(/[▲▼%,]/g, '').trim());
+                    const numB = parseFloat(valB.replace(/[▲▼%,]/g, '').trim());
+
+                    let result;
+                    if (!isNaN(numA) && !isNaN(numB)) {
+                        result = numA - numB;
+                    } else if (!isNaN(numA)) {
+                        result = -1; // numbers before non-numbers
+                    } else if (!isNaN(numB)) {
+                        result = 1;
+                    } else {
+                        result = valA.localeCompare(valB);
+                    }
+
+                    return ascending ? result : -result;
+                });
+
+                // Re-append in new order
+                rows.forEach(r => tbody.appendChild(r));
+            });
+        });
+    }
+
     // Initialize page
-    document.addEventListener('DOMContentLoaded', () => {
-        loadInflationTable();
-        loadOutlookTable();
-        loadPolicyRates();
+    document.addEventListener('DOMContentLoaded', async () => {
+        await Promise.all([
+            loadInflationTable(),
+            loadOutlookTable(),
+            loadPolicyRates()
+        ]);
+        // Attach sort behaviour to both data tables
+        document.querySelectorAll('.data-table').forEach(makeSortable);
     });
     </script>
 </body>

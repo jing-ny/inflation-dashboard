@@ -112,6 +112,9 @@ const DATA_SOURCES = {
     US: [
         { label: 'CPI Data', value: 'Bureau of Labor Statistics', url: 'https://www.bls.gov/cpi/' },
         { label: 'Series ID', value: 'CPIAUCNS (CPI-U All Items)', url: 'https://fred.stlouisfed.org/series/CPIAUCNS' },
+        { label: 'Core CPI', value: 'CPILFESL (All Items Less Food & Energy)', url: 'https://fred.stlouisfed.org/series/CPILFESL' },
+        { label: 'PCE', value: 'PCEPI (PCE Price Index)', url: 'https://fred.stlouisfed.org/series/PCEPI' },
+        { label: 'Core PCE', value: 'PCEPILFE (PCE ex Food & Energy)', url: 'https://fred.stlouisfed.org/series/PCEPILFE' },
         { label: 'Forecasts', value: 'FOMC Summary of Economic Projections', url: 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm' },
         { label: 'Target', value: 'FOMC Statement on Longer-Run Goals', url: 'https://www.federalreserve.gov/monetarypolicy/review-of-monetary-policy-strategy-tools-and-communications-statement-on-longer-run-goals-monetary-policy-strategy.htm' }
     ],
@@ -215,6 +218,9 @@ async function initCountryPage(countryCode) {
         // Render historical chart
         renderHistoricalChart(countryCode, countryData);
 
+        // Render supplementary metrics (Core CPI, PCE) if available
+        renderSupplementaryMetrics(countryData);
+
         // Render forecast table (loads from cb_forecasts.json and imf_forecasts.json)
         await renderForecastTable(countryCode);
 
@@ -284,6 +290,37 @@ function updateMetrics(countryCode, data) {
             else statusDetailEl.textContent = 'Near target';
         }
     }
+}
+
+// ============================================================
+// SUPPLEMENTARY METRICS (Core CPI, PCE, Core PCE)
+// ============================================================
+
+function renderSupplementaryMetrics(data) {
+    const section = document.getElementById('supplementarySection');
+    const container = document.getElementById('supplementaryMetrics');
+    if (!section || !container || !data.supplementary) return;
+
+    const sup = data.supplementary;
+    let html = '';
+
+    for (const [key, metric] of Object.entries(sup)) {
+        const val = metric.latest.value;
+        const dateStr = formatDate(metric.latest.date);
+        const fredUrl = 'https://fred.stlouisfed.org/series/' + metric.fred_series;
+        const colorClass = getValueClass(val, 2.0);
+
+        html += `
+            <div class="metric-card">
+                <div class="metric-label">${metric.name}</div>
+                <div class="metric-value ${colorClass}">${val.toFixed(1)}%</div>
+                <div class="metric-detail">${dateStr} · <a href="${fredUrl}" target="_blank" style="color:#2563eb;text-decoration:none;font-size:0.8rem;">${metric.fred_series}</a></div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+    section.style.display = '';
 }
 
 // ============================================================
@@ -652,4 +689,4 @@ function showError(message) {
 }
 
 // Log version for debugging
-console.log('country.js loaded - Version 2026-01-26 (includes Japan)');
+console.log('country.js loaded - Version 2026-03-24 (added supplementary metrics)');

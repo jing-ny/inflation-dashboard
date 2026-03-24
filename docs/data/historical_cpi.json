@@ -500,7 +500,24 @@
         "date": "2026-02",
         "value": 2.41
       }
-    ]
+    ],
+    "supplementary": {
+      "core_cpi": {
+        "name": "Core CPI (ex Food & Energy)",
+        "latest": {"date": "2026-02", "value": 3.1},
+        "fred_series": "CPILFESL"
+      },
+      "pce": {
+        "name": "PCE Price Index",
+        "latest": {"date": "2026-01", "value": 2.5},
+        "fred_series": "PCEPI"
+      },
+      "core_pce": {
+        "name": "Core PCE",
+        "latest": {"date": "2026-01", "value": 2.6},
+        "fred_series": "PCEPILFE"
+      }
+    }
   },
   "CA": {
     "code": "CA",
