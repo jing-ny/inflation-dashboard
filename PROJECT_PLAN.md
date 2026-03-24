@@ -28,7 +28,7 @@
 **Repo:** https://github.com/jing-ny/inflation-dashboard
 **Newsletter:** https://inflationofficially.substack.com
 
-**Purpose:** A source-first dashboard tracking official CPI inflation data and central bank forecasts across 13 economies.
+**Purpose:** A source-first dashboard tracking official CPI inflation data and central bank forecasts across 15 economies.
 
 **Countries Covered:**
 
@@ -54,11 +54,11 @@
 
 ### What Works
 - Dashboard fully deployed on GitHub Pages, all 13 country pages render correctly
-- `fetch_historical_cpi.py` covers all 13 countries via FRED + ECB APIs
+- `fetch_historical_cpi.py` covers all 15 countries via FRED + ECB APIs
 - 5 GitHub Actions workflows running on schedule
 - `update_cpi.py` and `batch_update_cpi.py` manual update tools functional
 - Substack newsletter signup embedded on homepage
-- CB forecasts and IMF forecasts populated for all 13 countries
+- CB forecasts and IMF forecasts populated for all 15 countries
 - 10-year CPI history with Chart.js visualization on country pages
 - CPI data current through Feb 2026 for most countries (updated Mar 24)
 - CB forecasts updated to latest meetings (Mar 24)
@@ -94,7 +94,7 @@
 
 | # | Task | Details | Status |
 |---|------|---------|--------|
-| 1.1 | Manual CPI update for all 13 countries | Updated Jan + Feb 2026 values for all 13 countries. Added 5 missing countries (JP, IN, KR, SG, VE) to `historical_cpi.json`. UK/AU have Jan only (Feb releases Mar 25). NZ updated to Q4 2025. | **Done** (Mar 24) |
+| 1.1 | Manual CPI update for all 15 countries | Updated Jan + Feb 2026 values for all 15 countries. Added 5 missing countries (JP, IN, KR, SG, VE) to `historical_cpi.json`. UK/AU have Jan only (Feb releases Mar 25). NZ updated to Q4 2025. | **Done** (Mar 24) |
 | 1.2 | Update CB forecasts | Updated 10 central banks to latest meetings: Fed Mar SEP, ECB Mar, BoE Feb MPR, BoC Jan MPR, RBA Feb SoMP, RBNZ Feb MPS, SARB Jan, BoJ Mar, RBI Feb, BOK Feb. Policy rates and projections current. SG/VE/CN unchanged (no new publications). | **Done** (Mar 24) |
 | 1.3 | Add direct API sources for key countries | Reduce FRED dependency. Priority: BLS API for US, Stats Canada API for CA, ONS API for UK. Each country 2-3 hours. | To Do |
 | 1.4 | Fix Monitor workflow commit failure | Added `permissions: contents: write` (root cause was 403 on push). Also aligned git config and added summary step to match `update-data.yml` pattern. | **Done** (Mar 24) |
@@ -125,8 +125,8 @@
 | # | Task | Details | Status |
 |---|------|---------|--------|
 | 4.1 | Add Core CPI + US PCE tracking | Added Core CPI (3.1%), PCE (2.5%), Core PCE (2.6%) as supplementary metrics on US page. Data in `historical_cpi.json` under `supplementary` field. | **Done** (Mar 24) |
-| 4.2 | Add Brazil and Mexico | FRED series available. Extends LatAm coverage. | To Do |
-| 4.3 | Make year columns dynamic in index.html | Central Bank Outlook headers hardcoded as 2025/2026/2027. Should auto-advance. | To Do |
+| 4.2 | Add Brazil and Mexico | Added BR (IBGE/BCB, 14.25%) and MX (INEGI/Banxico, 9.50%). Country pages, CPI data, CB/IMF forecasts, FRED series. Now 15 countries. | **Done** (Mar 24) |
+| 4.3 | Make year columns dynamic in index.html | Outlook table headers now auto-advance based on `new Date().getFullYear()`. | **Done** (Mar 24) |
 | 4.4 | Add table sorting on index page | Click column headers to sort/toggle. Visual ▲/▼ indicator. Numeric-aware sorting. | **Done** (Mar 24) |
 | 4.5 | Clean up legacy files | Removed 11 legacy scripts, `inflation_data.js`, 4 semi-redundant fetch scripts. | **Done** (Mar 24) |
 | 4.6 | Consolidate duplicate workflows | Removed `auto-scrape-forecasts.yml` (kept `auto-scrape-cb-forecasts.yml`). | **Done** (Mar 24) |
@@ -178,7 +178,7 @@ Python Scripts (fetch / update data)
 
 | File | Contents | Updated By |
 |------|----------|------------|
-| `historical_cpi.json` | 10-year CPI history + latest/previous readings for 13 countries | `fetch_historical_cpi.py` (auto) + `update_cpi.py` (manual) |
+| `historical_cpi.json` | 10-year CPI history + latest/previous readings for 15 countries | `fetch_historical_cpi.py` (auto) + `update_cpi.py` (manual) |
 | `cb_forecasts.json` | Central bank forecasts, policy rates, key quotes | Manual edit after MPC meetings |
 | `imf_forecasts.json` | IMF WEO inflation projections | Manual (2x/year: Apr + Oct) |
 | `cpi_supplements.json` | Manual CPI supplements when FRED lags | Manual |
@@ -245,7 +245,7 @@ inflation-dashboard/
 ├── batch_update_cpi.py          # Manual CPI update tool (batch)
 │
 ├── scripts/
-│   ├── fetch_historical_cpi.py  # FRED/ECB CPI fetch (all 13 countries)
+│   ├── fetch_historical_cpi.py  # FRED/ECB CPI fetch (all 15 countries)
 │   ├── fetch_imf_forecasts.py   # IMF WEO fetch
 │   ├── auto_scrape_cb_forecasts.py  # CB forecast scraper (6 banks: ECB, BoE, RBA, BoC, RBNZ, SARB)
 │   ├── monitor_updates.py       # FRED freshness check + CB meeting calendar
@@ -263,7 +263,7 @@ inflation-dashboard/
 │   ├── data_sources.md          # Legacy doc (in docs/)
 │   ├── project_plan.md          # Legacy plan copy (in docs/)
 │   └── data/                    # ★ SINGLE SOURCE OF TRUTH ★
-│       ├── historical_cpi.json  # CPI data for all 13 countries
+│       ├── historical_cpi.json  # CPI data for all 15 countries
 │       ├── cb_forecasts.json    # Central bank forecasts + policy rates
 │       ├── imf_forecasts.json   # IMF WEO projections
 │       ├── cpi_supplements.json # Manual CPI supplements
@@ -433,7 +433,7 @@ git log --oneline --since="30 days ago" -- docs/data/historical_cpi.json
 
 ### 3. Test the Site
 - Open https://jing-ny.github.io/inflation-dashboard/
-- Verify all 13 countries appear in the table
+- Verify all 15 countries appear in the table
 - Check "As Of" dates — should be within the last 1-2 months
 - Click Venezuela page (tests null target handling)
 
