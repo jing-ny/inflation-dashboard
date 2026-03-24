@@ -124,12 +124,12 @@
 
 | # | Task | Details | Status |
 |---|------|---------|--------|
-| 4.1 | Add Core CPI + US PCE tracking | High value for professional users. FRED series available. | To Do |
+| 4.1 | Add Core CPI + US PCE tracking | Added Core CPI (3.1%), PCE (2.5%), Core PCE (2.6%) as supplementary metrics on US page. Data in `historical_cpi.json` under `supplementary` field. | **Done** (Mar 24) |
 | 4.2 | Add Brazil and Mexico | FRED series available. Extends LatAm coverage. | To Do |
 | 4.3 | Make year columns dynamic in index.html | Central Bank Outlook headers hardcoded as 2025/2026/2027. Should auto-advance. | To Do |
-| 4.4 | Add table sorting on index page | Click column headers to sort. Small UX win. | To Do |
-| 4.5 | Clean up legacy files | Remove unused scripts: `fetch_de.py`, `fetch_us.py`, `fetch_uk.py`, `fetch_au.py`, `fetch_nz.py`, `fetch_za.py`, `load_us_to_supabase.py`. Remove `docs/data/inflation_data.js` (replaced by JSON fetch). Remove `data_backup_*` directory. | To Do |
-| 4.6 | Consolidate duplicate workflows | `auto-scrape-forecasts.yml` and `auto-scrape-cb-forecasts.yml` are near-identical. Keep one. | To Do |
+| 4.4 | Add table sorting on index page | Click column headers to sort/toggle. Visual ▲/▼ indicator. Numeric-aware sorting. | **Done** (Mar 24) |
+| 4.5 | Clean up legacy files | Removed 11 legacy scripts, `inflation_data.js`, 4 semi-redundant fetch scripts. | **Done** (Mar 24) |
+| 4.6 | Consolidate duplicate workflows | Removed `auto-scrape-forecasts.yml` (kept `auto-scrape-cb-forecasts.yml`). | **Done** (Mar 24) |
 
 ---
 
@@ -253,17 +253,7 @@ inflation-dashboard/
 │   ├── send_weekly_alert.py     # Weekly alert logic (BUG: wrong data path, non-functional)
 │   ├── patch_cpi_supplements.py # Patches FRED gaps
 │   ├── test_data_sources.py     # Data source testing
-│   ├── fetch_cb_forecasts.py    # Older CB forecast fetcher (semi-redundant)
-│   ├── fetch_ecb_forecast.py    # ECB-specific fetcher (semi-redundant)
-│   ├── fetch_us_fed_forecast.py # Fed-specific fetcher (semi-redundant)
-│   ├── fetch_uk_cpi.py          # UK-specific fetcher (semi-redundant)
-│   ├── fetch_au.py              # Legacy (pre-consolidation) ─┐
-│   ├── fetch_de.py              #                              │ Can be
-│   ├── fetch_nz.py              #                              │ removed
-│   ├── fetch_uk.py              #                              │
-│   ├── fetch_us.py              #                              │
-│   ├── fetch_za.py              #                             ─┘
-│   └── load_us_to_supabase.py   # Legacy Supabase loader (abandoned)
+│   └── test_data_sources.py     # Data source testing
 │
 ├── docs/                        # GitHub Pages root
 │   ├── index.html               # Overview page
@@ -286,7 +276,6 @@ inflation-dashboard/
     ├── update-data.yml              # Mon 12pm UTC — FRED/ECB fetch + commit
     ├── monitor-updates.yml          # Mon & Thu 9am UTC — freshness check + email
     ├── auto-scrape-cb-forecasts.yml # Mon & Thu 10am UTC — CB forecast scraper
-    ├── auto-scrape-forecasts.yml    # Duplicate of above (consolidate)
     └── weekly-alert.yml             # Mon 1pm UTC — stub (just prints data)
 ```
 
@@ -300,8 +289,7 @@ inflation-dashboard/
 |----------|------|----------|---------|--------|
 | Update Inflation Data | `update-data.yml` | Mon 12pm UTC | Fetch CPI + IMF from FRED/ECB, commit if changed | Running, but FRED lag means no new data |
 | Monitor & Update Data | `monitor-updates.yml` | Mon & Thu 9am UTC | Check FRED for updates, email alerts | Running, commit step fails (B7) |
-| Auto-Scrape CB Forecasts | `auto-scrape-cb-forecasts.yml` | Mon & Thu 10am UTC | Scrape CB forecast pages | Running, CLI args ignored (B4) |
-| Auto-Scrape Forecasts | `auto-scrape-forecasts.yml` | Mon & Thu 10am UTC | Duplicate of above | Should consolidate |
+| Auto-Scrape CB Forecasts | `auto-scrape-cb-forecasts.yml` | Mon & Thu 10am UTC | Scrape CB forecast pages | Running, CLI args now functional |
 | Weekly Alert | `weekly-alert.yml` | Mon 1pm UTC | Data check | Stub — does not call `send_weekly_alert.py` |
 
 ### GitHub Secrets Required
