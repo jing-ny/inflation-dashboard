@@ -1,6 +1,6 @@
-# Inflation, Officially — Q1 2026
+# March 2026 Update: Q1 Looked Simpler in January
 
-**The quarter where everything changed — and nothing did.**
+**Q1 started as a simple disinflation story. It did not end that way.**
 
 ---
 
@@ -12,7 +12,7 @@ Through January, the story was clean: US inflation fell to 2.4%, the Euro Area h
 
 Then the Iran war erupted in March. Oil spiked to $120/bbl. The Strait of Hormuz — 20% of global oil and LNG supply — was disrupted. And every inflation forecast written before mid-March became a rough draft.
 
-**The question for Q2: is this a bump, or a regime change?**
+**Q2 will test whether March was a temporary shock, or the start of a harder inflation path.**
 
 ---
 
@@ -29,7 +29,7 @@ Then the Iran war erupted in March. Oil spiked to $120/bbl. The Strait of Hormuz
 | China | 1.3% (Feb) | Turning positive | 3.00% | 1.2% | 0.7% |
 | India | 3.2% (Feb) | Rebounding | 5.25% | 4.0% | 4.2% |
 | S. Korea | 2.0% (Feb) | At target | 2.50% | 2.1% | 2.0% |
-| S. Africa | 3.0% (Feb) | Near target | 6.75% | 3.6% | 3.7% |
+| S. Africa | 3.0% (Feb) | Near target | 6.75% | 3.3% | 3.7% |
 | N. Zealand | 3.1% (Q4) | Above target | 2.25% | 2.5% | 2.1% |
 | Singapore | 1.2% (Feb) | Subdued | NEER band | 1.5% | 1.5% |
 

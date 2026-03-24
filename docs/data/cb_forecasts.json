@@ -126,10 +126,10 @@
       "source_url": "https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements/2026/january",
       "publication_date": "January 2026",
       "forecast_type": "MPC projection (CPI)",
-      "note": "SARB held repo rate at 6.75% (4-2 vote). Near-term inflation forecast lower with stronger rand and lower oil. Risks from food (foot-and-mouth) and electricity prices.",
+      "note": "SARB held repo rate at 6.75% (4-2 vote). Jan 2026 QPM revised 2026 inflation down to 3.3% (from 3.6% in Nov QPM) on stronger rand and lower oil. Risks from food (foot-and-mouth) and electricity prices.",
       "projections": {
         "2025": 3.2,
-        "2026": 3.6,
+        "2026": 3.3,
         "2027": 3.0
       },
       "key_quote": "Near-term inflation forecast has fallen; gradual rate cuts expected as inflation subsides",
