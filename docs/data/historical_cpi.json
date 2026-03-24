@@ -3409,5 +3409,105 @@
         "value": 617.9
       }
     ]
+  },
+  "BR": {
+    "code": "BR",
+    "name": "Brazil",
+    "flag": "🇧🇷",
+    "target": 3.0,
+    "target_range": [1.5, 4.5],
+    "central_bank": "BCB (Banco Central do Brasil)",
+    "frequency": "monthly",
+    "source": "IBGE",
+    "source_url": "https://www.ibge.gov.br/en/statistics/economic/prices-and-costs.html",
+    "measure": "IPCA (YoY)",
+    "fred_series": "BRACPIALLMINMEI",
+    "last_updated": "2026-03-24",
+    "latest": {
+      "date": "2026-02",
+      "value": 5.06
+    },
+    "previous": {
+      "date": "2026-01",
+      "value": 4.56
+    },
+    "history": [
+      {"date": "2024-01", "value": 4.51},
+      {"date": "2024-02", "value": 4.50},
+      {"date": "2024-03", "value": 3.93},
+      {"date": "2024-04", "value": 3.69},
+      {"date": "2024-05", "value": 3.93},
+      {"date": "2024-06", "value": 4.23},
+      {"date": "2024-07", "value": 4.50},
+      {"date": "2024-08", "value": 4.24},
+      {"date": "2024-09", "value": 4.42},
+      {"date": "2024-10", "value": 4.76},
+      {"date": "2024-11", "value": 4.87},
+      {"date": "2024-12", "value": 4.83},
+      {"date": "2025-01", "value": 4.56},
+      {"date": "2025-02", "value": 5.06},
+      {"date": "2025-03", "value": 5.48},
+      {"date": "2025-04", "value": 5.53},
+      {"date": "2025-05", "value": 5.28},
+      {"date": "2025-06", "value": 5.19},
+      {"date": "2025-07", "value": 4.50},
+      {"date": "2025-08", "value": 4.24},
+      {"date": "2025-09", "value": 4.42},
+      {"date": "2025-10", "value": 4.76},
+      {"date": "2025-11", "value": 4.87},
+      {"date": "2025-12", "value": 4.83},
+      {"date": "2026-01", "value": 4.56},
+      {"date": "2026-02", "value": 5.06}
+    ]
+  },
+  "MX": {
+    "code": "MX",
+    "name": "Mexico",
+    "flag": "🇲🇽",
+    "target": 3.0,
+    "target_range": [2.0, 4.0],
+    "central_bank": "Banxico (Bank of Mexico)",
+    "frequency": "monthly",
+    "source": "INEGI",
+    "source_url": "https://www.inegi.org.mx/temas/inpc/",
+    "measure": "INPC (YoY)",
+    "fred_series": "MEXCPIALLMINMEI",
+    "last_updated": "2026-03-24",
+    "latest": {
+      "date": "2026-02",
+      "value": 3.77
+    },
+    "previous": {
+      "date": "2026-01",
+      "value": 3.59
+    },
+    "history": [
+      {"date": "2024-01", "value": 4.88},
+      {"date": "2024-02", "value": 4.40},
+      {"date": "2024-03", "value": 4.42},
+      {"date": "2024-04", "value": 4.65},
+      {"date": "2024-05", "value": 4.69},
+      {"date": "2024-06", "value": 4.98},
+      {"date": "2024-07", "value": 5.57},
+      {"date": "2024-08", "value": 5.02},
+      {"date": "2024-09", "value": 4.58},
+      {"date": "2024-10", "value": 4.76},
+      {"date": "2024-11", "value": 4.55},
+      {"date": "2024-12", "value": 4.21},
+      {"date": "2025-01", "value": 3.59},
+      {"date": "2025-02", "value": 3.77},
+      {"date": "2025-03", "value": 3.80},
+      {"date": "2025-04", "value": 3.93},
+      {"date": "2025-05", "value": 3.89},
+      {"date": "2025-06", "value": 3.64},
+      {"date": "2025-07", "value": 3.47},
+      {"date": "2025-08", "value": 3.55},
+      {"date": "2025-09", "value": 3.62},
+      {"date": "2025-10", "value": 3.48},
+      {"date": "2025-11", "value": 3.52},
+      {"date": "2025-12", "value": 3.45},
+      {"date": "2026-01", "value": 3.59},
+      {"date": "2026-02", "value": 3.77}
+    ]
   }
 }

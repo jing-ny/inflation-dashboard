@@ -104,6 +104,20 @@ const TARGET_INFO = {
         description: 'China sets an annual CPI target, typically around 3%, as part of its government work report. The target is more of a ceiling than a strict objective.',
         quote: 'We will keep the consumer price index increase at around 3 percent.',
         quoteSource: 'Government Work Report, March 2024'
+    },
+    BR: {
+        target: 3.0,
+        targetRange: '1.5-4.5%',
+        description: 'The Banco Central do Brasil (BCB) targets 3% IPCA inflation with a tolerance band of ±1.5 percentage points (1.5-4.5%). Brazil adopted an inflation targeting framework in 1999. Starting in 2025, the target became a continuous target rather than calendar-year based.',
+        quote: 'The National Monetary Council sets the inflation target at 3.00% per year, with a tolerance interval of 1.50 percentage points above and below.',
+        quoteSource: 'BCB Inflation Targeting Framework'
+    },
+    MX: {
+        target: 3.0,
+        targetRange: '2-4%',
+        description: 'Banco de México (Banxico) targets 3% CPI inflation with a variability interval of ±1 percentage point (2-4%). Mexico adopted inflation targeting in 2001. Banxico has been gradually easing policy rates as inflation converges toward the target.',
+        quote: 'Banco de México\'s monetary policy objective is to maintain the purchasing power of the national currency. The permanent inflation target is 3 percent, with a variability interval of plus or minus one percentage point.',
+        quoteSource: 'Banco de México Monetary Policy Framework'
     }
 };
 
@@ -189,6 +203,18 @@ const DATA_SOURCES = {
         { label: 'Series ID', value: 'CHNCPIALLMINMEI (OECD)', url: 'https://fred.stlouisfed.org/series/CHNCPIALLMINMEI' },
         { label: 'Forecasts', value: 'IMF World Economic Outlook', url: 'https://www.imf.org/en/Publications/WEO' },
         { label: 'Target', value: 'Government Work Report', url: 'http://english.www.gov.cn/' }
+    ],
+    BR: [
+        { label: 'CPI Data', value: 'IBGE (IPCA)', url: 'https://www.ibge.gov.br/en/statistics/economic/prices-and-costs.html' },
+        { label: 'FRED Series', value: 'BRACPIALLMINMEI', url: 'https://fred.stlouisfed.org/series/BRACPIALLMINMEI' },
+        { label: 'Forecasts', value: 'BCB Focus Survey', url: 'https://www.bcb.gov.br/en/monetarypolicy' },
+        { label: 'Target', value: 'BCB Inflation Targeting', url: 'https://www.bcb.gov.br/en/monetarypolicy/inflationtargeting' }
+    ],
+    MX: [
+        { label: 'CPI Data', value: 'INEGI (INPC)', url: 'https://www.inegi.org.mx/temas/inpc/' },
+        { label: 'FRED Series', value: 'MEXCPIALLMINMEI', url: 'https://fred.stlouisfed.org/series/MEXCPIALLMINMEI' },
+        { label: 'Forecasts', value: 'Banxico Quarterly Inflation Report', url: 'https://www.banxico.org.mx/publicaciones-y-prensa/informes-trimestrales/' },
+        { label: 'Target', value: 'Banxico Monetary Policy', url: 'https://www.banxico.org.mx/politica-monetaria/index.html' }
     ]
 };
 

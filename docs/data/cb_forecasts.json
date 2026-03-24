@@ -5,7 +5,7 @@
     "context": "The Iran war (Mar 2026) has sharply divided the inflation outlook. The ECB and Fed both revised 2026 inflation up (ECB: 1.9%→2.6%, Fed: 2.5%→2.7%) citing energy supply disruption via the Strait of Hormuz. Oil briefly hit $120/bbl. Meanwhile, the RBA hiked rates after Australian inflation surprised to the upside, while most other central banks held steady. IMF pre-conflict projections (Jan 2026 WEO) now look optimistic — the April 2026 WEO will likely revise upward. JP Morgan expects 'disparate outcomes' across regions: US inflation accelerating above 3%, Europe moderating to 2%, Asia subdued.",
     "imf_baseline": "IMF WEO January 2026 Update (pre-conflict)"
   },
-  "display_order": ["US", "EA", "UK", "CA", "AU", "NZ", "ZA", "JP", "KR", "SG", "IN", "CN", "VE"],
+  "display_order": ["US", "EA", "UK", "CA", "AU", "NZ", "ZA", "BR", "MX", "JP", "KR", "SG", "IN", "CN", "VE"],
   "forecasts": {
     "US": {
       "flag": "🇺🇸",
@@ -230,6 +230,42 @@
       "policy_rate": {
         "rate": "N/A",
         "last_change": "—"
+      }
+    },
+    "BR": {
+      "flag": "🇧🇷",
+      "source": "BCB",
+      "source_full": "Banco Central do Brasil - Focus Survey",
+      "source_url": "https://www.bcb.gov.br/en/monetarypolicy",
+      "publication_date": "March 2026",
+      "forecast_type": "Focus Survey median (IPCA)",
+      "note": "BCB raised Selic to 14.25% in Mar 2026 amid persistent inflation. Focus survey median sees IPCA at 5.7% for 2026, well above the 3% target midpoint.",
+      "projections": {
+        "2026": 5.7,
+        "2027": 4.0
+      },
+      "key_quote": "Inflation expectations remain above target; tightening cycle continues",
+      "policy_rate": {
+        "rate": "14.25%",
+        "last_change": "↑ Mar 2026"
+      }
+    },
+    "MX": {
+      "flag": "🇲🇽",
+      "source": "Banxico",
+      "source_full": "Banco de México - Quarterly Inflation Report",
+      "source_url": "https://www.banxico.org.mx/publicaciones-y-prensa/informes-trimestrales/",
+      "publication_date": "March 2026",
+      "forecast_type": "Staff projection (CPI)",
+      "note": "Banxico cut rate to 9.50% in Mar 2026 as inflation converges toward target. Staff projects CPI at 3.8% for 2026, within the 2-4% tolerance band.",
+      "projections": {
+        "2026": 3.8,
+        "2027": 3.2
+      },
+      "key_quote": "Inflation converging toward target; gradual easing appropriate",
+      "policy_rate": {
+        "rate": "9.50%",
+        "last_change": "↓ Mar 2026"
       }
     },
     "CN": {

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mexico Inflation | Inflation, Officially</title>
+    <meta name="description" content="Mexico INPC inflation rate, Banxico policy rate, and inflation forecasts. Official data from INEGI.">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-brand">Inflation, Officially</a>
+            <a href="index.html" class="nav-back">&larr; Overview</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <header class="page-header">
+            <h1><span class="flag">&#x1F1F2;&#x1F1FD;</span> Mexico</h1>
+            <p class="page-subtitle">INPC (INEGI) &middot; All Items &middot; Monthly</p>
+        </header>
+
+        <!-- Key Metrics -->
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Current Inflation</div>
+                <div class="metric-value" id="currentValue">&mdash;</div>
+                <div class="metric-detail" id="currentDate">&mdash;</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Previous</div>
+                <div class="metric-value secondary" id="previousValue">&mdash;</div>
+                <div class="metric-detail" id="previousDate">&mdash;</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Target</div>
+                <div class="metric-value target" id="targetValue">2-4%</div>
+                <div class="metric-detail">Banxico (3% midpoint)</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">vs Target</div>
+                <div class="metric-value" id="statusValue">&mdash;</div>
+                <div class="metric-detail" id="statusDetail">&mdash;</div>
+            </div>
+        </section>
+
+        <!-- Historical Chart -->
+        <section class="section">
+            <div class="section-header">
+                <h2 class="section-title">10-Year History</h2>
+                <p class="section-subtitle">Year-over-year INPC change with Banxico target</p>
+            </div>
+            <div class="chart-container">
+                <canvas id="historyChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Forecasts -->
+        <section class="section">
+            <div class="section-header">
+                <h2 class="section-title">Inflation Outlook</h2>
+                <p class="section-subtitle">Official projections from central bank and international organizations</p>
+            </div>
+            <div id="forecastTable">
+                <p class="loading">Loading forecasts...</p>
+            </div>
+        </section>
+
+        <!-- Target Information -->
+        <section class="section">
+            <div class="section-header">
+                <h2 class="section-title">Inflation Target</h2>
+            </div>
+            <div id="targetInfo">
+                <!-- Populated by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Data Sources -->
+        <section class="section sources-section">
+            <div id="dataSources">
+                <!-- Populated by JavaScript -->
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>All data from official government statistics and central bank publications</p>
+        <p><a href="https://github.com/jing-ny/inflation-dashboard" target="_blank">GitHub</a> &middot; For informational purposes only &middot; Not investment advice</p>
+    </footer>
+
+    <script src="country.js"></script>
+    <script>
+        // Initialize Mexico page
+        initCountryPage('MX');
+    </script>
+</body>
+</html>
