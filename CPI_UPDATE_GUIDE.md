@@ -1,6 +1,10 @@
-# CPI Data Verification Guide
+# Data Update Guide
 
-## Quick Reference - Official Sources
+This is the single reference for all manual data updates: CPI, central bank forecasts, and IMF forecasts.
+
+---
+
+## CPI: Official Sources
 
 | Country | Agency | URL | Release Day |
 |---------|--------|-----|-------------|
@@ -84,25 +88,86 @@ When updating CPI data:
 - Government target is "around 3%" but rarely binding
 - Often near zero or negative in recent years
 
-## Monthly Update Workflow
+## CPI Monthly Update Workflow
 
 1. Check release calendar at start of month
 2. As each country releases, verify and update
-3. After all major countries updated, commit changes
-4. Push to deploy
+3. After all major countries updated, commit and push
+
+```bash
+python3 update_cpi.py -c US -d 2026-03 -v 2.5
+git add docs/data/historical_cpi.json
+git commit -m "Update CPI data: US Mar 2026"
+git push
+```
+
+---
+
+## Central Bank Forecast Updates
+
+**When:** After major MPC meetings with new projections.
+
+| Country | Bank | Months with Projections |
+|---------|------|------------------------|
+| US | FOMC | Mar, Jun, Sep, Dec (SEP) |
+| EA | ECB | Mar, Jun, Sep, Dec (staff projections) |
+| UK | BoE | Feb, May, Aug, Nov (MPR) |
+| CA | BoC | Jan, Apr, Jul, Oct (MPR) |
+| AU | RBA | Feb, May, Aug, Nov (SoMP) |
+| NZ | RBNZ | Feb, May, Aug, Nov (MPS) |
+| ZA | SARB | Jan, Mar, May, Jul, Sep, Nov |
+| JP | BoJ | Jan, Apr, Jul, Oct (Outlook) |
+| KR | BOK | Feb, May, Aug, Nov |
+| SG | MAS | Apr, Oct (policy statement) |
+| IN | RBI | Feb, Apr, Jun, Aug, Oct, Dec |
+
+**How:** Edit `docs/data/cb_forecasts.json` — update `publication_date`, `projections`, `policy_rate`, `key_quote`, `note`.
+
+```bash
+git add docs/data/cb_forecasts.json
+git commit -m "Update US CB forecast after Mar 2026 FOMC"
+git push
+```
+
+---
+
+## IMF Forecast Updates
+
+**When:** April and October (WEO releases).
+
+**Source:** https://www.imf.org/external/datamapper/PCPIPCH@WEO
+
+**How:** Edit `docs/data/imf_forecasts.json` — update `version`, `retrieved`, and all country forecast values.
+
+```bash
+git add docs/data/imf_forecasts.json
+git commit -m "Update IMF WEO forecasts (April 2026)"
+git push
+```
+
+---
+
+## Troubleshooting
+
+- **FRED data not updating:** FRED OECD series lag 1-6 months. Use `update_cpi.py` with official source values.
+- **Venezuela page not loading:** Check `target: null` handling in country.js.
+- **Email notifications not arriving:** Check Resend dashboard, verify `NOTIFICATION_EMAIL` GitHub secret.
+- **GitHub Actions failing:** Check Actions tab. Common issue: quarterly date format (2025-Q4).
+
+---
 
 ## Release Calendar Template
 
 ```
-January 2026:
-  1st: KR (Dec 2025)
-  9th: CN (Dec 2025)
-  12th: IN (Dec 2025)
-  13th: US (Dec 2025)
-  15th: UK (Dec 2025)
-  17th: CA (Dec 2025)
-  19th: EA (Dec 2025 final), ZA (Dec 2025), JP (Dec 2025)
-  22nd: NZ (Q4 2025)
-  23rd: SG (Dec 2025)
-  28th: AU (Dec 2025)
+Monthly pattern:
+  1st:  KR
+  9th:  CN
+  12th: IN
+  13th: US
+  15th: UK
+  17th: CA, EA (final)
+  19th: ZA, JP
+  23rd: SG
+  28th: AU
+  Quarterly: NZ (mid-month of Jan/Apr/Jul/Oct)
 ```

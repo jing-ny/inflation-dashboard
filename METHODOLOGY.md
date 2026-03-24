@@ -2,7 +2,7 @@
 
 Technical documentation for the Inflation Monitor dashboard.
 
-**Last Updated:** February 3, 2026
+**Last Updated:** March 24, 2026
 
 ---
 

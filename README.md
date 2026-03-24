@@ -109,7 +109,7 @@ python3 update_cpi.py --show-all
 python3 batch_update_cpi.py --dry-run
 ```
 
-See [CPI_UPDATE_GUIDE.md](CPI_UPDATE_GUIDE.md) for detailed update procedures.
+See [CPI_UPDATE_GUIDE.md](CPI_UPDATE_GUIDE.md) for CPI, CB forecast, and IMF update procedures.
 
 ---
 
@@ -142,16 +142,21 @@ python3 -m http.server 8000 --directory docs
 
 ## Changelog
 
+### March 2026
+- Updated all 13 countries to Jan/Feb 2026 CPI data
+- Updated CB forecasts to latest meetings (10 central banks)
+- Added IMF forecasts side-by-side on homepage with divergence highlighting
+- Fixed 6 bugs: CSS duplication, broken scripts, FRED series mismatch
+- Published Q1 2026 newsletter draft
+
 ### February 2026
-- **Data Quality Fix:** Corrected Dec 2025 CPI values for 8 countries using verified official sources
-- **Architecture:** Consolidated all data to `docs/data/` (single source of truth)
-- **Tooling:** Added `update_cpi.py` and `batch_update_cpi.py` for manual updates
-- **Documentation:** Added `CPI_UPDATE_GUIDE.md` with official source URLs and release schedules
+- Corrected Dec 2025 CPI values for 8 countries
+- Consolidated data to `docs/data/` (single source of truth)
+- Added `update_cpi.py` and `batch_update_cpi.py` manual update tools
 
 ### January 2026
 - Added 5 new countries: South Korea, Singapore, India, China, Venezuela
-- Implemented central bank forecast tracking
-- Added IMF WEO forecast comparison
+- Implemented central bank forecast tracking and IMF WEO comparison
 - Set up automated monitoring via GitHub Actions
 
 ---

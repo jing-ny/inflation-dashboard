@@ -4,81 +4,70 @@ All notable changes to the Inflation Dashboard project are documented here.
 
 ---
 
-## [1.0.0] - 2026-01-26
+## [1.2.0] - 2026-03-24
 
-### 🎉 Initial Release
+### Changed
+- **CPI Data:** Updated all 13 countries to Jan/Feb 2026 (UK/AU to Jan, NZ to Q4 2025)
+- **CB Forecasts:** Updated 10 central banks to latest meetings (Fed Mar, ECB Mar, BoE Feb, BoC Jan, RBA Feb+Mar, RBNZ Feb, SARB Jan, BoJ Mar, RBI Feb, BOK Feb)
+- **IMF Forecasts:** Updated to WEO January 2026 Update; added 6 missing countries (EA, JP, IN, KR, SG, VE)
+- **Homepage:** Renamed "Central Bank Outlook" to "Inflation Outlook" with side-by-side CB vs IMF forecasts and divergence highlighting
+- **Australia policy rate:** Corrected to 4.10% after two consecutive hikes (Feb + Mar 2026)
+- **South Africa forecast:** Corrected 2026 projection to 3.3% (Jan 2026 QPM revision)
 
-The first complete version of the Inflation Dashboard, tracking official inflation statistics and central bank forecasts across 9 major economies.
+### Fixed
+- Deduplicated `styles.css` (1279 → 604 lines; 4 redundant CSS blocks removed)
+- Removed stray "test" text from `index.html`
+- Fixed `send_weekly_alert.py` data path and key structure (was completely non-functional)
+- Added argparse to `auto_scrape_cb_forecasts.py` (`--force`, `--country`, `--dry-run`)
+- Unified FRED series between `monitor_updates.py` and `fetch_historical_cpi.py`
+- Implemented `update_forecast_history()` in `monitor_updates.py` (was placeholder)
+- Fixed monitor workflow commit failure (added `permissions: contents: write`)
 
-### Countries Covered
-- 🇺🇸 United States (Fed)
-- 🇪🇺 Euro Area (ECB)
-- 🇬🇧 United Kingdom (BoE)
-- 🇨🇦 Canada (BoC)
-- 🇦🇺 Australia (RBA)
-- 🇳🇿 New Zealand (RBNZ)
-- 🇿🇦 South Africa (SARB)
-- 🇯🇵 Japan (BoJ)
-- 🇨🇳 China (PBoC/NBS)
+### Added
+- IMF forecasts comparison on homepage (CB vs IMF side-by-side)
+- Geopolitical context banner (Iran war / Strait of Hormuz impact on forecasts)
+- Q1 2026 newsletter draft (`docs/drafts/2026-Q1-newsletter.md`)
+- 5 new countries in `historical_cpi.json`: Japan, India, South Korea, Singapore, Venezuela
 
-### Features
-- **Overview Page**: Current inflation table, Central Bank Outlook table, Policy Rates grid
-- **Country Pages**: 10-year historical charts, forecast comparisons (CB vs IMF), target information, official sources
-- **Data Architecture**: JSON-based data files for easy updates
-  - `historical_cpi.json` - 10-year CPI history per country
-  - `cb_forecasts.json` - Central bank projections and policy rates
-  - `imf_forecasts.json` - IMF World Economic Outlook data
-- **Policy Change Tracking**: Alert boxes, timeline sections, and "NEW" badges for recent target changes
+### Removed
+- Obsolete `docs/project_plan.md` (superseded by `PROJECT_PLAN.md`)
+- Empty `docs/data_sources.md`
+- `MAINTENANCE.md` (consolidated into `CPI_UPDATE_GUIDE.md`)
 
-### Data Sources
-- FRED API (St. Louis Fed)
-- BLS API (US Bureau of Labor Statistics)
-- ECB Data Portal (Euro Area HICP)
-- Official central bank publications
-- IMF World Economic Outlook
+---
+
+## [1.1.0] - 2026-02-03
+
+### Changed
+- **Data Quality Fix:** Corrected Dec 2025 CPI values for 8 countries using verified official sources
+- **Architecture:** Consolidated all data to `docs/data/` (single source of truth)
+
+### Added
+- `update_cpi.py` and `batch_update_cpi.py` manual update tools
+- `CPI_UPDATE_GUIDE.md` with official source URLs and release schedules
 
 ---
 
 ## [1.0.1] - 2026-01-26
 
 ### Changed
-- **South Africa**: Updated inflation target from 4.5% (3-6% range) to **3.0%** (2-4% range)
+- **South Africa:** Updated inflation target from 4.5% (3-6% range) to 3.0% (2-4% range)
   - First target change in 25 years, announced November 12, 2025
   - Added Policy Updates timeline section to za.html
-  - Added "NEW" badge on index page target column
-  - Added policy change alert box in target info section
 
 ### Added
-- **Japan (JP)**: Full integration
-  - Country page (jp.html)
-  - 10-year historical CPI data
-  - BoJ forecasts (January 2026 Outlook)
-  - Policy rate: 0.75%
+- **Japan (JP):** Full integration with country page, 10-year history, BoJ forecasts
 
 ---
 
-## Roadmap
+## [1.0.0] - 2026-01-26
 
-### Planned Features
-- [ ] Email subscription for quarterly newsletter
-- [ ] Automated data updates via GitHub Actions
-- [ ] Additional countries (Switzerland, Germany, Singapore, India)
-- [ ] RSS feed for policy changes
-
-### Under Consideration
-- [ ] Dark mode
-- [ ] Data export (CSV download)
-- [ ] Comparison charts across countries
-- [ ] Mobile app wrapper
-
----
-
-## Versioning
-
-This project uses [Semantic Versioning](https://semver.org/):
-- **Major** (1.x.x): New countries, major feature additions
-- **Minor** (x.1.x): New data visualizations, UI improvements
-- **Patch** (x.x.1): Data updates, bug fixes, target changes
+### Initial Release
+- Dashboard tracking official CPI inflation and central bank forecasts across 9 economies
+- Overview page with inflation table, Central Bank Outlook, Policy Rates grid
+- Country detail pages with 10-year charts, forecast comparisons, target info
+- JSON-based data architecture (`historical_cpi.json`, `cb_forecasts.json`, `imf_forecasts.json`)
+- Data from FRED API, ECB API, and official central bank publications
 
 ---
 
