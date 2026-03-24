@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "last_updated": "January 2026",
+    "last_updated": "March 2026",
     "notes": "Central bank inflation forecasts and policy rates"
   },
   "display_order": ["US", "EA", "UK", "CA", "AU", "NZ", "ZA", "JP", "KR", "SG", "IN", "CN", "VE"],
@@ -9,191 +9,187 @@
       "flag": "🇺🇸",
       "source": "Fed",
       "source_full": "Federal Reserve - Summary of Economic Projections",
-      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
-      "publication_date": "December 2025",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomcprojtabl20260318.htm",
+      "publication_date": "March 2026",
       "forecast_type": "Median FOMC projection (PCE)",
-      "note": "Fed projects core PCE inflation. Expects only 1 cut in 2026.",
+      "note": "Fed revised PCE inflation up to 2.7% for 2026 amid Middle East energy disruptions. Expects 1 cut in 2026.",
       "projections": {
-        "2025": 2.4,
-        "2026": 2.5,
-        "2027": 2.1,
+        "2026": 2.7,
+        "2027": 2.2,
+        "2028": 2.0,
         "longer_run": 2.0
       },
-      "key_quote": "Core inflation revised slightly lower for 2026",
+      "key_quote": "Inflation remains somewhat elevated; uncertainty increased",
       "policy_rate": {
-        "rate": "4.25-4.50%",
-        "last_change": "↓ Dec 2025"
+        "rate": "3.50-3.75%",
+        "last_change": "— Mar 2026 (hold)"
       }
     },
     "EA": {
       "flag": "🇪🇺",
       "source": "ECB",
       "source_full": "European Central Bank - Staff Projections",
-      "source_url": "https://www.ecb.europa.eu/press/projections/html/index.en.html",
-      "publication_date": "December 2025",
+      "source_url": "https://www.ecb.europa.eu/press/projections/html/ecb.projections202603_ecbstaff~ebe291cd3d.en.html",
+      "publication_date": "March 2026",
       "forecast_type": "Staff projection (HICP)",
-      "note": "ECB expects inflation below 2% in 2026-27 before returning to target.",
+      "note": "ECB revised 2026 inflation up sharply (1.9%→2.6%) due to Middle East energy price surge. Rates held at 2.00%.",
       "projections": {
         "2025": 2.1,
-        "2026": 1.9,
-        "2027": 2.1
+        "2026": 2.6,
+        "2027": 2.0,
+        "2028": 2.1
       },
-      "key_quote": "Inflation projected to decrease to 1.9% in 2026",
+      "key_quote": "Headline inflation projected to increase to 2.6% in 2026 reflecting energy price rises",
       "policy_rate": {
-        "rate": "3.00%",
-        "last_change": "↓ Dec 2025"
+        "rate": "2.00%",
+        "last_change": "— Mar 2026 (hold)"
       }
     },
     "UK": {
       "flag": "🇬🇧",
       "source": "BoE",
       "source_full": "Bank of England - Monetary Policy Report",
-      "source_url": "https://www.bankofengland.co.uk/monetary-policy-report/2025/november-2025",
-      "publication_date": "November 2025",
+      "source_url": "https://www.bankofengland.co.uk/monetary-policy-report/2026/february-2026",
+      "publication_date": "February 2026",
       "forecast_type": "MPC projection (CPI)",
-      "note": "BoE expects inflation to fall below 2% target by Q2 2027.",
+      "note": "BoE expects CPI to fall to 2.1% by Q2 2026, notably lower than Nov forecast. Energy price declines from Budget 2025 driving near-term relief.",
       "projections": {
-        "2025": 2.6,
-        "2026": 2.5,
-        "2027": 1.9
+        "2026": 2.3,
+        "2027": 2.0
       },
-      "key_quote": "CPI inflation projected to slow to 2.5% by Q4 2026",
+      "key_quote": "CPI inflation expected to fall to 2.1% in Q2 2026, lower than anticipated in November",
       "policy_rate": {
-        "rate": "4.50%",
-        "last_change": "↓ Dec 2025"
+        "rate": "3.75%",
+        "last_change": "— Feb 2026 (hold, 5-4 vote)"
       }
     },
     "CA": {
       "flag": "🇨🇦",
       "source": "BoC",
       "source_full": "Bank of Canada - Monetary Policy Report",
-      "source_url": "https://www.bankofcanada.ca/publications/mpr/",
-      "publication_date": "October 2025",
+      "source_url": "https://www.bankofcanada.ca/publications/mpr/mpr-2026-01-28/",
+      "publication_date": "January 2026",
       "forecast_type": "Staff projection (CPI)",
-      "note": "BoC expects inflation to remain near 2% target through 2027.",
+      "note": "BoC expects inflation near 2% target. Trade uncertainty elevated due to US tariff review. Growth modest at 1.1% for 2026.",
       "projections": {
-        "2025": 2.4,
         "2026": 2.0,
         "2027": 2.0
       },
-      "key_quote": "Inflation expected to stay close to 2% target",
+      "key_quote": "Inflation expected to stay close to 2% target; trade risks elevated",
       "policy_rate": {
-        "rate": "3.25%",
-        "last_change": "↓ Dec 2025"
+        "rate": "2.25%",
+        "last_change": "— Jan 2026 (hold)"
       }
     },
     "AU": {
       "flag": "🇦🇺",
       "source": "RBA",
       "source_full": "Reserve Bank of Australia - Statement on Monetary Policy",
-      "source_url": "https://www.rba.gov.au/publications/smp/",
-      "publication_date": "November 2025",
+      "source_url": "https://www.rba.gov.au/publications/smp/2026/feb/",
+      "publication_date": "February 2026",
       "forecast_type": "Staff projection (trimmed mean)",
-      "note": "RBA focuses on trimmed mean inflation, expects return to target band.",
+      "note": "RBA hiked rates 25bp to 3.85% after inflation surprised to upside. Trimmed mean to peak 3.7% mid-2026, above 2-3% target band until early 2027.",
       "projections": {
-        "2025": 2.8,
-        "2026": 2.6,
-        "2027": 2.5
+        "2026": 3.7,
+        "2027": 2.7
       },
-      "key_quote": "Underlying inflation expected to return to target range",
+      "key_quote": "Underlying inflation revised up; expected to peak at 3.7% in mid-2026",
       "policy_rate": {
-        "rate": "4.10%",
-        "last_change": "↓ Nov 2025"
+        "rate": "3.85%",
+        "last_change": "↑ Feb 2026"
       }
     },
     "NZ": {
       "flag": "🇳🇿",
       "source": "RBNZ",
       "source_full": "Reserve Bank of New Zealand - Monetary Policy Statement",
-      "source_url": "https://www.rbnz.govt.nz/monetary-policy/monetary-policy-statement",
-      "publication_date": "November 2025",
+      "source_url": "https://www.rbnz.govt.nz/monetary-policy/monetary-policy-statement/monetary-policy-statement-filtered-listing-page/2026/feb-182/monetary-policy-statement-february-2026",
+      "publication_date": "February 2026",
       "forecast_type": "Staff projection (CPI)",
-      "note": "RBNZ expects inflation to settle near 2% midpoint.",
+      "note": "RBNZ held OCR at 2.25%. Inflation temporarily above 3% target band but expected to fall to ~2% by early 2027. Significant excess capacity in economy.",
       "projections": {
-        "2025": 2.2,
-        "2026": 2.1,
+        "2026": 2.5,
         "2027": 2.0
       },
-      "key_quote": "Inflation settling near target midpoint",
+      "key_quote": "Inflation expected to decline to around target midpoint over next 12 months",
       "policy_rate": {
-        "rate": "3.75%",
-        "last_change": "↓ Nov 2025"
+        "rate": "2.25%",
+        "last_change": "— Feb 2026 (hold)"
       }
     },
     "ZA": {
       "flag": "🇿🇦",
       "source": "SARB",
       "source_full": "South African Reserve Bank - MPC Statement",
-      "source_url": "https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements/2025/november",
-      "publication_date": "November 2025",
+      "source_url": "https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements/2026/january",
+      "publication_date": "January 2026",
       "forecast_type": "MPC projection (CPI)",
-      "note": "New 3% target (±1pp) announced Nov 2025, replacing 25-year-old 3-6% range. On track to meet target by 2026.",
+      "note": "SARB held repo rate at 6.75% (4-2 vote). Near-term inflation forecast lower with stronger rand and lower oil. Risks from food (foot-and-mouth) and electricity prices.",
       "projections": {
-        "2025": 3.4,
+        "2025": 3.2,
         "2026": 3.6,
         "2027": 3.0
       },
-      "key_quote": "On course to meet new 3% inflation target in 2026",
+      "key_quote": "Near-term inflation forecast has fallen; gradual rate cuts expected as inflation subsides",
       "policy_rate": {
         "rate": "6.75%",
-        "last_change": "↓ Nov 2025"
+        "last_change": "— Jan 2026 (hold)"
       }
     },
     "JP": {
       "flag": "🇯🇵",
       "source": "BoJ",
       "source_full": "Bank of Japan - Outlook for Economic Activity and Prices",
-      "source_url": "https://www.boj.or.jp/en/mopo/outlook/gor2601a.pdf",
-      "publication_date": "January 2026",
+      "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/mpr_2026/k260319a.pdf",
+      "publication_date": "March 2026",
       "forecast_type": "Median Policy Board forecast (core CPI ex-fresh food)",
-      "note": "BoJ uses fiscal year (April-March). FY2025 = Apr 2025 - Mar 2026. Core CPI excludes fresh food.",
+      "note": "BoJ held rate at 0.75% (8-1 vote). CPI expected to dip below 2% temporarily before rising on energy costs. Will continue raising rates if outlook holds.",
       "projections": {
         "2025": 2.7,
         "2026": 2.0,
         "2027": 2.0
       },
-      "key_quote": "Underlying inflation expected to reach level consistent with 2% target",
+      "key_quote": "CPI to dip below 2% temporarily; upward pressure from energy prices ahead",
       "policy_rate": {
         "rate": "0.75%",
-        "last_change": "↑ Dec 2025"
+        "last_change": "— Mar 2026 (hold)"
       }
     },
     "IN": {
       "flag": "🇮🇳",
       "source": "RBI",
       "source_full": "Reserve Bank of India - Monetary Policy Statement",
-      "source_url": "https://www.rbi.org.in/Scripts/PublicationsView.aspx",
-      "publication_date": "December 2025",
+      "source_url": "https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=62261",
+      "publication_date": "February 2026",
       "forecast_type": "MPC projection (CPI)",
-      "note": "RBI uses fiscal year (April-March). Record-low inflation in 2025 due to falling food prices.",
+      "note": "RBI held repo rate at 5.25% with neutral stance. FY2025-26 CPI revised to 2.1% (from 2.0%). New CPI base year 2024=100 from Feb 2026.",
       "projections": {
-        "2025": 2.0,
+        "2025": 2.1,
         "2026": 4.0,
         "2027": 4.2
       },
-      "key_quote": "Inflation outlook benign; food supply prospects improved",
+      "key_quote": "FY26 inflation projection revised to 2.1%; neutral stance maintained",
       "policy_rate": {
         "rate": "5.25%",
-        "last_change": "↓ Dec 2025"
+        "last_change": "— Feb 2026 (hold)"
       }
     },
     "KR": {
       "flag": "🇰🇷",
       "source": "BOK",
       "source_full": "Bank of Korea - Economic Outlook",
-      "source_url": "https://www.bok.or.kr/eng/main/main.do",
-      "publication_date": "November 2025",
+      "source_url": "https://www.bok.or.kr/eng/bbs/E0000634/view.do?nttId=10095362&menuNo=400423",
+      "publication_date": "February 2026",
       "forecast_type": "BOK projection (CPI)",
-      "note": "2025 full-year inflation of 2.1% aligned with BOK 2% target.",
+      "note": "BOK held rate at 2.50% unanimously for 6th consecutive meeting. GDP growth revised up to 2.0%. Headline CPI projected at 2.1%.",
       "projections": {
-        "2025": 2.1,
-        "2026": 1.9,
+        "2026": 2.1,
         "2027": 2.0
       },
-      "key_quote": "Inflation expected to remain close to target",
+      "key_quote": "Growth forecast revised up to 2.0%; inflation near target",
       "policy_rate": {
         "rate": "2.50%",
-        "last_change": "— Nov 2025 (hold)"
+        "last_change": "— Feb 2026 (hold)"
       }
     },
     "SG": {
@@ -203,7 +199,7 @@
       "source_url": "https://www.mas.gov.sg/monetary-policy",
       "publication_date": "December 2025",
       "forecast_type": "SPF median forecast (CPI)",
-      "note": "MAS uses exchange rate policy, not interest rates. Core inflation forecast 0.5-1.5% for 2026.",
+      "note": "MAS uses exchange rate policy, not interest rates. Core inflation forecast 0.5-1.5% for 2026. Next MAS policy review in April 2026.",
       "projections": {
         "2025": 0.9,
         "2026": 1.5,
@@ -222,7 +218,7 @@
       "source_url": "https://www.imf.org/en/Publications/WEO",
       "publication_date": "October 2025",
       "forecast_type": "IMF staff projection (CPI)",
-      "note": "Post-hyperinflation recovery. BCV does not publish forecasts. Data reliability uncertain.",
+      "note": "Post-hyperinflation recovery. BCV does not publish forecasts. Data reliability uncertain. Actual 2025 inflation was ~475%.",
       "projections": {
         "2025": 150,
         "2026": 80,
@@ -241,7 +237,7 @@
       "source_url": "https://www.imf.org/en/Publications/WEO",
       "publication_date": "October 2025",
       "forecast_type": "IMF staff projection (CPI)",
-      "note": "PBoC does not publish inflation forecasts. IMF projections used. Deflationary pressures persist.",
+      "note": "PBoC does not publish inflation forecasts. IMF projections used. 1Y LPR held at 3.00% for 10 consecutive months.",
       "projections": {
         "2025": 0.5,
         "2026": 1.2,
@@ -249,8 +245,8 @@
       },
       "key_quote": "Deflationary pressures amid weak domestic demand",
       "policy_rate": {
-        "rate": "3.10%",
-        "last_change": "↓ Oct 2025"
+        "rate": "3.00%",
+        "last_change": "— Mar 2026 (hold)"
       }
     }
   }
