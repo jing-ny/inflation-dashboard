@@ -97,16 +97,17 @@
         <!-- Central Bank Outlook Table - DYNAMICALLY LOADED -->
         <section class="section">
             <div class="section-header">
-                <h2 class="section-title">Central Bank Outlook</h2>
-                <p class="section-subtitle">Latest inflation forecasts from monetary policy authorities</p>
+                <h2 class="section-title">Inflation Outlook</h2>
+                <p class="section-subtitle">Central bank and IMF inflation forecasts compared</p>
             </div>
+            <div id="outlookContext" class="outlook-context" style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.8125rem; color: #92400e; line-height: 1.5;"></div>
             <table class="data-table outlook-table">
                 <thead>
                     <tr>
                         <th>Country</th>
                         <th>Source</th>
-                        <th>2025</th>
-                        <th>2026</th>
+                        <th>2026 (CB)</th>
+                        <th>2026 (IMF)</th>
                         <th>2027</th>
                         <th class="assessment-header">Key Assessment</th>
                     </tr>
@@ -115,6 +116,9 @@
                     <tr><td colspan="6" class="loading">Loading forecasts...</td></tr>
                 </tbody>
             </table>
+            <p style="margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280;">
+                CB = Central bank's own projection. IMF = <a href="https://www.imf.org/en/publications/weo/issues/2026/01/19/world-economic-outlook-update-january-2026" target="_blank" style="color: #6b7280;">IMF WEO Jan 2026 Update</a> (pre-conflict baseline). Next full WEO: April 2026.
+            </p>
         </section>
 
         <!-- Policy Rates Grid - DYNAMICALLY LOADED -->
@@ -273,15 +277,25 @@
     }
 
     /**
-     * Load and render the Central Bank Outlook table from cb_forecasts.json
+     * Load and render the Inflation Outlook table from cb_forecasts.json + imf_forecasts.json
      */
     async function loadOutlookTable() {
         const tbody = document.getElementById('outlookTableBody');
-        
+        const contextDiv = document.getElementById('outlookContext');
+
         try {
-            const response = await fetch('data/cb_forecasts.json');
-            const forecastData = await response.json();
-            
+            const [cbResponse, imfResponse] = await Promise.all([
+                fetch('data/cb_forecasts.json'),
+                fetch('data/imf_forecasts.json')
+            ]);
+            const forecastData = await cbResponse.json();
+            const imfData = await imfResponse.json();
+
+            // Show geopolitical context note
+            if (imfData.note) {
+                contextDiv.innerHTML = `<strong>⚠ Context:</strong> ${imfData.note}`;
+            }
+
             const displayOrder = forecastData.display_order || DISPLAY_ORDER;
             let html = '';
 
@@ -291,22 +305,31 @@
 
                 const page = COUNTRY_PAGES[code];
                 const proj = forecast.projections;
-                
+                const imfCountry = imfData.countries?.[code];
+                const imf2026 = imfCountry?.forecasts?.['2026'];
+
                 // Format source with date abbreviation
                 const sourceDate = forecast.publication_date
-                    .replace('December', 'Dec')
-                    .replace('November', 'Nov')
-                    .replace('October', 'Oct')
-                    .replace('2025', "'25")
-                    .replace('2026', "'26");
+                    .replace('January', 'Jan').replace('February', 'Feb').replace('March', 'Mar')
+                    .replace('December', 'Dec').replace('November', 'Nov').replace('October', 'Oct')
+                    .replace('2025', "'25").replace('2026', "'26");
+
+                // Highlight divergence between CB and IMF
+                const cb2026 = proj['2026'];
+                let imfCell = '—';
+                if (imf2026 !== undefined && imf2026 !== null) {
+                    const diff = cb2026 !== null ? Math.abs(cb2026 - imf2026) : 0;
+                    const divergeStyle = diff >= 0.5 ? ' style="color: #dc2626; font-weight: 600;"' : '';
+                    imfCell = `<span${divergeStyle}>${imf2026.toFixed(1)}%</span>`;
+                }
 
                 html += `
                     <tr onclick="window.location='${page}'" class="clickable-row">
                         <td class="country-cell">${forecast.flag} ${code}</td>
                         <td class="source-cell">${forecast.source} ${sourceDate}</td>
-                        <td>${proj['2025'] !== null ? proj['2025'].toFixed(1) + '%' : '—'}</td>
-                        <td><strong>${proj['2026'] !== null ? proj['2026'].toFixed(1) + '%' : '—'}</strong></td>
-                        <td>${proj['2027'] !== null ? proj['2027'].toFixed(1) + '%' : '—'}</td>
+                        <td><strong>${cb2026 !== null && cb2026 !== undefined ? cb2026.toFixed(1) + '%' : '—'}</strong></td>
+                        <td>${imfCell}</td>
+                        <td>${proj['2027'] !== null && proj['2027'] !== undefined ? proj['2027'].toFixed(1) + '%' : '—'}</td>
                         <td class="assessment-cell">"${forecast.key_quote}"</td>
                     </tr>
                 `;

@@ -1,7 +1,9 @@
 {
   "metadata": {
     "last_updated": "March 2026",
-    "notes": "Central bank inflation forecasts and policy rates"
+    "notes": "Central bank inflation forecasts and policy rates",
+    "context": "The Iran war (Mar 2026) has sharply divided the inflation outlook. The ECB and Fed both revised 2026 inflation up (ECB: 1.9%→2.6%, Fed: 2.5%→2.7%) citing energy supply disruption via the Strait of Hormuz. Oil briefly hit $120/bbl. Meanwhile, the RBA hiked rates after Australian inflation surprised to the upside, while most other central banks held steady. IMF pre-conflict projections (Jan 2026 WEO) now look optimistic — the April 2026 WEO will likely revise upward. JP Morgan expects 'disparate outcomes' across regions: US inflation accelerating above 3%, Europe moderating to 2%, Asia subdued.",
+    "imf_baseline": "IMF WEO January 2026 Update (pre-conflict)"
   },
   "display_order": ["US", "EA", "UK", "CA", "AU", "NZ", "ZA", "JP", "KR", "SG", "IN", "CN", "VE"],
   "forecasts": {
