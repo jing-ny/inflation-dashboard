@@ -13,6 +13,7 @@ Output:
     - data/cb_forecasts_changes.md (summary of changes for PR)
 """
 
+import argparse
 import json
 import re
 import os
@@ -352,20 +353,74 @@ def compare_forecasts(current, new):
     return changes
 
 
+COUNTRY_SCRAPERS = {
+    "EA": scrape_ecb,
+    "UK": scrape_boe,
+    "AU": scrape_rba,
+    "CA": scrape_boc,
+    "NZ": scrape_rbnz,
+    "ZA": scrape_sarb,
+}
+
+
+def parse_args():
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Auto-scrape central bank inflation forecasts."
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force scrape even if a recent draft already exists",
+    )
+    parser.add_argument(
+        "--country",
+        type=str,
+        default=None,
+        help="Scrape only the specified country code (e.g. UK, EA, AU)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        dest="dry_run",
+        help="Run scrapers but do not write output files",
+    )
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
+
     print("🔄 Auto-scraping Central Bank Forecasts...")
-    print(f"   Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
-    
-    # Scrape each bank
-    scrapers = [
-        scrape_ecb,
-        scrape_boe,
-        scrape_rba,
-        scrape_boc,
-        scrape_rbnz,
-        scrape_sarb,
-    ]
-    
+    print(f"   Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    if args.dry_run:
+        print("   Mode: DRY RUN (no files will be written)")
+    if args.country:
+        print(f"   Country filter: {args.country}")
+    if args.force:
+        print("   Force: enabled")
+    print()
+
+    # Check for existing draft unless --force
+    draft_path = "docs/data/cb_forecasts_draft.json"
+    if not args.force and os.path.exists(draft_path):
+        mod_time = datetime.fromtimestamp(os.path.getmtime(draft_path))
+        age_hours = (datetime.now() - mod_time).total_seconds() / 3600
+        if age_hours < 12:
+            print(f"⚠️  Recent draft exists ({age_hours:.1f}h old). Use --force to re-scrape.")
+            return
+
+    # Select scrapers
+    if args.country:
+        code = args.country.upper()
+        if code not in COUNTRY_SCRAPERS:
+            print(f"❌ Unknown country code: {code}")
+            print(f"   Available: {', '.join(COUNTRY_SCRAPERS.keys())}")
+            return
+        scrapers = [COUNTRY_SCRAPERS[code]]
+    else:
+        scrapers = list(COUNTRY_SCRAPERS.values())
+
     new_forecasts = []
     for scraper in scrapers:
         try:
@@ -398,18 +453,24 @@ def main():
         "forecasts": new_forecasts
     }
     
+    if args.dry_run:
+        print("\n🏁 Dry run complete. No files written.")
+        print(f"   Forecasts extracted: {len(new_forecasts)}")
+        print(f"   Changes detected: {len(changes)}")
+        return
+
     os.makedirs("docs/data", exist_ok=True)
-    
+
     with open("docs/data/cb_forecasts_draft.json", 'w') as f:
         json.dump(draft, f, indent=2)
     print(f"\n📄 Draft saved to docs/data/cb_forecasts_draft.json")
-    
+
     # Create changes markdown for PR
     md = f"# Central Bank Forecast Changes\n\n"
     md += f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M UTC')}\n\n"
     md += "## ⚠️ Review Required\n\n"
     md += "The following values were auto-extracted and may need verification:\n\n"
-    
+
     for forecast in new_forecasts:
         md += f"### {forecast['bank']} ({forecast['country']})\n"
         md += f"- **Source:** [{forecast['source']}]({forecast.get('source_url', '#')})\n"
@@ -418,7 +479,7 @@ def main():
         for p in forecast["projections"]:
             md += f"  - {p['year']}: **{p['value']}%**\n"
         md += "\n"
-    
+
     if changes:
         md += "## Changes Detected\n\n"
         for change in changes:
@@ -429,11 +490,11 @@ def main():
     else:
         md += "## No Changes Detected\n\n"
         md += "Extracted values match current data.\n"
-    
+
     with open("docs/data/cb_forecasts_changes.md", 'w') as f:
         f.write(md)
     print(f"📄 Changes summary saved to docs/data/cb_forecasts_changes.md")
-    
+
     print("\n✅ Done! Review the draft and changes before merging.")
 
 

@@ -16,14 +16,14 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # FRED series for each country
 FRED_SERIES = {
-    'US': 'CPIAUCSL',
+    'US': 'CPIAUCNS',              # CPI-U All Urban Consumers, NSA (index)
     'EA': 'CP0000EZ19M086NEST',
     'UK': 'GBRCPIALLMINMEI',
     'CA': 'CANCPIALLMINMEI',
     'AU': 'AUSCPIALLQINMEI',
     'NZ': 'NZLCPIALLQINMEI',
     'ZA': 'ZAFCPIALLMINMEI',
-    'JP': 'FPCPITOTLZGJPN',            # World Bank annual (OECD series broken)
+    'JP': 'JPNCPIALLMINMEI',       # COICOP 1999 index (alt: FPCPITOTLZGJPN)
     'KR': 'KORCPIALLMINMEI',       # COICOP 1999 - discontinued Nov 2023, monitor anyway
     'SG': 'FPCPITOTLZGSGP',        # World Bank annual (OECD series broken)
     'IN': 'INDCPIALLMINMEI',
@@ -208,17 +208,65 @@ class DataMonitor:
     def update_forecast_history(self):
         """Snapshot current forecasts to history files if changed"""
         today = datetime.now().strftime('%Y-%m-%d')
-        
+
         # Load current forecasts
         cb_path = os.path.join(BASE_DIR, 'docs/data/cb_forecasts.json')
-        imf_path = os.path.join(BASE_DIR, 'docs/data/imf_forecasts.json')
-        
         cb_history_path = os.path.join(BASE_DIR, 'docs/data/history/cb_forecast_history.json')
-        imf_history_path = os.path.join(BASE_DIR, 'docs/data/history/imf_forecast_history.json')
-        
-        # This is a placeholder - actual implementation would compare
-        # current forecasts with last snapshot and add if different
-        pass
+
+        # Read current cb_forecasts.json
+        if not os.path.exists(cb_path):
+            self.errors.append("cb_forecasts.json not found")
+            return
+
+        with open(cb_path, 'r') as f:
+            cb_data = json.load(f)
+
+        # Read or initialize history
+        os.makedirs(os.path.dirname(cb_history_path), exist_ok=True)
+        if os.path.exists(cb_history_path):
+            with open(cb_history_path, 'r') as f:
+                history = json.load(f)
+        else:
+            history = {
+                "metadata": {
+                    "description": "Historical record of central bank inflation forecast revisions",
+                    "frequency": "Updated after major monetary policy meetings"
+                },
+                "snapshots": []
+            }
+
+        # Build a compact snapshot: just projections and policy rates per country
+        snapshot_forecasts = {}
+        for country_code, forecast in cb_data.get('forecasts', {}).items():
+            entry = {
+                "source": forecast.get('source', '') + ' ' + forecast.get('publication_date', ''),
+                "projections": forecast.get('projections', {}),
+                "policy_rate": forecast.get('policy_rate', {}).get('rate', '')
+            }
+            if forecast.get('note'):
+                entry["note"] = forecast['note']
+            snapshot_forecasts[country_code] = entry
+
+        if not snapshot_forecasts:
+            return
+
+        # Skip if the most recent snapshot is from today
+        if history["snapshots"] and history["snapshots"][-1].get("date") == today:
+            return
+
+        # Append new snapshot
+        history["snapshots"].append({
+            "date": today,
+            "note": f"Auto-snapshot by monitor_updates.py",
+            "forecasts": snapshot_forecasts
+        })
+
+        # Update metadata
+        history["metadata"]["last_updated"] = today
+
+        # Write back
+        with open(cb_history_path, 'w') as f:
+            json.dump(history, f, indent=2)
     
     def run(self):
         """Run all monitoring checks"""

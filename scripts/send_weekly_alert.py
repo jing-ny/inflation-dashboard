@@ -41,7 +41,7 @@ except ImportError:
 # -----------------------------------------------------------------------------
 
 # Paths
-DATA_DIR = "data"
+DATA_DIR = "docs/data"
 SNAPSHOTS_FILE = os.path.join(DATA_DIR, "weekly_snapshots.json")
 CURRENT_DATA_FILE = os.path.join(DATA_DIR, "historical_cpi.json")
 
@@ -191,7 +191,9 @@ def create_current_snapshot(data: Dict) -> WeeklySnapshot:
     week_start = get_week_start()
     countries = {}
     
-    for country_code, country_data in data.get("countries", {}).items():
+    for country_code, country_data in data.items():
+        if not isinstance(country_data, dict):
+            continue
         latest = country_data.get("latest")
         if latest and latest.get("value") is not None:
             countries[country_code] = {
