@@ -97,7 +97,7 @@
 | 1.1 | Manual CPI update for all 13 countries | Updated Jan + Feb 2026 values for all 13 countries. Added 5 missing countries (JP, IN, KR, SG, VE) to `historical_cpi.json`. UK/AU have Jan only (Feb releases Mar 25). NZ updated to Q4 2025. | **Done** (Mar 24) |
 | 1.2 | Update CB forecasts | Updated 10 central banks to latest meetings: Fed Mar SEP, ECB Mar, BoE Feb MPR, BoC Jan MPR, RBA Feb SoMP, RBNZ Feb MPS, SARB Jan, BoJ Mar, RBI Feb, BOK Feb. Policy rates and projections current. SG/VE/CN unchanged (no new publications). | **Done** (Mar 24) |
 | 1.3 | Add direct API sources for key countries | Reduce FRED dependency. Priority: BLS API for US, Stats Canada API for CA, ONS API for UK. Each country 2-3 hours. | To Do |
-| 1.4 | Fix Monitor workflow commit failure | `monitor-updates.yml` fails at "Commit and push" when there are no changes. Add a proper check before attempting commit (same pattern as `update-data.yml`). | To Do |
+| 1.4 | Fix Monitor workflow commit failure | Added `permissions: contents: write` (root cause was 403 on push). Also aligned git config and added summary step to match `update-data.yml` pattern. | **Done** (Mar 24) |
 
 ### Phase 2: Fix Known Bugs (Priority: High)
 
