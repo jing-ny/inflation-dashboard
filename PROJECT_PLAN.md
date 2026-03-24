@@ -1,6 +1,6 @@
 # Inflation Dashboard - Project Plan & Architecture
 
-**Last Updated:** March 23, 2026
+**Last Updated:** March 24, 2026
 **Purpose:** Reference document to maintain consistency across sessions.
 
 ---
@@ -50,7 +50,7 @@
 
 ---
 
-## Current State (as of March 23, 2026)
+## Current State (as of March 24, 2026)
 
 ### What Works
 - Dashboard fully deployed on GitHub Pages, all 13 country pages render correctly
@@ -60,20 +60,22 @@
 - Substack newsletter signup embedded on homepage
 - CB forecasts and IMF forecasts populated for all 13 countries
 - 10-year CPI history with Chart.js visualization on country pages
+- CPI data current through Feb 2026 for most countries (updated Mar 24)
+- CB forecasts updated to latest meetings (Mar 24)
 
-### Critical Problem: Data Is ~2 Months Stale
+### Data Freshness
 
-**Live site data as of March 23, 2026:**
+**Live site data as of March 24, 2026:**
 
 | Data | Last Updated | Should Be | Gap |
 |------|-------------|-----------|-----|
-| CPI (all countries) | Dec 2025 | Feb 2026 | ~2 months |
-| CB Forecasts | Jan 2026 | Mar 2026 | ~2 months |
+| CPI (10 countries) | Feb 2026 | Feb 2026 | OK |
+| CPI (UK, AU) | Jan 2026 | Jan 2026 | OK (Feb releasing Mar 25) |
+| CPI (NZ) | Q4 2025 | Q4 2025 | OK (quarterly) |
+| CB Forecasts | Mar 2026 | Mar 2026 | OK |
 | IMF WEO | Oct 2025 | Oct 2025 | OK (next: Apr 2026) |
 
-**Root cause:** FRED API lags official releases by 1-6 months for most international series. The automated `update-data.yml` workflow runs every Monday and succeeds, but FRED has no new data to pull, so nothing gets committed. No commits to `historical_cpi.json` since Feb 3, 2026.
-
-The manual update tools exist (`update_cpi.py`) but require a human to look up each country's official source and enter values.
+**Ongoing concern:** FRED API lags official releases by 1-6 months for most international series. The automated `update-data.yml` workflow runs every Monday and succeeds, but FRED has no new data to pull, so nothing gets committed. Manual updates via `update_cpi.py` remain necessary for timely data.
 
 ### Workflow Status
 
@@ -92,8 +94,8 @@ The manual update tools exist (`update_cpi.py`) but require a human to look up e
 
 | # | Task | Details | Status |
 |---|------|---------|--------|
-| 1.1 | Manual CPI update for all 13 countries | Update Jan + Feb 2026 values using `update_cpi.py`. Refer to CPI_UPDATE_GUIDE.md for official source URLs. | To Do |
-| 1.2 | Update CB forecasts | Multiple central banks have published new forecasts since Jan 2026 (Fed Mar FOMC/SEP, ECB Mar, BoE Feb MPR, BoC Jan MPR, RBA Feb SoMP, RBNZ Feb MPS, SARB Jan+Mar, BoJ Jan, RBI Feb, BOK Feb). Edit `docs/data/cb_forecasts.json`. | To Do |
+| 1.1 | Manual CPI update for all 13 countries | Updated Jan + Feb 2026 values for all 13 countries. Added 5 missing countries (JP, IN, KR, SG, VE) to `historical_cpi.json`. UK/AU have Jan only (Feb releases Mar 25). NZ updated to Q4 2025. | **Done** (Mar 24) |
+| 1.2 | Update CB forecasts | Updated 10 central banks to latest meetings: Fed Mar SEP, ECB Mar, BoE Feb MPR, BoC Jan MPR, RBA Feb SoMP, RBNZ Feb MPS, SARB Jan, BoJ Mar, RBI Feb, BOK Feb. Policy rates and projections current. SG/VE/CN unchanged (no new publications). | **Done** (Mar 24) |
 | 1.3 | Add direct API sources for key countries | Reduce FRED dependency. Priority: BLS API for US, Stats Canada API for CA, ONS API for UK. Each country 2-3 hours. | To Do |
 | 1.4 | Fix Monitor workflow commit failure | `monitor-updates.yml` fails at "Commit and push" when there are no changes. Add a proper check before attempting commit (same pattern as `update-data.yml`). | To Do |
 
