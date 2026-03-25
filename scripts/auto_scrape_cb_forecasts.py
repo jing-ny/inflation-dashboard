@@ -22,10 +22,8 @@ from urllib.request import urlopen, Request
 from urllib.error import URLError
 import ssl
 
-# Disable SSL verification for some government sites
+# Use default SSL verification (secure)
 ssl_context = ssl.create_default_context()
-ssl_context.check_hostname = False
-ssl_context.verify_mode = ssl.CERT_NONE
 
 CURRENT_YEAR = datetime.now().year
 HEADERS = {'User-Agent': 'Mozilla/5.0 (compatible; InflationDashboard/1.0)'}
@@ -64,7 +62,8 @@ def extract_numbers(text, around_pattern, count=4):
 def scrape_ecb():
     """Scrape ECB Staff Projections."""
     print("📊 Scraping ECB...")
-    url = "https://www.ecb.europa.eu/pub/projections/html/ecb.projections202412_ecbstaff~14c709ec36.en.html"
+    # Fallback URL; the index page scrape below usually finds the latest
+    url = None
     
     # Try to find the latest projections page
     index_url = "https://www.ecb.europa.eu/pub/projections/html/index.en.html"
@@ -75,7 +74,11 @@ def scrape_ecb():
         links = re.findall(r'href="([^"]*projections\d{6}[^"]*\.en\.html)"', index_html)
         if links:
             url = "https://www.ecb.europa.eu" + links[0] if links[0].startswith('/') else links[0]
-    
+
+    if not url:
+        print("  ⚠️  Could not find ECB projections URL from index page")
+        return None
+
     html = fetch_url(url)
     if not html:
         return None
@@ -118,17 +121,19 @@ def scrape_boe():
     """Scrape Bank of England Monetary Policy Report."""
     print("📊 Scraping BoE...")
     
-    # BoE MPR page
-    url = "https://www.bankofengland.co.uk/monetary-policy-report/2024/november-2024"
-    
-    # Try to find latest MPR
+    # Try to find latest MPR from index page
+    url = None
     index_url = "https://www.bankofengland.co.uk/monetary-policy-report"
     index_html = fetch_url(index_url)
-    
+
     if index_html:
         links = re.findall(r'href="(/monetary-policy-report/\d{4}/[^"]+)"', index_html)
         if links:
             url = "https://www.bankofengland.co.uk" + links[0]
+
+    if not url:
+        print("  ⚠️  Could not find BoE MPR URL from index page")
+        return None
     
     html = fetch_url(url)
     if not html:
@@ -166,16 +171,19 @@ def scrape_rba():
     """Scrape RBA Statement on Monetary Policy."""
     print("📊 Scraping RBA...")
     
-    url = "https://www.rba.gov.au/publications/smp/2024/nov/economic-outlook.html"
-    
-    # Try to find latest SoMP
+    # Try to find latest SoMP from index page
+    url = None
     index_url = "https://www.rba.gov.au/publications/smp/"
     index_html = fetch_url(index_url)
-    
+
     if index_html:
         links = re.findall(r'href="(/publications/smp/\d{4}/\w+/)"', index_html)
         if links:
             url = "https://www.rba.gov.au" + links[0] + "economic-outlook.html"
+
+    if not url:
+        print("  ⚠️  Could not find RBA SoMP URL from index page")
+        return None
     
     html = fetch_url(url)
     if not html:
@@ -205,16 +213,19 @@ def scrape_boc():
     """Scrape Bank of Canada Monetary Policy Report."""
     print("📊 Scraping BoC...")
     
-    url = "https://www.bankofcanada.ca/2024/10/mpr-2024-10-23/"
-    
-    # Try to find latest MPR
+    # Try to find latest MPR from index page
+    url = None
     index_url = "https://www.bankofcanada.ca/publications/mpr/"
     index_html = fetch_url(index_url)
-    
+
     if index_html:
         links = re.findall(r'href="(https://www\.bankofcanada\.ca/\d{4}/\d{2}/mpr-[^"]+)"', index_html)
         if links:
             url = links[0]
+
+    if not url:
+        print("  ⚠️  Could not find BoC MPR URL from index page")
+        return None
     
     html = fetch_url(url)
     if not html:
@@ -243,16 +254,19 @@ def scrape_rbnz():
     """Scrape RBNZ Monetary Policy Statement."""
     print("📊 Scraping RBNZ...")
     
-    url = "https://www.rbnz.govt.nz/monetary-policy/monetary-policy-statement/mps-november-2024"
-    
-    # Try to find latest MPS
+    # Try to find latest MPS from index page
+    url = None
     index_url = "https://www.rbnz.govt.nz/monetary-policy/monetary-policy-statement"
     index_html = fetch_url(index_url)
-    
+
     if index_html:
         links = re.findall(r'href="(/monetary-policy/monetary-policy-statement/mps-[^"]+)"', index_html)
         if links:
             url = "https://www.rbnz.govt.nz" + links[0]
+
+    if not url:
+        print("  ⚠️  Could not find RBNZ MPS URL from index page")
+        return None
     
     html = fetch_url(url)
     if not html:
@@ -282,7 +296,7 @@ def scrape_sarb():
     
     # SARB publishes forecasts in MPC statements (PDFs), harder to scrape
     # Try the main monetary policy page for any HTML summaries
-    url = "https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements/2024"
+    url = f"https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements/{CURRENT_YEAR}"
     
     html = fetch_url(url)
     if not html:

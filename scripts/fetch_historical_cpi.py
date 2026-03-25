@@ -70,7 +70,7 @@ OUTPUT_DIR = Path(__file__).parent.parent / "docs" / "data" if Path(__file__).pa
 DATA_FILE = OUTPUT_DIR / "historical_cpi.json"
 
 # -----------------------------------------------------------------------------
-# Country Configuration - All 13 Countries
+# Country Configuration - All 15 Countries
 # -----------------------------------------------------------------------------
 
 COUNTRIES = {
@@ -157,11 +157,11 @@ COUNTRIES = {
         "target": 2.0,
         "source": "MIC",
         "source_url": "https://www.stat.go.jp/english/data/cpi/",
-        "fred_series": "JPNCPIALLMINMEI",  # COICOP 1999 index (discontinued Jun 2021 but still serves data)
-        "fred_series_alt": "FPCPITOTLZGJPN",  # World Bank annual YoY fallback
+        "fred_series": "JPNCPALTT01IXNBM",  # COICOP 2018 index, monthly
+        "fred_series_alt": "JPNCPIALLMINMEI",  # COICOP 1999 fallback (discontinued Jun 2021 but may still serve data)
         "frequency": "monthly",
         "data_type": "index",
-        "notes": "FRED OECD COICOP 2018 series (JPNCPALTT01GYM659N) returns 400. Using COICOP 1999 + World Bank annual fallback. Manual supplement recommended.",
+        "notes": "Primary: COICOP 2018 index. Fallback: COICOP 1999 (discontinued Jun 2021). Manual supplement recommended for latest data.",
     },
     "CN": {
         "name": "China",
@@ -189,11 +189,11 @@ COUNTRIES = {
         "target": 2.0,
         "source": "KOSTAT",
         "source_url": "https://kostat.go.kr/",
-        "fred_series": "KORCPIALLMINMEI",  # COICOP 1999 (discontinued Nov 2023)
-        "fred_series_alt": "FPCPITOTLZGKOR",  # World Bank annual fallback
+        "fred_series": "KORCPALTT01IXNBM",  # COICOP 2018 index, monthly
+        "fred_series_alt": "KORCPIALLMINMEI",  # COICOP 1999 fallback (discontinued Nov 2023)
         "frequency": "monthly",
         "data_type": "index",
-        "notes": "FRED COICOP 1999 series discontinued Nov 2023. Falls back to World Bank annual data. Manual supplement recommended.",
+        "notes": "Primary: COICOP 2018 index. Fallback: COICOP 1999 (discontinued Nov 2023). Manual supplement recommended for latest data.",
     },
     "SG": {
         "name": "Singapore",
