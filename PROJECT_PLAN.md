@@ -1,6 +1,6 @@
 # Inflation Dashboard - Project Plan & Architecture
 
-**Last Updated:** March 24, 2026
+**Last Updated:** March 25, 2026
 **Purpose:** Reference document to maintain consistency across sessions.
 
 ---
@@ -46,6 +46,8 @@
 | SG | Singapore | DOS | MAS | Monthly |
 | IN | India | MOSPI | RBI | Monthly |
 | CN | China | NBS | PBOC | Monthly |
+| BR | Brazil | IBGE | BCB | Monthly |
+| MX | Mexico | INEGI | Banxico | Monthly |
 | VE | Venezuela | BCV | BCV | Irregular |
 
 ---
@@ -53,7 +55,7 @@
 ## Current State (as of March 24, 2026)
 
 ### What Works
-- Dashboard fully deployed on GitHub Pages, all 13 country pages render correctly
+- Dashboard fully deployed on GitHub Pages, all 15 country pages render correctly
 - `fetch_historical_cpi.py` covers all 15 countries via FRED + ECB APIs
 - 5 GitHub Actions workflows running on schedule
 - `update_cpi.py` and `batch_update_cpi.py` manual update tools functional
@@ -109,7 +111,7 @@
 | 2.4 | Add argparse to `auto_scrape_cb_forecasts.py` | Added argparse for `--force`, `--country`, `--dry-run`. Wired into scraper logic. | **Done** (Mar 24) |
 | 2.5 | Unify FRED series between scripts | Updated `monitor_updates.py` to use same series as `fetch_historical_cpi.py` (US: CPIAUCNS, JP: JPNCPIALLMINMEI). | **Done** (Mar 24) |
 | 2.6 | Implement `update_forecast_history()` | Implemented in `monitor_updates.py`. Reads CB forecasts, appends timestamped snapshot to `docs/data/history/cb_forecast_history.json`. | **Done** (Mar 24) |
-| 2.7 | Rotate leaked API keys | Commit `c681654` removed hardcoded API keys, but they remain in git history. Rotate FRED, Supabase, and Resend keys. | **Manual** — requires key regeneration on provider dashboards + GitHub Secrets update |
+| 2.7 | Rotate leaked API keys | Rotated FRED, Resend keys. Added Anthropic API key. All GitHub Secrets updated. | **Done** (Mar 25) |
 
 ### Phase 3: Newsletter Automation (Priority: Medium)
 
@@ -139,10 +141,7 @@
 
 | # | Bug | Impact | File |
 |---|-----|--------|------|
-| B7 | Monitor workflow fails on commit step | Attempts git commit when there are no changes | `.github/workflows/monitor-updates.yml` |
-| B8 | SSL verification disabled in CB scraper | `ssl_context.verify_mode = ssl.CERT_NONE` — security risk | `scripts/auto_scrape_cb_forecasts.py` |
-| B9 | CB scraper has hardcoded 2024 fallback URLs | ECB, BoE, RBA, BoC, RBNZ fallback URLs point to 2024 pages | `scripts/auto_scrape_cb_forecasts.py` |
-| B10 | JP and KR FRED series discontinued | JPNCPIALLMINMEI (COICOP 1999) and KORCPIALLMINMEI (discontinued Nov 2023) — auto-update effectively broken for these countries | `scripts/fetch_historical_cpi.py` |
+*None — all known bugs resolved.*
 
 ### Resolved (since Feb 2026)
 
@@ -154,6 +153,10 @@
 | B4 | Added argparse to auto_scrape_cb_forecasts.py | Mar 2026 |
 | B5 | Unified FRED series in monitor_updates.py | Mar 2026 |
 | B6 | Implemented update_forecast_history() | Mar 2026 |
+| B7 | Monitor workflow commit step guarded with has_changes check | Mar 2026 |
+| B8 | Re-enabled SSL verification in CB scraper | Mar 2026 |
+| B9 | Removed hardcoded 2024 URLs; scrapers discover latest from index pages | Mar 2026 |
+| B10 | Switched JP/KR to COICOP 2018 FRED series with fallback | Mar 2026 |
 | Live site out of sync (2 commits, 8 countries) | Full codebase pushed to GitHub | Feb 2026 |
 | Venezuela page "Error loading data" | Null target handling fixed in country.js | Jan 2026 |
 | Quarterly date format crash in monitor | Fixed AU/NZ `2025-Q4` format | Jan 2026 |
@@ -182,18 +185,18 @@ Python Scripts (fetch / update data)
 | `cb_forecasts.json` | Central bank forecasts, policy rates, key quotes | Manual edit after MPC meetings |
 | `imf_forecasts.json` | IMF WEO inflation projections | Manual (2x/year: Apr + Oct) |
 | `cpi_supplements.json` | Manual CPI supplements when FRED lags | Manual |
-| `weekly_snapshots.json` | Weekly alert snapshots for change detection | `send_weekly_alert.py` (not functional) |
-| `history/cb_forecast_history.json` | CB forecast revision tracking | Placeholder (not implemented) |
-| `history/imf_forecast_history.json` | IMF forecast revision tracking | Placeholder (not implemented) |
+| `weekly_snapshots.json` | Weekly alert snapshots for change detection | `send_weekly_alert.py` |
+| `history/cb_forecast_history.json` | CB forecast revision tracking | `monitor_updates.py` |
+| `history/imf_forecast_history.json` | IMF forecast revision tracking | `monitor_updates.py` |
 
 ### Frontend Files (in `docs/`)
 
 | File | Purpose |
 |------|---------|
 | `index.html` | Overview — inflation table, CB outlook, policy rates |
-| `country.js` | Shared JS module for all 13 country detail pages |
-| `styles.css` | Shared styles (has duplication issue — see B1) |
-| `{code}.html` | Country detail pages (us, ea, uk, ca, au, nz, za, jp, kr, sg, in, cn, ve) |
+| `country.js` | Shared JS module for all 15 country detail pages |
+| `styles.css` | Shared styles |
+| `{code}.html` | Country detail pages (us, ea, uk, ca, au, nz, za, br, mx, jp, kr, sg, in, cn, ve) |
 
 ---
 
@@ -204,7 +207,7 @@ Python Scripts (fetch / update data)
 │                  Data Sources                                    │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐   │
 │  │ FRED API │  │ ECB API  │  │ Official │  │ Manual Input │   │
-│  │ (13 ctry)│  │ (EA only)│  │ Websites │  │ update_cpi.py│   │
+│  │ (15 ctry)│  │ (EA only)│  │ Websites │  │ update_cpi.py│   │
 │  └────┬─────┘  └────┬─────┘  └─────┬────┘  └──────┬───────┘   │
 └───────┼──────────────┼──────────────┼──────────────┼───────────┘
         │              │              │              │
@@ -221,7 +224,7 @@ Python Scripts (fetch / update data)
 │                    GitHub Pages (docs/)                          │
 │  ┌─────────────────┐  ┌───────────────────────────────────┐   │
 │  │index.html       │  │us.html, ea.html, ... ve.html      │   │
-│  │(overview)       │  │(13 country detail pages)           │   │
+│  │(overview)       │  │(15 country detail pages)           │   │
 │  └─────────────────┘  └───────────────────────────────────┘   │
 └────────────────────────────────────────────────────────────────┘
 ```
@@ -236,11 +239,11 @@ inflation-dashboard/
 ├── PROJECT_PLAN.md              # This file
 ├── METHODOLOGY.md               # Data methodology documentation
 ├── CPI_UPDATE_GUIDE.md          # Official source URLs + release calendar
-├── MAINTENANCE.md               # Manual update procedures
 ├── CHANGELOG.md
 ├── LICENSE
 ├── .env.local                   # Local API keys (gitignored)
 ├── .gitignore
+├── update.sh                    # One-command update tool (cpi/forecast/imf/status)
 ├── update_cpi.py                # Manual CPI update tool (single country)
 ├── batch_update_cpi.py          # Manual CPI update tool (batch)
 │
@@ -250,18 +253,16 @@ inflation-dashboard/
 │   ├── auto_scrape_cb_forecasts.py  # CB forecast scraper (6 banks: ECB, BoE, RBA, BoC, RBNZ, SARB)
 │   ├── monitor_updates.py       # FRED freshness check + CB meeting calendar
 │   ├── send_notification.py     # Email via Resend API
-│   ├── send_weekly_alert.py     # Weekly alert logic (BUG: wrong data path, non-functional)
+│   ├── send_weekly_alert.py     # Weekly change detection + email alert
+│   ├── generate_newsletter.py   # Claude API newsletter draft generation
 │   ├── patch_cpi_supplements.py # Patches FRED gaps
-│   ├── test_data_sources.py     # Data source testing
 │   └── test_data_sources.py     # Data source testing
 │
 ├── docs/                        # GitHub Pages root
 │   ├── index.html               # Overview page
-│   ├── {country}.html           # 13 country detail pages
-│   ├── styles.css               # Shared styles (BUG: CSS duplicated 5x)
+│   ├── {country}.html           # 15 country detail pages
+│   ├── styles.css               # Shared styles
 │   ├── country.js               # Shared JS for country pages
-│   ├── data_sources.md          # Legacy doc (in docs/)
-│   ├── project_plan.md          # Legacy plan copy (in docs/)
 │   └── data/                    # ★ SINGLE SOURCE OF TRUTH ★
 │       ├── historical_cpi.json  # CPI data for all 15 countries
 │       ├── cb_forecasts.json    # Central bank forecasts + policy rates
@@ -269,14 +270,15 @@ inflation-dashboard/
 │       ├── cpi_supplements.json # Manual CPI supplements
 │       ├── weekly_snapshots.json
 │       └── history/
-│           ├── cb_forecast_history.json   # Placeholder
-│           └── imf_forecast_history.json  # Placeholder
+│           ├── cb_forecast_history.json   # Forecast revision history
+│           └── imf_forecast_history.json  # Forecast revision history
 │
 └── .github/workflows/
     ├── update-data.yml              # Mon 12pm UTC — FRED/ECB fetch + commit
     ├── monitor-updates.yml          # Mon & Thu 9am UTC — freshness check + email
     ├── auto-scrape-cb-forecasts.yml # Mon & Thu 10am UTC — CB forecast scraper
-    └── weekly-alert.yml             # Mon 1pm UTC — stub (just prints data)
+    ├── weekly-alert.yml             # Mon 1pm UTC — change detection + email
+    └── newsletter-draft.yml         # 1st of month + on CPI push — Claude API draft
 ```
 
 ---
@@ -287,24 +289,26 @@ inflation-dashboard/
 
 | Workflow | File | Schedule | Purpose | Status |
 |----------|------|----------|---------|--------|
-| Update Inflation Data | `update-data.yml` | Mon 12pm UTC | Fetch CPI + IMF from FRED/ECB, commit if changed | Running, but FRED lag means no new data |
-| Monitor & Update Data | `monitor-updates.yml` | Mon & Thu 9am UTC | Check FRED for updates, email alerts | Running, commit step fails (B7) |
-| Auto-Scrape CB Forecasts | `auto-scrape-cb-forecasts.yml` | Mon & Thu 10am UTC | Scrape CB forecast pages | Running, CLI args now functional |
-| Weekly Alert | `weekly-alert.yml` | Mon 1pm UTC | Data check | Stub — does not call `send_weekly_alert.py` |
+| Update Inflation Data | `update-data.yml` | Mon 12pm UTC | Fetch CPI + IMF from FRED/ECB, commit if changed | Running |
+| Monitor & Update Data | `monitor-updates.yml` | Mon & Thu 9am UTC | Check FRED for updates, email alerts | Running |
+| Auto-Scrape CB Forecasts | `auto-scrape-cb-forecasts.yml` | Mon & Thu 10am UTC | Scrape CB forecast pages | Running |
+| Weekly Alert | `weekly-alert.yml` | Mon 1pm UTC | Change detection + email alert | Running |
+| Newsletter Draft | `newsletter-draft.yml` | 1st of month + on CPI push | Claude API draft generation | Running |
 
 ### GitHub Secrets Required
 
 | Secret | Purpose | Status |
 |--------|---------|--------|
-| `FRED_API_KEY` | FRED API access | Configured |
-| `RESEND_API_KEY` | Email notifications | Configured |
+| `FRED_API_KEY` | FRED API access | Configured (rotated Mar 2026) |
+| `RESEND_API_KEY` | Email notifications | Configured (rotated Mar 2026) |
+| `ANTHROPIC_API_KEY` | Claude API for newsletter drafts | Configured (Mar 2026) |
 | `NOTIFICATION_EMAIL` | Recipient email | Configured |
 
 ### Automation Coverage
 
 | Task | Automated? | Notes |
 |------|-----------|-------|
-| CPI data fetch (all 13) | Yes (FRED/ECB) | But FRED lags 1-6 months for most countries |
+| CPI data fetch (all 15) | Yes (FRED/ECB) | But FRED lags 1-6 months for most countries |
 | CPI manual update tool | Yes (CLI) | `update_cpi.py` — requires human to look up values |
 | CB forecasts (6 banks) | Partial | ECB, BoE, RBA, BoC, RBNZ, SARB — scraper generates drafts |
 | CB forecasts (7 banks) | No | Fed, BoJ, BOK, MAS, RBI, PBoC, IMF(VE/CN) — manual only |
@@ -312,8 +316,8 @@ inflation-dashboard/
 | IMF WEO reminders | Yes | `monitor_updates.py` (Apr/Oct) |
 | Stale data alerts | Yes | `monitor_updates.py` (75-day threshold) |
 | Email notifications | Yes | Resend API |
-| Weekly material change alert | No | `send_weekly_alert.py` exists but is broken (B3) |
-| Newsletter draft generation | No | Planned (Phase 3) |
+| Weekly material change alert | Yes | `send_weekly_alert.py` via `weekly-alert.yml` |
+| Newsletter draft generation | Yes | `generate_newsletter.py` via `newsletter-draft.yml` (monthly + on CPI push) |
 
 ---
 
@@ -385,8 +389,8 @@ FRED OECD series lag official releases significantly:
 
 | Country | Series | Issue | Fallback |
 |---------|--------|-------|----------|
-| JP | JPNCPIALLMINMEI | COICOP 1999 — may stop updating | World Bank annual (FPCPITOTLZGJPN) + manual |
-| KR | KORCPIALLMINMEI | Discontinued Nov 2023 | World Bank annual (FPCPITOTLZGKOR) + manual |
+| JP | JPNCPALTT01IXNBM | COICOP 2018 (primary) | JPNCPIALLMINMEI (COICOP 1999, discontinued Jun 2021) |
+| KR | KORCPALTT01IXNBM | COICOP 2018 (primary) | KORCPIALLMINMEI (COICOP 1999, discontinued Nov 2023) |
 | SG | FPCPITOTLZGSGP | World Bank annual only | Manual from SingStat |
 
 ### Special Cases

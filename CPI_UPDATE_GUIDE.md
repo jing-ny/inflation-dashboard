@@ -20,6 +20,8 @@ This is the single reference for all manual data updates: CPI, central bank fore
 | IN | MOSPI | https://www.mospi.gov.in/ | ~12th |
 | KR | KOSTAT | https://kostat.go.kr/ | ~1st |
 | SG | SingStat | https://www.singstat.gov.sg/ | ~23rd |
+| BR | IBGE | https://www.ibge.gov.br/en/statistics/economic/prices-and-costs.html | ~10th |
+| MX | INEGI | https://www.inegi.org.mx/temas/inpc/ | ~9th |
 | VE | BCV | https://www.bcv.org.ve/ | Irregular |
 
 ## FRED Series (for automated fetching)
@@ -35,11 +37,13 @@ These FRED series can be used for automated data retrieval, but note that FRED d
 | AU | AUSCPIALLQINMEI | Australia CPI (was quarterly, now monthly) |
 | NZ | NZLCPIALLQINMEI | New Zealand CPI (quarterly) |
 | ZA | ZAFCPIALLMINMEI | South Africa CPI |
-| JP | JPNCPIALLMINMEI | Japan CPI |
+| JP | JPNCPALTT01IXNBM | Japan CPI (COICOP 2018) |
 | CN | CHNCPIALLMINMEI | China CPI |
 | IN | INDCPIALLMINMEI | India CPI |
-| KR | KORCPIALLMINMEI | South Korea CPI |
-| SG | SGPCPIALLMINMEI | Singapore CPI |
+| KR | KORCPALTT01IXNBM | South Korea CPI (COICOP 2018) |
+| SG | FPCPITOTLZGSGP | Singapore CPI (World Bank annual) |
+| BR | BRACPIALLMINMEI | Brazil CPI |
+| MX | MEXCPIALLMINMEI | Mexico CPI |
 
 ## Verification Checklist
 
@@ -95,6 +99,13 @@ When updating CPI data:
 3. After all major countries updated, commit and push
 
 ```bash
+# Recommended: use update.sh (handles commit + push automatically)
+./update.sh cpi
+> US 2026-03 2.5
+> UK 2026-02 2.9
+> done
+
+# Or manually:
 python3 update_cpi.py -c US -d 2026-03 -v 2.5
 git add docs/data/historical_cpi.json
 git commit -m "Update CPI data: US Mar 2026"
@@ -161,7 +172,8 @@ git push
 ```
 Monthly pattern:
   1st:  KR
-  9th:  CN
+  9th:  CN, MX
+  10th: BR
   12th: IN
   13th: US
   15th: UK

@@ -131,7 +131,7 @@ Set `EDITOR=nano` or `EDITOR=vim` if you don't use VS Code.
 | FRED/ECB CPI fetch | Every Monday | `update-data.yml` (commits if new data found) |
 | Weekly change alert | Every Monday | `weekly-alert.yml` (emails if ≥0.3pp change) |
 | CB forecast scrape | Mon & Thu | `auto-scrape-cb-forecasts.yml` (6 banks) |
-| Newsletter draft | On CPI data push | `newsletter-draft.yml` (Claude API → `docs/drafts/`) |
+| Newsletter draft | 1st of month + on CPI push | `newsletter-draft.yml` (Claude API → `docs/drafts/`) |
 
 FRED lags official releases by 1-6 months for most countries, so manual CPI updates via `./update.sh cpi` remain necessary for timely data.
 

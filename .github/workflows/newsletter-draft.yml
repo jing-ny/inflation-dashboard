@@ -1,6 +1,9 @@
 name: Newsletter Draft
 
 on:
+  schedule:
+    # Run on the 1st of each month at 2pm UTC (10am EST)
+    - cron: '0 14 1 * *'
   push:
     branches: [main]
     paths:

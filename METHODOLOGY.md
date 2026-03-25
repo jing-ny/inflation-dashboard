@@ -27,11 +27,13 @@ All data is stored in `docs/data/` as the single source of truth.
 | 🇦🇺 Australia | FRED (AUSCPIALLQINMEI) | [ABS](https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/) | Monthly* |
 | 🇳🇿 New Zealand | FRED (NZLCPIALLQINMEI) | [Stats NZ](https://www.stats.govt.nz/indicators/consumers-price-index-cpi/) | Quarterly |
 | 🇿🇦 South Africa | FRED (ZAFCPIALLMINMEI) | [Stats SA](https://www.statssa.gov.za/) | Monthly |
-| 🇯🇵 Japan | FRED (JPNCPALTT01GYM659N) | [MIC](https://www.stat.go.jp/english/data/cpi/) | Monthly |
+| 🇯🇵 Japan | FRED (JPNCPALTT01IXNBM) | [MIC](https://www.stat.go.jp/english/data/cpi/) | Monthly |
 | 🇨🇳 China | FRED (CHNCPIALLMINMEI) | [NBS](https://www.stats.gov.cn/english/) | Monthly |
 | 🇮🇳 India | FRED (INDCPIALLMINMEI) | [MOSPI](https://www.mospi.gov.in/) | Monthly |
-| 🇰🇷 South Korea | FRED (KORCPIALLMINMEI) | [KOSTAT](https://kostat.go.kr/) | Monthly |
-| 🇸🇬 Singapore | FRED (SGPCPIALLMINMEI) | [SingStat](https://www.singstat.gov.sg/) | Monthly |
+| 🇰🇷 South Korea | FRED (KORCPALTT01IXNBM) | [KOSTAT](https://kostat.go.kr/) | Monthly |
+| 🇸🇬 Singapore | FRED (FPCPITOTLZGSGP) | [SingStat](https://www.singstat.gov.sg/) | Monthly |
+| 🇧🇷 Brazil | FRED (BRACPIALLMINMEI) | [IBGE](https://www.ibge.gov.br/) | Monthly |
+| 🇲🇽 Mexico | FRED (MEXCPIALLMINMEI) | [INEGI](https://www.inegi.org.mx/) | Monthly |
 | 🇻🇪 Venezuela | FRED (FPCPITOTLZGVEN) | [BCV](https://www.bcv.org.ve/) | Monthly |
 
 *Australia transitioned to monthly CPI in late 2025. Historical data is quarterly.
@@ -40,7 +42,8 @@ All data is stored in `docs/data/` as the single source of truth.
 - All series measure **headline CPI (All Items)** year-over-year percentage change
 - FRED OECD series use base year 2015=100
 - US BLS series uses base year 1982-84=100
-- Japan series changed from JPNCPIALLMINMEI (discontinued Jun 2021) to JPNCPALTT01GYM659N (COICOP 2018)
+- Japan series changed from JPNCPIALLMINMEI (discontinued Jun 2021) to JPNCPALTT01IXNBM (COICOP 2018)
+- South Korea series changed from KORCPIALLMINMEI (discontinued Nov 2023) to KORCPALTT01IXNBM (COICOP 2018)
 - Venezuela data reliability varies; post-hyperinflation period only (2022+)
 
 ---
@@ -97,6 +100,8 @@ When FRED data is stale, we verify and supplement with official data from the so
 | Bank of Korea | BOK Website | CPI Inflation | 4x/year |
 | Monetary Authority of Singapore | MAS Website | CPI Inflation | 4x/year |
 | Reserve Bank of India | RBI Website | CPI Inflation | 6x/year |
+| Banco Central do Brasil | BCB Website | IPCA Inflation | 8x/year |
+| Banco de México | Banxico Website | CPI Inflation | 8x/year |
 | China (PBOC) | IMF WEO | CPI Inflation | 2x/year |
 | Venezuela (BCV) | IMF WEO | CPI Inflation | 2x/year |
 
@@ -136,13 +141,15 @@ This enables tracking how forecasts change over time and comparing forecast accu
 
 | Workflow | Schedule | Purpose |
 |----------|----------|---------|
+| Update Inflation Data | Mon 12 PM UTC | Fetch CPI from FRED/ECB |
 | Monitor & Update Data | Mon/Thu 9 AM UTC | Check FRED for new CPI data |
 | Auto-Scrape CB Forecasts | Mon/Thu 10 AM UTC | Check central bank publications |
 | Weekly Alert | Mon 1 PM UTC | Summary notifications |
+| Newsletter Draft | 1st of month + on CPI push | Generate Claude-powered draft |
 
 ### Manual Updates Required
 
-- **Central bank forecasts:** After MPC meetings (see MAINTENANCE.md)
+- **Central bank forecasts:** After MPC meetings (see CPI_UPDATE_GUIDE.md)
 - **IMF forecasts:** April and October
 - **CPI verification:** Monthly, using `update_cpi.py`
 
@@ -159,7 +166,7 @@ This enables tracking how forecasts change over time and comparing forecast accu
 
 ### Japan (JP)
 - **FRED Series Change:** Original series JPNCPIALLMINMEI discontinued June 2021
-- Now using JPNCPALTT01GYM659N (COICOP 2018 classification)
+- Now using JPNCPALTT01IXNBM (COICOP 2018 index), with COICOP 1999 as fallback
 - BoJ uses fiscal year (April-March) for forecasts
 
 ### Australia (AU)
@@ -188,7 +195,7 @@ This enables tracking how forecasts change over time and comparing forecast accu
 
 ```
 docs/data/                        # Single source of truth
-├── historical_cpi.json           # CPI history for all 13 countries
+├── historical_cpi.json           # CPI history for all 15 countries
 ├── cb_forecasts.json             # Central bank forecasts
 ├── imf_forecasts.json            # IMF WEO projections
 ├── cpi_supplements.json          # Manual supplements for FRED lag
@@ -198,13 +205,16 @@ docs/data/                        # Single source of truth
     └── imf_forecast_history.json # IMF forecast revision history
 
 scripts/                          # Data collection scripts
-├── fetch_historical_cpi.py       # FRED API fetcher
+├── fetch_historical_cpi.py       # FRED API fetcher (all 15 countries)
 ├── fetch_imf_forecasts.py        # IMF API fetcher
-├── auto_scrape_cb_forecasts.py   # CB publication scraper
+├── auto_scrape_cb_forecasts.py   # CB publication scraper (6 banks)
 ├── monitor_updates.py            # Automated checker
-└── send_notification.py          # Email notifications
+├── send_notification.py          # Email via Resend API
+├── send_weekly_alert.py          # Weekly change detection + email
+└── generate_newsletter.py        # Claude API newsletter draft generation
 
 # Manual update tools (repo root)
+├── update.sh                     # One-command update tool (cpi/forecast/imf/status)
 ├── update_cpi.py                 # Single-value CPI updates
 ├── batch_update_cpi.py           # Multi-country batch updates
 └── CPI_UPDATE_GUIDE.md           # Update procedures and sources
@@ -237,6 +247,8 @@ scripts/                          # Data collection scripts
 - **India MOSPI:** https://www.mospi.gov.in/
 - **KOSTAT:** https://kostat.go.kr/
 - **SingStat:** https://www.singstat.gov.sg/
+- **Brazil IBGE:** https://www.ibge.gov.br/
+- **Mexico INEGI:** https://www.inegi.org.mx/
 - **Venezuela BCV:** https://www.bcv.org.ve/
 
 ### Data APIs
