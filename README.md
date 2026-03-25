@@ -38,7 +38,7 @@ It aggregates official inflation statistics and central bank projections in one 
 
 ## Coverage
 
-This dashboard tracks headline consumer price inflation (year-over-year) across 13 economies:
+This dashboard tracks headline consumer price inflation (year-over-year) across 15 economies:
 
 | Economy | Inflation Measure | Source | Central Bank |
 |---------|-------------------|--------|--------------|
@@ -49,6 +49,8 @@ This dashboard tracks headline consumer price inflation (year-over-year) across 
 | 🇦🇺 Australia | CPI (YoY) | ABS | RBA |
 | 🇳🇿 New Zealand | CPI (YoY) | Stats NZ | RBNZ |
 | 🇿🇦 South Africa | CPI (YoY) | Stats SA | SARB |
+| 🇧🇷 Brazil | IPCA (YoY) | IBGE | BCB |
+| 🇲🇽 Mexico | INPC (YoY) | INEGI | Banxico |
 | 🇯🇵 Japan | CPI (YoY) | Statistics Bureau | Bank of Japan |
 | 🇰🇷 South Korea | CPI (YoY) | KOSTAT | Bank of Korea |
 | 🇸🇬 Singapore | CPI (YoY) | DOS | MAS |
@@ -88,28 +90,65 @@ All data is stored in `docs/data/` as the single source of truth:
 
 ```
 docs/data/
-├── historical_cpi.json       # CPI history for all 13 countries
+├── historical_cpi.json       # CPI history for all 15 countries
 ├── cb_forecasts.json         # Central bank inflation forecasts
 ├── imf_forecasts.json        # IMF WEO projections
 ├── cpi_supplements.json      # Manual supplements for lagging FRED data
 └── history/                  # Forecast revision tracking
 ```
 
-### Manual Update Tools
+### Keeping Data Current
 
-For monthly CPI updates:
+Use `update.sh` for all manual updates. One command handles data entry, git commit, and push.
+
 ```bash
-# Update a single country
-python3 update_cpi.py -c US -d 2026-01 -v 2.8
+# Check what's current
+./update.sh status
 
-# View current data
-python3 update_cpi.py --show-all
+# When new CPI data comes out
+./update.sh cpi
+> US 2026-03 2.8
+> UK 2026-02 2.9
+> done
+# Commits, pushes, and triggers newsletter draft automatically
 
-# Batch update multiple countries
-python3 batch_update_cpi.py --dry-run
+# After a CB meeting with new projections
+./update.sh forecast
+# Opens cb_forecasts.json in your editor — edit, save, close
+# Then confirms and pushes
+
+# After IMF WEO release (April & October)
+./update.sh imf
+# Same flow — opens imf_forecasts.json for editing
 ```
 
-See [CPI_UPDATE_GUIDE.md](CPI_UPDATE_GUIDE.md) for CPI, CB forecast, and IMF update procedures.
+Set `EDITOR=nano` or `EDITOR=vim` if you don't use VS Code.
+
+### What's Automated
+
+| What | When | How |
+|------|------|-----|
+| FRED/ECB CPI fetch | Every Monday | `update-data.yml` (commits if new data found) |
+| Weekly change alert | Every Monday | `weekly-alert.yml` (emails if ≥0.3pp change) |
+| CB forecast scrape | Mon & Thu | `auto-scrape-cb-forecasts.yml` (6 banks) |
+| Newsletter draft | On CPI data push | `newsletter-draft.yml` (Claude API → `docs/drafts/`) |
+
+FRED lags official releases by 1-6 months for most countries, so manual CPI updates via `./update.sh cpi` remain necessary for timely data.
+
+### Release Calendar
+
+CPI data releases follow a predictable monthly pattern:
+
+```
+~1st:  KR          ~15th: UK
+~9th:  CN          ~17th: CA, EA
+~12th: IN          ~19th: ZA, JP
+~13th: US          ~23rd: SG
+                   ~28th: AU
+Quarterly: NZ (mid-month of Jan/Apr/Jul/Oct)
+```
+
+See [CPI_UPDATE_GUIDE.md](CPI_UPDATE_GUIDE.md) for full procedures and official source URLs.
 
 ---
 
@@ -143,11 +182,16 @@ python3 -m http.server 8000 --directory docs
 ## Changelog
 
 ### March 2026
-- Updated all 13 countries to Jan/Feb 2026 CPI data
+- Added Brazil and Mexico (now 15 countries)
+- Updated all countries to Jan/Feb 2026 CPI data
 - Updated CB forecasts to latest meetings (10 central banks)
 - Added IMF forecasts side-by-side on homepage with divergence highlighting
+- Added Core CPI + PCE tracking on US page
+- Added table sorting, dynamic year columns
 - Fixed 6 bugs: CSS duplication, broken scripts, FRED series mismatch
-- Published Q1 2026 newsletter draft
+- Built newsletter automation (change detection, Claude API drafts, GitHub Actions)
+- Added `update.sh` one-command update tool
+- Cleaned up 12 legacy files, consolidated duplicate workflows
 
 ### February 2026
 - Corrected Dec 2025 CPI values for 8 countries
