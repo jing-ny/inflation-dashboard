@@ -55,6 +55,26 @@ jobs:
           git commit -m "Update inflation data $(date +'%Y-%m-%d')"
           git push
 
+      - name: Send email notification
+        if: steps.changes.outputs.changed == 'true' && env.RESEND_API_KEY != ''
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
+        run: |
+          if [ -n "$NOTIFICATION_EMAIL" ]; then
+            pip install resend
+            python -c "
+          import resend, os
+          resend.api_key = os.environ['RESEND_API_KEY']
+          resend.Emails.send({
+              'from': 'Inflation Dashboard <onboarding@resend.dev>',
+              'to': os.environ['NOTIFICATION_EMAIL'],
+              'subject': 'FRED/ECB data updated',
+              'text': 'New CPI data was fetched from FRED/ECB and committed to the dashboard.'
+          })
+          "
+          fi
+
       - name: Summary
         run: |
           if [ "${{ steps.changes.outputs.changed }}" == "true" ]; then

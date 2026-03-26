@@ -95,12 +95,32 @@ jobs:
           
           git push
 
+      - name: Send email notification
+        if: steps.changes.outputs.changed == 'true' && inputs.dry_run != true
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
+        run: |
+          if [ -n "$RESEND_API_KEY" ] && [ -n "$NOTIFICATION_EMAIL" ]; then
+            pip install resend
+            python -c "
+          import resend, os
+          resend.api_key = os.environ['RESEND_API_KEY']
+          resend.Emails.send({
+              'from': 'Inflation Dashboard <onboarding@resend.dev>',
+              'to': os.environ['NOTIFICATION_EMAIL'],
+              'subject': 'CB forecast scraper found updates',
+              'text': 'The central bank forecast scraper detected changes. Review the draft in docs/data/cb_forecasts_draft.json.'
+          })
+          "
+          fi
+
       - name: Summary
         run: |
           echo "## Central Bank Forecast Scraper Results" >> $GITHUB_STEP_SUMMARY
           echo "**Run time:** $(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
           echo "**Mode:** ${{ inputs.dry_run == true && 'Dry Run' || 'Live' }}" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ steps.changes.outputs.changed }}" = "true" ]; then
             echo "✅ **Updates committed and pushed**" >> $GITHUB_STEP_SUMMARY
           else
