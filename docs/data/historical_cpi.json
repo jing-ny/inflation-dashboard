@@ -1,23 +1,23 @@
 {
   "metadata": {
-    "last_updated": "2026-04-06",
+    "last_updated": "2026-04-13",
     "source": "Official national statistical agencies"
   },
   "US": {
     "code": "US",
     "name": "United States",
-    "flag": "🇺🇸",
+    "flag": "\ud83c\uddfa\ud83c\uddf8",
     "target": 2.0,
     "frequency": "monthly",
     "source": "Bureau of Labor Statistics via FRED",
     "last_updated": "2026-02-03",
     "latest": {
-      "date": "2026-02",
-      "value": 2.41
+      "date": "2026-03",
+      "value": 3.26
     },
     "previous": {
-      "date": "2026-01",
-      "value": 2.39
+      "date": "2026-02",
+      "value": 2.41
     },
     "history": [
       {
@@ -503,6 +503,10 @@
       {
         "date": "2026-02",
         "value": 2.41
+      },
+      {
+        "date": "2026-03",
+        "value": 3.26
       }
     ],
     "supplementary": {
@@ -535,7 +539,7 @@
   "EA": {
     "code": "EA",
     "name": "Euro Area",
-    "flag": "🇪🇺",
+    "flag": "\ud83c\uddea\ud83c\uddfa",
     "target": 2.0,
     "frequency": "monthly",
     "source": "Eurostat via ECB",
@@ -1090,7 +1094,7 @@
   "UK": {
     "code": "UK",
     "name": "United Kingdom",
-    "flag": "🇬🇧",
+    "flag": "\ud83c\uddec\ud83c\udde7",
     "target": 2.0,
     "frequency": "monthly",
     "source": "ONS via OECD/FRED",
@@ -1557,7 +1561,7 @@
   "CA": {
     "code": "CA",
     "name": "Canada",
-    "flag": "🇨🇦",
+    "flag": "\ud83c\udde8\ud83c\udde6",
     "target": 2.0,
     "frequency": "monthly",
     "source": "Statistics Canada via OECD/FRED",
@@ -2028,7 +2032,7 @@
   "AU": {
     "code": "AU",
     "name": "Australia",
-    "flag": "🇦🇺",
+    "flag": "\ud83c\udde6\ud83c\uddfa",
     "target": 2.5,
     "frequency": "monthly",
     "source": "Australian Bureau of Statistics",
@@ -2348,7 +2352,7 @@
   "NZ": {
     "code": "NZ",
     "name": "New Zealand",
-    "flag": "🇳🇿",
+    "flag": "\ud83c\uddf3\ud83c\uddff",
     "target": 2.0,
     "frequency": "quarterly",
     "source": "Stats NZ via OECD/FRED",
@@ -2667,7 +2671,7 @@
   "ZA": {
     "code": "ZA",
     "name": "South Africa",
-    "flag": "🇿🇦",
+    "flag": "\ud83c\uddff\ud83c\udde6",
     "target": 4.5,
     "frequency": "monthly",
     "source": "Stats SA via OECD/FRED",
@@ -3131,7 +3135,7 @@
   "BR": {
     "code": "BR",
     "name": "Brazil",
-    "flag": "🇧🇷",
+    "flag": "\ud83c\udde7\ud83c\uddf7",
     "target": 3.0,
     "target_range": [
       1.5,
@@ -3647,7 +3651,7 @@
   "MX": {
     "code": "MX",
     "name": "Mexico",
-    "flag": "🇲🇽",
+    "flag": "\ud83c\uddf2\ud83c\uddfd",
     "target": 3.0,
     "target_range": [
       2.0,
@@ -4158,12 +4162,12 @@
         "value": 3.77
       }
     ],
-    "notes": "Banxico target 3% with ±1pp tolerance band (2-4%)"
+    "notes": "Banxico target 3% with \u00b11pp tolerance band (2-4%)"
   },
   "JP": {
     "code": "JP",
     "name": "Japan",
-    "flag": "🇯🇵",
+    "flag": "\ud83c\uddef\ud83c\uddf5",
     "target": 2.0,
     "frequency": "monthly",
     "source": "Statistics Bureau of Japan",
@@ -4451,7 +4455,7 @@
   "CN": {
     "code": "CN",
     "name": "China",
-    "flag": "🇨🇳",
+    "flag": "\ud83c\udde8\ud83c\uddf3",
     "target": 3.0,
     "frequency": "monthly",
     "source": "NBS via OECD/FRED",
@@ -4926,7 +4930,7 @@
   "IN": {
     "code": "IN",
     "name": "India",
-    "flag": "🇮🇳",
+    "flag": "\ud83c\uddee\ud83c\uddf3",
     "target": 4.0,
     "frequency": "monthly",
     "source": "Ministry of Statistics and Programme Implementation",
@@ -5393,7 +5397,7 @@
   "KR": {
     "code": "KR",
     "name": "South Korea",
-    "flag": "🇰🇷",
+    "flag": "\ud83c\uddf0\ud83c\uddf7",
     "target": 2.0,
     "frequency": "monthly",
     "source": "Statistics Korea (KOSTAT)",
@@ -5797,7 +5801,7 @@
   "SG": {
     "code": "SG",
     "name": "Singapore",
-    "flag": "🇸🇬",
+    "flag": "\ud83c\uddf8\ud83c\uddec",
     "target": 2.0,
     "frequency": "monthly",
     "source": "Department of Statistics Singapore",
@@ -5861,7 +5865,7 @@
   "VE": {
     "code": "VE",
     "name": "Venezuela",
-    "flag": "🇻🇪",
+    "flag": "\ud83c\uddfb\ud83c\uddea",
     "target": null,
     "frequency": "monthly",
     "source": "Banco Central de Venezuela",
