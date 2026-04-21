@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "last_updated": "2026-04-20",
+    "last_updated": "2026-04-22",
     "source": "Official national statistical agencies"
   },
   "US": {
@@ -10,7 +10,7 @@
     "target": 2.0,
     "frequency": "monthly",
     "source": "Bureau of Labor Statistics via FRED",
-    "last_updated": "2026-02-03",
+    "last_updated": "2026-04-22",
     "latest": {
       "date": "2026-03",
       "value": 3.26
@@ -543,14 +543,14 @@
     "target": 2.0,
     "frequency": "monthly",
     "source": "Eurostat via ECB",
-    "last_updated": "2026-02-03",
+    "last_updated": "2026-04-22",
     "latest": {
-      "date": "2026-02",
-      "value": 1.9
+      "date": "2026-03",
+      "value": 2.6
     },
     "previous": {
-      "date": "2026-01",
-      "value": 1.7
+      "date": "2026-02",
+      "value": 1.9
     },
     "history": [
       {
@@ -1088,6 +1088,10 @@
       {
         "date": "2026-02",
         "value": 1.9
+      },
+      {
+        "date": "2026-03",
+        "value": 2.6
       }
     ]
   },
@@ -1098,14 +1102,14 @@
     "target": 2.0,
     "frequency": "monthly",
     "source": "ONS via OECD/FRED",
-    "last_updated": "2026-02-03",
+    "last_updated": "2026-04-22",
     "latest": {
-      "date": "2026-01",
+      "date": "2026-02",
       "value": 3.0
     },
     "previous": {
-      "date": "2025-03",
-      "value": 3.42
+      "date": "2026-01",
+      "value": 3.0
     },
     "history": [
       {
@@ -1555,6 +1559,10 @@
       {
         "date": "2026-01",
         "value": 3.0
+      },
+      {
+        "date": "2026-02",
+        "value": 3.0
       }
     ]
   },
@@ -1565,14 +1573,14 @@
     "target": 2.0,
     "frequency": "monthly",
     "source": "Statistics Canada via OECD/FRED",
-    "last_updated": "2026-02-03",
+    "last_updated": "2026-04-22",
     "latest": {
-      "date": "2026-02",
-      "value": 1.8
+      "date": "2026-03",
+      "value": 2.4
     },
     "previous": {
-      "date": "2026-01",
-      "value": 2.3
+      "date": "2026-02",
+      "value": 1.8
     },
     "history": [
       {
@@ -2026,6 +2034,10 @@
       {
         "date": "2026-02",
         "value": 1.8
+      },
+      {
+        "date": "2026-03",
+        "value": 2.4
       }
     ]
   },
@@ -2036,14 +2048,14 @@
     "target": 2.5,
     "frequency": "monthly",
     "source": "Australian Bureau of Statistics",
-    "last_updated": "2026-02-03",
+    "last_updated": "2026-04-22",
     "latest": {
-      "date": "2026-01",
-      "value": 3.8
+      "date": "2026-02",
+      "value": 3.7
     },
     "previous": {
-      "date": "2025-01",
-      "value": 2.4
+      "date": "2026-01",
+      "value": 3.8
     },
     "history": [
       {
@@ -2345,6 +2357,10 @@
       {
         "date": "2026-01",
         "value": 3.8
+      },
+      {
+        "date": "2026-02",
+        "value": 3.7
       }
     ],
     "notes": "ABS transitioned to monthly CPI in late 2025. FRED still quarterly."
@@ -2356,14 +2372,14 @@
     "target": 2.0,
     "frequency": "quarterly",
     "source": "Stats NZ via OECD/FRED",
-    "last_updated": "2026-02-03",
+    "last_updated": "2026-04-22",
     "latest": {
-      "date": "2025-Q4",
+      "date": "2026-Q1",
       "value": 3.1
     },
     "previous": {
-      "date": "2025-01",
-      "value": 2.53
+      "date": "2025-Q4",
+      "value": 3.1
     },
     "history": [
       {
@@ -2664,6 +2680,10 @@
       },
       {
         "date": "2025-Q4",
+        "value": 3.1
+      },
+      {
+        "date": "2026-Q1",
         "value": 3.1
       }
     ]
@@ -4459,14 +4479,14 @@
     "target": 3.0,
     "frequency": "monthly",
     "source": "NBS via OECD/FRED",
-    "last_updated": "2026-02-03",
+    "last_updated": "2026-04-22",
     "latest": {
-      "date": "2026-02",
-      "value": 1.3
+      "date": "2026-03",
+      "value": 1.0
     },
     "previous": {
-      "date": "2026-01",
-      "value": 0.2
+      "date": "2026-02",
+      "value": 1.3
     },
     "history": [
       {
@@ -4924,6 +4944,10 @@
       {
         "date": "2026-02",
         "value": 1.3
+      },
+      {
+        "date": "2026-03",
+        "value": 1.0
       }
     ]
   },
@@ -4934,14 +4958,14 @@
     "target": 4.0,
     "frequency": "monthly",
     "source": "Ministry of Statistics and Programme Implementation",
-    "last_updated": "2026-03-24",
+    "last_updated": "2026-04-22",
     "latest": {
-      "date": "2026-02",
-      "value": 3.21
+      "date": "2026-03",
+      "value": 3.4
     },
     "previous": {
-      "date": "2026-01",
-      "value": 2.75
+      "date": "2026-02",
+      "value": 3.21
     },
     "history": [
       {
@@ -5391,6 +5415,10 @@
       {
         "date": "2026-02",
         "value": 3.21
+      },
+      {
+        "date": "2026-03",
+        "value": 3.4
       }
     ]
   },
@@ -5401,13 +5429,13 @@
     "target": 2.0,
     "frequency": "monthly",
     "source": "Statistics Korea (KOSTAT)",
-    "last_updated": "2026-03-24",
+    "last_updated": "2026-04-22",
     "latest": {
-      "date": "2026-02",
-      "value": 2.0
+      "date": "2026-03",
+      "value": 2.2
     },
     "previous": {
-      "date": "2026-01",
+      "date": "2026-02",
       "value": 2.0
     },
     "history": [
@@ -5794,6 +5822,10 @@
       {
         "date": "2026-02",
         "value": 2.0
+      },
+      {
+        "date": "2026-03",
+        "value": 2.2
       }
     ],
     "notes": "Primary: COICOP 2018 index. Fallback: COICOP 1999 (discontinued Nov 2023). Manual supplement recommended for latest data."
