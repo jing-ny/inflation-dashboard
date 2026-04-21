@@ -3167,14 +3167,14 @@
     "source_url": "https://www.ibge.gov.br/en/statistics/economic/prices-and-costs.html",
     "measure": "IPCA (YoY)",
     "fred_series": "BRACPIALLMINMEI",
-    "last_updated": "2026-03-24",
+    "last_updated": "2026-04-22",
     "latest": {
-      "date": "2026-02",
-      "value": 5.06
+      "date": "2026-03",
+      "value": 4.14
     },
     "previous": {
-      "date": "2026-01",
-      "value": 4.56
+      "date": "2026-02",
+      "value": 3.81
     },
     "history": [
       {
@@ -3659,11 +3659,15 @@
       },
       {
         "date": "2026-01",
-        "value": 4.56
+        "value": 4.44
       },
       {
         "date": "2026-02",
-        "value": 5.06
+        "value": 3.81
+      },
+      {
+        "date": "2026-03",
+        "value": 4.14
       }
     ],
     "notes": "BCB target 3% with 1.5pp tolerance band (1.5-4.5%)"
@@ -3683,14 +3687,14 @@
     "source_url": "https://www.inegi.org.mx/temas/inpc/",
     "measure": "INPC (YoY)",
     "fred_series": "MEXCPIALLMINMEI",
-    "last_updated": "2026-03-24",
+    "last_updated": "2026-04-22",
     "latest": {
-      "date": "2026-02",
-      "value": 3.77
+      "date": "2026-03",
+      "value": 4.59
     },
     "previous": {
-      "date": "2026-01",
-      "value": 3.59
+      "date": "2026-02",
+      "value": 4.02
     },
     "history": [
       {
@@ -4175,11 +4179,15 @@
       },
       {
         "date": "2026-01",
-        "value": 3.59
+        "value": 3.79
       },
       {
         "date": "2026-02",
-        "value": 3.77
+        "value": 4.02
+      },
+      {
+        "date": "2026-03",
+        "value": 4.59
       }
     ],
     "notes": "Banxico target 3% with ±1pp tolerance band (2-4%)"
