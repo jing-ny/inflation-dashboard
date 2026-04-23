@@ -55,11 +55,19 @@ def build_prompt(changes: list, cb_forecasts: dict, imf_forecasts: dict) -> str:
     material = [c for c in changes if c.is_material]
     all_changes = [asdict(c) for c in changes]
 
+    # IMF metadata — pass to the model so it knows which WEO vintage these numbers are from
+    imf_meta = {
+        "version": imf_forecasts.get("version"),
+        "retrieved": imf_forecasts.get("retrieved"),
+        "note": imf_forecasts.get("note"),
+    }
+
     # Compact forecast summaries
     cb_summary = {}
     for code, fc in cb_forecasts.get("forecasts", {}).items():
         cb_summary[code] = {
             "source": fc.get("source"),
+            "publication_date": fc.get("publication_date"),
             "2026": fc.get("projections", {}).get("2026"),
             "rate": fc.get("policy_rate", {}).get("rate"),
             "note": fc.get("note"),
@@ -85,7 +93,10 @@ def build_prompt(changes: list, cb_forecasts: dict, imf_forecasts: dict) -> str:
 ### Central bank forecasts (selected fields)
 {json.dumps(cb_summary, indent=2)}
 
-### IMF WEO forecasts (2026)
+### IMF WEO forecasts — vintage metadata
+{json.dumps(imf_meta, indent=2)}
+
+### IMF WEO 2026 forecasts (per country)
 {json.dumps(imf_summary, indent=2)}
 
 ## Instructions
@@ -93,6 +104,10 @@ def build_prompt(changes: list, cb_forecasts: dict, imf_forecasts: dict) -> str:
 - Tone: professional, factual, no predictions or opinions
 - Include specific numbers (inflation rates, changes in pp) with source attributions
 - Mention relevant central bank and IMF forecast context where useful
+- **CRITICAL — do not cite any IMF figures other than the numbers in the "IMF WEO 2026 forecasts" block above.** Do not recall figures from prior WEO editions, news articles, or pre-training. When you attribute an IMF number, it MUST come from the provided data.
+- **CRITICAL — do not cite CB forecasts other than the numbers in the "Central bank forecasts" block above.** When you say "X vs Y" comparisons between CB and IMF, compute them from the provided data only.
+- When citing CB forecasts, prefer the `publication_date` field as the vintage; do not assume a forecast is current if its publication_date is older than 3 months.
+- If a country's latest CPI reading is older than the current newsletter date (see `current_period` in the changes block), describe the value as being from that specific month/quarter, not "held steady" or "current".
 - End with a pointer to the dashboard for full data: {DASHBOARD_URL}
 - Output valid Markdown
 - Do NOT add a title — the caller will prepend one
