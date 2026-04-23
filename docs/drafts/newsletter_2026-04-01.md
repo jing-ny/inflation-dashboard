@@ -21,3 +21,8 @@ Monitor whether the current stability proves durable given central bank concerns
 Trade uncertainty, particularly around US tariff policies affecting Canada and other trading partners, adds another layer of complexity to inflation dynamics. The contrast between current stability and central bank forecast revisions suggests underlying tensions that could emerge in coming months.
 
 For complete data, methodology, and real-time updates across all regions, visit the full dashboard: https://jing-ny.github.io/inflation-dashboard/
+
+
+---
+
+*Some data points in this newsletter are compiled with AI assistance. Figures should be verified against the original official sources (linked on each country page at https://jing-ny.github.io/inflation-dashboard/) before any formal, professional, or published use. This newsletter is for informational purposes only and is not investment advice.*

@@ -27,3 +27,8 @@ Energy-driven revisions in Europe and potential spillovers from Middle East disr
 ---
 
 *For complete data, interactive charts, and real-time updates, visit the full dashboard: https://jing-ny.github.io/inflation-dashboard/*
+
+
+---
+
+*Some data points in this newsletter are compiled with AI assistance. Figures should be verified against the original official sources (linked on each country page at https://jing-ny.github.io/inflation-dashboard/) before any formal, professional, or published use. This newsletter is for informational purposes only and is not investment advice.*

@@ -354,7 +354,10 @@ def generate_email_body_text(
     lines.append("Material change threshold: ≥0.3pp or direction reversal")
     lines.append("Sources: Official government statistics agencies")
     lines.append("")
-    
+    lines.append("Some updates are compiled with AI assistance. Verify against the")
+    lines.append("original official source before any formal or published use.")
+    lines.append("")
+
     return "\n".join(lines)
 
 def generate_email_body_html(
@@ -445,6 +448,7 @@ def generate_email_body_html(
     html.append('<p class="principle"><strong>No analysis. No predictions. Just the data.</strong></p>')
     html.append('<p>Material change threshold: ≥0.3pp or direction reversal</p>')
     html.append('<p>Sources: Official government statistics agencies</p>')
+    html.append('<p>Some updates are compiled with AI assistance. Verify against the original official source before any formal or published use.</p>')
     html.append('</div>')
     
     html.append('</body></html>')

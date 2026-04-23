@@ -144,7 +144,14 @@ def main():
     # --- assemble output ---
     today = datetime.now().strftime("%Y-%m-%d")
     title = f"# Inflation Newsletter — {today}\n\n"
-    draft = title + body + "\n"
+    disclaimer = (
+        "\n\n---\n\n"
+        "*Some data points in this newsletter are compiled with AI assistance. "
+        "Figures should be verified against the original official sources (linked on each "
+        f"country page at {DASHBOARD_URL}) before any formal, professional, or published use. "
+        "This newsletter is for informational purposes only and is not investment advice.*\n"
+    )
+    draft = title + body + disclaimer
 
     # --- write file ---
     output_path = args.output or os.path.join(DRAFTS_DIR, f"newsletter_{today}.md")

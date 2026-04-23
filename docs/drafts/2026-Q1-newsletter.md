@@ -39,3 +39,8 @@ Q2 will test whether March was a temporary shock, or the start of a harder infla
 For full country data, forecasts, and charts, see the dashboard: [inflationofficially.com](https://jing-ny.github.io/inflation-dashboard/)
 
 *Sources: BLS/FRED, Eurostat, ONS, Statistics Canada, ABS, Stats NZ, Stats SA, Statistics Bureau Japan, NBS China, MOSPI India, KOSTAT, SingStat, BCV, Federal Reserve, ECB, BoE, BoC, RBA, RBNZ, SARB, BoJ, RBI, BOK, MAS, IMF WEO January 2026 Update.*
+
+
+---
+
+*Some data points in this newsletter are compiled with AI assistance. Figures should be verified against the original official sources (linked on each country page at https://jing-ny.github.io/inflation-dashboard/) before any formal, professional, or published use. This newsletter is for informational purposes only and is not investment advice.*
