@@ -139,6 +139,41 @@
 | 5.5 | Preserve emoji encoding in `update_cpi.py` | `save_data` now uses `ensure_ascii=False` so raw unicode flags survive, preventing rebase conflicts with bot commits. | **Done** (Apr 22) |
 | 5.6 | Deeper BR/MX history audit | Spot-checked 2026-01/02. Full 2025 audit still pending. | To Do |
 
+### Phase 6: Eliminate Manual Updates (Priority: High)
+
+**Goal:** Drive the manual update surface to near-zero. Today 9/15 central banks and most fresh CPI values require human entry. Build direct-API fetchers and official-source scrapers so automation catches releases without human intervention.
+
+**Tier 1 — ship first (highest payoff, lowest friction):**
+
+| # | Task | Source | Scope | Status |
+|---|------|--------|-------|--------|
+| 6.1 | Fed SEP scraper | federalreserve.gov (static HTML table) | Quarterly (Mar/Jun/Sep/Dec). Writes to `cb_forecasts.json[US]`. Integrate into `auto_scrape_cb_forecasts.py`. | To Do |
+| 6.2 | BoJ Outlook scraper | boj.or.jp (HTML + PDF table) | Quarterly (Jan/Apr/Jul/Oct). Writes to `cb_forecasts.json[JP]`. | To Do |
+| 6.3 | BCB Focus survey fetcher | BCB open data API (JSON) | Weekly survey + quarterly Inflation Report. Writes to `cb_forecasts.json[BR]`. | To Do |
+| 6.4 | BLS CPI API fetcher | `api.bls.gov/publicAPI/v2/...` (free tier: 25/day; with key: 500/day) | Monthly. Replaces FRED lag for US; precise within 30 min of BLS release. Extend `fetch_historical_cpi.py`. | To Do |
+| 6.5 | Eurostat HICP API fetcher | Eurostat SDMX / REST JSON | Monthly. Flash + final. | To Do |
+| 6.6 | ONS UK CPI API fetcher | ONS Beta API JSON | Monthly. | To Do |
+| 6.7 | StatCan CPI API fetcher | StatCan WDS vector API | Monthly. | To Do |
+
+**Tier 2 — defer (medium effort, medium payoff):**
+
+| # | Task | Source | Scope | Status |
+|---|------|--------|-------|--------|
+| 6.8 | Banxico scraper | banxico.org.mx Quarterly Inflation Report (PDF) | 4x/year | To Do |
+| 6.9 | BOK scraper | bok.or.kr Economic Outlook (PDF) | 4x/year | To Do |
+| 6.10 | RBI scraper | rbi.org.in Monetary Policy Report (PDF) | 6x/year | To Do |
+| 6.11 | MAS scraper | mas.gov.sg Macroeconomic Review (PDF) | 2x/year | To Do |
+
+**Explicit non-goals:**
+- **PBoC**: China does not publish numerical inflation forecasts in a standardized schedule. Track policy rate manually; skip forecast scraping.
+- **BCV**: Venezuela publishes irregularly and inconsistently. Keep manual.
+- **CPI for 11 countries without clean APIs**: Continue WebSearch + manual gate via `update_cpi.py` (anomaly gates now prevent past BR/MX-style miscaptures).
+
+**Success criteria (when Phase 6 closes):**
+- Monthly CPI updates require manual entry only for NZ (quarterly), ZA, JP, CN, IN, KR, SG, AU, BR, MX, VE — and JP/CN/IN/KR/SG/BR/MX we'll target via API if an API exists by then.
+- CB forecast updates require manual entry only for PBoC + BCV (and Tier 2 banks until those ship).
+- The automated weekly workflow picks up 90%+ of release cadence on its own.
+
 ### Phase 4: Expansion & Polish (Priority: Low)
 
 | # | Task | Details | Status |
