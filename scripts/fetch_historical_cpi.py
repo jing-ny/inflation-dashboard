@@ -459,6 +459,50 @@ def load_existing_data() -> Dict:
     return {}
 
 
+STEP_THRESHOLD_PP = 1.0  # YoY inflation rarely shifts >1pp month-over-month
+ANOMALY_LOG: List[Dict] = []
+
+
+def _prior_year_value(history: List[Dict], date: str) -> Optional[float]:
+    """Value in prior year's same period, or None."""
+    if '-Q' in date:
+        year, q = date.split('-Q')
+        prior = f"{int(year) - 1}-Q{q}"
+    else:
+        year, month = date.split('-')
+        prior = f"{int(year) - 1}-{month}"
+    for h in history:
+        if h['date'] == prior:
+            return h['value']
+    return None
+
+
+def _log_anomaly(code: str, date: str, value: float, prev_value: Optional[float],
+                 prior_year: Optional[float], reasons: List[str]):
+    ANOMALY_LOG.append({
+        "country": code,
+        "date": date,
+        "value": value,
+        "previous_value": prev_value,
+        "prior_year_value": prior_year,
+        "reasons": reasons,
+    })
+
+
+def detect_anomalies(code: str, new_point: Dict, prev_point: Optional[Dict], history: List[Dict]):
+    """Append to ANOMALY_LOG if the new point looks suspicious."""
+    date, value = new_point['date'], new_point['value']
+    prev_value = prev_point['value'] if prev_point and isinstance(prev_point.get('value'), (int, float)) else None
+    prior_year = _prior_year_value(history, date)
+    reasons = []
+    if prev_value is not None and abs(value - prev_value) > STEP_THRESHOLD_PP:
+        reasons.append(f"step {value - prev_value:+.2f}pp > {STEP_THRESHOLD_PP}pp ({prev_value}% → {value}%)")
+    if prior_year is not None and abs(value - prior_year) < 0.01:
+        reasons.append(f"exactly matches prior-year same-period ({prior_year}%) — possible comparison-text miscapture")
+    if reasons:
+        _log_anomaly(code, date, value, prev_value, prior_year, reasons)
+
+
 def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
     """
     Merge fetched data with existing data for a country.
@@ -499,6 +543,10 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
     new_points = 0
     for point in fetched.get("history", []):
         if point["date"] not in existing_dates:
+            # Anomaly check vs. existing history before appending
+            hist_so_far = sorted(merged.get("history", []), key=lambda x: x["date"])
+            prev = hist_so_far[-1] if hist_so_far else None
+            detect_anomalies(code, point, prev, hist_so_far)
             merged.setdefault("history", []).append(point)
             new_points += 1
     
@@ -628,6 +676,26 @@ def main():
         with open(DATA_FILE, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
         print(f"\n✅ Saved: {DATA_FILE}")
+
+    # Anomaly report
+    if ANOMALY_LOG:
+        print("\n" + "=" * 60)
+        print(f"⚠  {len(ANOMALY_LOG)} ANOMALIES DETECTED")
+        print("=" * 60)
+        for a in ANOMALY_LOG:
+            print(f"  {a['country']} {a['date']} = {a['value']}%")
+            for reason in a['reasons']:
+                print(f"    - {reason}")
+        anomaly_file = OUTPUT_DIR / "cpi_anomalies.json"
+        if not args.dry_run:
+            with open(anomaly_file, 'w', encoding='utf-8') as f:
+                json.dump({
+                    "detected_at": datetime.now().isoformat(timespec='seconds'),
+                    "threshold_pp": STEP_THRESHOLD_PP,
+                    "anomalies": ANOMALY_LOG,
+                }, f, indent=2, ensure_ascii=False)
+            print(f"\n   Logged to: {anomaly_file}")
+        sys.exit(2)  # non-zero so CI / cron can flag
 
 
 if __name__ == "__main__":

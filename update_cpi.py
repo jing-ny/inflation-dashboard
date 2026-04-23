@@ -49,7 +49,8 @@ def load_data():
 def save_data(data):
     """Save the CPI data file."""
     with open(DATA_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
+        json.dump(data, f, indent=2, ensure_ascii=False)
+        f.write('\n')
     print(f"✓ Data saved to {DATA_FILE}")
 
 
@@ -91,21 +92,75 @@ def show_all(data):
             print(f"{c.get('flag','')} {c['name']:<22} {latest['value']:>7}% {latest['date']:>10} {prev['value']:>7}% {target_str:>8}")
 
 
-def update_country(data, country_code, date, value, previous_value=None):
+STEP_THRESHOLD_PP = 1.0  # YoY inflation rarely shifts >1pp month-over-month; flag if it does
+
+
+def _prior_year_value(history, date):
+    """Return the history value for the same month/quarter in the prior year, or None."""
+    if '-Q' in date:
+        year, q = date.split('-Q')
+        prior = f"{int(year) - 1}-Q{q}"
+    else:
+        year, month = date.split('-')
+        prior = f"{int(year) - 1}-{month}"
+    for h in history:
+        if h['date'] == prior:
+            return h['value']
+    return None
+
+
+def check_anomaly(country_code, date, value, current_latest, history):
+    """Return a list of (severity, message) for suspicious updates."""
+    warnings = []
+    if current_latest and isinstance(current_latest.get('value'), (int, float)):
+        delta = abs(value - current_latest['value'])
+        if delta > STEP_THRESHOLD_PP:
+            warnings.append(
+                (
+                    'step',
+                    f"MoM step {value - current_latest['value']:+.2f}pp "
+                    f"({current_latest['value']}% → {value}%) exceeds {STEP_THRESHOLD_PP}pp threshold",
+                )
+            )
+    prior_year = _prior_year_value(history, date)
+    if prior_year is not None and abs(value - prior_year) < 0.01:
+        warnings.append(
+            (
+                'prior_year_match',
+                f"Value {value}% exactly matches prior-year same-period ({prior_year}%) — "
+                f"possible miscapture of comparison-text figure",
+            )
+        )
+    return warnings
+
+
+def update_country(data, country_code, date, value, previous_value=None, confirm_anomaly=False):
     """Update CPI value for a country."""
     if country_code not in data:
         print(f"Error: Country '{country_code}' not found")
         return False
-    
+
     c = data[country_code]
     old_latest = c['latest'].copy()
-    
+
+    warnings = check_anomaly(country_code, date, value, old_latest, c.get('history', []))
+    if warnings and not confirm_anomaly:
+        print(f"\n⚠  Anomaly detected updating {c['name']} ({country_code}) {date} = {value}%:")
+        for _, msg in warnings:
+            print(f"   - {msg}")
+        print(f"\n   Re-run with --confirm-anomaly to proceed, or double-check the official source.")
+        return False
+    if warnings and confirm_anomaly:
+        print(f"\n⚠  Anomaly noted (proceeding with --confirm-anomaly):")
+        for _, msg in warnings:
+            print(f"   - {msg}")
+
     # Update previous with old latest (if not explicitly provided)
     if previous_value is None:
         c['previous'] = old_latest
     else:
         c['previous'] = {"date": c['latest']['date'], "value": previous_value}
-    
+
     # Update latest
     c['latest'] = {"date": date, "value": value}
     
@@ -146,6 +201,7 @@ def main():
     parser.add_argument('--show', '-s', type=str, help='Show current values for a country')
     parser.add_argument('--show-all', '-a', action='store_true', help='Show summary for all countries')
     parser.add_argument('--dry-run', action='store_true', help='Show what would be changed without saving')
+    parser.add_argument('--confirm-anomaly', action='store_true', help='Proceed even when anomaly checks fire')
     
     args = parser.parse_args()
     
@@ -164,7 +220,7 @@ def main():
     # Handle update
     if args.country and args.date and args.value is not None:
         country = args.country.upper()
-        if update_country(data, country, args.date, args.value, args.previous_value):
+        if update_country(data, country, args.date, args.value, args.previous_value, confirm_anomaly=args.confirm_anomaly):
             if args.dry_run:
                 print("\n[DRY RUN - Changes not saved]")
             else:
