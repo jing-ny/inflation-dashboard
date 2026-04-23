@@ -15,7 +15,7 @@ Usage:
     python fetch_imf_forecasts.py
 
 Output:
-    - data/imf_forecasts.json
+    - docs/data/imf_forecasts.json
 
 No API key required.
 """
@@ -24,40 +24,52 @@ import os
 import json
 import requests
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Optional
 
-# Output directory
-OUTPUT_DIR = "data"
+# Output directory — single source of truth (same convention as fetch_historical_cpi.py)
+OUTPUT_DIR = Path(__file__).parent.parent / "docs" / "data" if Path(__file__).parent.name == "scripts" else Path("docs/data")
 
 # IMF DataMapper API base URL
 IMF_API_BASE = "https://www.imf.org/external/datamapper/api/v1"
 
 # Country mapping: Dashboard code -> IMF code
+# Note: Euro Area uses the "EURO" group code (not country code "EMU", which returns empty).
 COUNTRY_MAPPING = {
     "US": "USA",
-    "CA": "CAN",
+    "EA": "EURO",  # Euro Area — group code, not "EMU"
     "UK": "GBR",
-    "CH": "CHE",
-    "DE": "DEU",
-    "EA": "EMU",  # Euro Area
+    "CA": "CAN",
     "AU": "AUS",
     "NZ": "NZL",
     "ZA": "ZAF",
-    "CN": "CHN"
+    "JP": "JPN",
+    "CN": "CHN",
+    "IN": "IND",
+    "KR": "KOR",
+    "SG": "SGP",
+    "BR": "BRA",
+    "MX": "MEX",
+    "VE": "VEN",
 }
 
 # Country names for output
 COUNTRY_NAMES = {
     "US": "United States",
-    "CA": "Canada",
-    "UK": "United Kingdom",
-    "CH": "Switzerland",
-    "DE": "Germany",
     "EA": "Euro Area",
+    "UK": "United Kingdom",
+    "CA": "Canada",
     "AU": "Australia",
     "NZ": "New Zealand",
     "ZA": "South Africa",
-    "CN": "China"
+    "JP": "Japan",
+    "CN": "China",
+    "IN": "India",
+    "KR": "South Korea",
+    "SG": "Singapore",
+    "BR": "Brazil",
+    "MX": "Mexico",
+    "VE": "Venezuela",
 }
 
 
@@ -124,16 +136,31 @@ def fetch_imf_forecasts() -> Dict:
     else:
         weo_version = f"October {today.year - 1}"
     
-    # Build output
-    result = {
+    # Preserve existing 'note' and 'display_order' if the file already exists
+    existing_path = OUTPUT_DIR / "imf_forecasts.json"
+    existing: Dict = {}
+    if existing_path.exists():
+        try:
+            with open(existing_path, encoding='utf-8') as f:
+                existing = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            existing = {}
+
+    # Build output. Preserve manually curated fields: url, note, display_order.
+    default_url = "https://www.imf.org/external/datamapper/PCPIPCH@WEO"
+    result: Dict = {
         "source": "IMF World Economic Outlook",
         "version": weo_version,
         "retrieved": datetime.now().strftime("%Y-%m-%d"),
         "indicator": "PCPIPCH",
         "indicator_label": "Inflation rate, average consumer prices (% change)",
-        "url": "https://www.imf.org/external/datamapper/PCPIPCH@WEO",
-        "countries": {}
+        "url": existing.get("url") or default_url,
     }
+    if existing.get("note"):
+        result["note"] = existing["note"]
+    if existing.get("display_order"):
+        result["display_order"] = existing["display_order"]
+    result["countries"] = {}
     
     # Map IMF codes back to dashboard codes
     imf_to_dashboard = {v: k for k, v in COUNTRY_MAPPING.items()}
@@ -159,12 +186,13 @@ def fetch_imf_forecasts() -> Dict:
 
 def save_json(data: Dict, filename: str):
     """Save data to JSON file."""
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    filepath = os.path.join(OUTPUT_DIR, filename)
-    
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    filepath = OUTPUT_DIR / filename
+
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
-    
+        f.write('\n')
+
     print(f"Saved: {filepath}")
 
 
