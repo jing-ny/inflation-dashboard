@@ -5,7 +5,7 @@
   "indicator": "PCPIPCH",
   "indicator_label": "Inflation rate, average consumer prices (% change)",
   "url": "https://www.imf.org/external/datamapper/PCPIPCH@WEO",
-  "note": "Pre-conflict baseline (Jan 2026). The Iran war (Mar 2026) and resulting Strait of Hormuz disruption have created significant upside risks to these projections. Oil briefly hit $120/bbl before settling ~$90. Next full WEO due April 2026.",
+  "note": "IMF World Economic Outlook April 2026 edition (released Apr 14, 2026), reflecting the Middle East conflict oil-price shock. Headline global inflation revised up to 4.4% for 2026; broad upside revisions across advanced economies (US +0.8pp, EA +0.7pp, UK +0.7pp, AU/NZ +1.0pp) driven by energy pass-through. Severe-scenario alternative puts global inflation >6%. Next WEO: October 2026.",
   "countries": {
     "AU": {
       "name": "Australia",

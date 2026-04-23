@@ -137,7 +137,7 @@
                 </tbody>
             </table>
             <p style="margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280;">
-                CB = Central bank's own projection. IMF = <a href="https://www.imf.org/en/publications/weo/issues/2026/01/19/world-economic-outlook-update-january-2026" target="_blank" style="color: #6b7280;">IMF WEO Jan 2026 Update</a> (pre-conflict baseline). Next full WEO: April 2026.
+                CB = Central bank's own projection. IMF = <a href="https://www.imf.org/en/publications/weo/issues/2026/04/14/world-economic-outlook-april-2026" target="_blank" style="color: #6b7280;">IMF WEO April 2026</a> (first full report post-Mid-East conflict).
             </p>
         </section>
 
@@ -389,7 +389,7 @@
             const forecastData = await response.json();
             
             // Update subtitle with date
-            const lastUpdated = forecastData.metadata?.last_updated || 'January 2026';
+            const lastUpdated = forecastData.metadata?.last_updated || 'latest';
             subtitle.textContent = `Current central bank interest rates (as of ${lastUpdated})`;
 
             const displayOrder = forecastData.display_order || DISPLAY_ORDER;
