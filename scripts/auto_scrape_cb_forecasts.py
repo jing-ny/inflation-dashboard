@@ -290,6 +290,92 @@ def scrape_rbnz():
     return result if result["projections"] else None
 
 
+def _discover_fed_sep_url():
+    """Find the URL of the most recent Fed SEP from the FOMC calendar page.
+
+    Returns (url, pub_date) or (None, None) if none found.
+    """
+    index_url = "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    html = fetch_url(index_url)
+    if not html:
+        return None, None
+
+    # Pattern: href="/monetarypolicy/fomcprojtabl20260318.htm"
+    links = re.findall(r'href="(/monetarypolicy/fomcprojtabl(\d{8})\.htm)"', html)
+    if not links:
+        return None, None
+
+    links.sort(key=lambda x: x[1], reverse=True)
+    rel, date_str = links[0]
+    url = f"https://www.federalreserve.gov{rel}"
+    pub_date = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+    return url, pub_date
+
+
+def _normalize_year_label(label):
+    """'2026' stays '2026'; 'Longer run' -> 'longer_run'."""
+    label = label.strip()
+    if re.match(r'^\d{4}$', label):
+        return label
+    if "longer" in label.lower():
+        return "longer_run"
+    return label
+
+
+def scrape_fed():
+    """Scrape the Fed SEP for median PCE inflation projections."""
+    print("📊 Scraping Fed SEP...")
+
+    url, pub_date = _discover_fed_sep_url()
+    if not url:
+        print("  ⚠️  Could not discover Fed SEP URL from FOMC calendar")
+        return None
+
+    html = fetch_url(url)
+    if not html:
+        return None
+
+    # Column year labels live in the header row as <th ... id="xt1bN">YEAR</th>
+    # IDs b1..b4 are the Median block; b5..b8 Central Tendency; b9..b12 Range.
+    header_matches = re.findall(r'<th[^>]*id="xt1b(\d+)"[^>]*>\s*([^<]+?)\s*</th>', html)
+    header_map = {int(n): label for n, label in header_matches}
+    median_years = [header_map.get(i) for i in (1, 2, 3, 4)]
+    if not all(median_years):
+        print(f"  ⚠️  Could not extract year header (got {median_years})")
+        return None
+
+    # PCE inflation row — top-level, class is exactly "stub" (not "stub in1").
+    # The row contains 12 <td class="data"> cells; first 4 are the Medians.
+    row = re.search(
+        r'<th class="stub"[^>]*>\s*PCE inflation\s*</th>(.*?)</tr>',
+        html, re.DOTALL
+    )
+    if not row:
+        print("  ⚠️  PCE inflation row not found")
+        return None
+
+    value_matches = re.findall(r'<td class="data"[^>]*>\s*([\d.]+)\s*</td>', row.group(1))
+    values = [float(v) for v in value_matches[:4]]
+    if len(values) < 4:
+        print(f"  ⚠️  Incomplete Median values (got {values})")
+        return None
+
+    projections = [
+        {"year": _normalize_year_label(y), "value": v}
+        for y, v in zip(median_years, values)
+    ]
+
+    return {
+        "bank": "Federal Reserve",
+        "country": "US",
+        "metric": "PCE Inflation (Median FOMC projection)",
+        "source": "Fed Summary of Economic Projections",
+        "source_url": url,
+        "source_date": pub_date,
+        "projections": projections,
+    }
+
+
 def scrape_sarb():
     """Scrape SARB MPC Statement."""
     print("📊 Scraping SARB...")
@@ -335,39 +421,43 @@ def load_current_forecasts():
 
 
 def compare_forecasts(current, new):
-    """Compare current and new forecasts, return changes."""
+    """Compare current and new forecasts, return changes.
+
+    `current` is the committed cb_forecasts.json with shape
+        {"forecasts": {"US": {"projections": {"2026": 2.7, ...}, ...}, ...}}
+    `new` is a list of scraper results with shape
+        [{"country": "US", "bank": "Federal Reserve",
+          "projections": [{"year": "2026", "value": 2.7}, ...]}, ...]
+    """
     changes = []
-    
-    current_by_bank = {f["bank"]: f for f in current.get("forecasts", [])}
-    
+    current_by_country = current.get("forecasts", {}) or {}
+
     for new_forecast in new:
-        bank = new_forecast["bank"]
-        if bank in current_by_bank:
-            old = current_by_bank[bank]
-            old_proj = {p["year"]: p["value"] for p in old.get("projections", [])}
-            new_proj = {p["year"]: p["value"] for p in new_forecast.get("projections", [])}
-            
-            for year, value in new_proj.items():
-                old_value = old_proj.get(year)
-                if old_value != value:
-                    changes.append({
-                        "bank": bank,
-                        "year": year,
-                        "old": old_value,
-                        "new": value
-                    })
-        else:
-            changes.append({
-                "bank": bank,
-                "year": "all",
-                "old": None,
-                "new": new_forecast["projections"]
-            })
-    
+        country = new_forecast.get("country")
+        bank = new_forecast.get("bank", country)
+        current_entry = current_by_country.get(country, {}) if isinstance(current_by_country, dict) else {}
+        old_proj = current_entry.get("projections", {}) if isinstance(current_entry, dict) else {}
+        new_proj = {p["year"]: p["value"] for p in new_forecast.get("projections", [])}
+
+        if not old_proj:
+            changes.append({"bank": bank, "country": country, "year": "all",
+                            "old": None, "new": new_proj})
+            continue
+
+        for year, value in new_proj.items():
+            old_value = old_proj.get(year)
+            if old_value is None:
+                changes.append({"bank": bank, "country": country, "year": year,
+                                "old": None, "new": value})
+            elif abs(float(old_value) - float(value)) > 0.01:
+                changes.append({"bank": bank, "country": country, "year": year,
+                                "old": old_value, "new": value})
+
     return changes
 
 
 COUNTRY_SCRAPERS = {
+    "US": scrape_fed,
     "EA": scrape_ecb,
     "UK": scrape_boe,
     "AU": scrape_rba,
@@ -375,6 +465,83 @@ COUNTRY_SCRAPERS = {
     "NZ": scrape_rbnz,
     "ZA": scrape_sarb,
 }
+
+MERGE_THRESHOLD_PP = 1.0  # any year-over-year change larger than this blocks auto-merge
+
+
+def merge_into_main(new_forecasts, dry_run=False):
+    """Merge scraped forecasts directly into cb_forecasts.json.
+
+    Preserves all curated fields (flag, note, key_quote, policy_rate, etc.);
+    only rewrites projections, source_url, and publication_date.
+
+    Anomaly gate: if any year's delta exceeds MERGE_THRESHOLD_PP, that country
+    is SKIPPED (not merged) and reported so a human can verify.
+
+    Returns (merged_countries: list, blocked: list[{country, reason, ...}]).
+    """
+    path = "docs/data/cb_forecasts.json"
+    if not os.path.exists(path):
+        return [], [{"reason": "cb_forecasts.json missing"}]
+
+    with open(path, 'r') as f:
+        data = json.load(f)
+
+    country_data = data.get("forecasts", {})
+    merged = []
+    blocked = []
+
+    for fc in new_forecasts:
+        country = fc.get("country")
+        if not country or country not in country_data:
+            blocked.append({"country": country, "reason": "country_not_in_forecasts"})
+            continue
+
+        entry = country_data[country]
+        old_proj = entry.get("projections", {}) or {}
+        new_proj = {p["year"]: p["value"] for p in fc.get("projections", [])}
+
+        # Anomaly gate: largest absolute delta on any matching year
+        max_delta = 0.0
+        for year, value in new_proj.items():
+            old_value = old_proj.get(year)
+            if old_value is not None:
+                max_delta = max(max_delta, abs(float(old_value) - float(value)))
+
+        if max_delta > MERGE_THRESHOLD_PP:
+            blocked.append({
+                "country": country,
+                "reason": f"step {max_delta:.2f}pp exceeds {MERGE_THRESHOLD_PP}pp",
+                "old": old_proj,
+                "new": new_proj,
+            })
+            continue
+
+        # Apply merge — rewrite projections and source metadata only
+        entry["projections"] = new_proj
+        if fc.get("source_url"):
+            entry["source_url"] = fc["source_url"]
+        if fc.get("source_date"):
+            try:
+                d = datetime.strptime(fc["source_date"], "%Y-%m-%d")
+                entry["publication_date"] = d.strftime("%B %Y")
+            except ValueError:
+                pass
+        merged.append({
+            "country": country,
+            "bank": fc.get("bank"),
+            "projections": new_proj,
+            "source_url": fc.get("source_url"),
+        })
+
+    if merged:
+        data.setdefault("metadata", {})["last_updated"] = datetime.now().strftime("%B %Y")
+        if not dry_run:
+            with open(path, 'w') as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+                f.write('\n')
+
+    return merged, blocked
 
 
 def parse_args():
@@ -398,6 +565,13 @@ def parse_args():
         action="store_true",
         dest="dry_run",
         help="Run scrapers but do not write output files",
+    )
+    parser.add_argument(
+        "--merge",
+        action="store_true",
+        help=("Auto-merge scraped projections directly into cb_forecasts.json. "
+              "Changes larger than %.1fpp/year are blocked and written to the "
+              "draft review path instead." % MERGE_THRESHOLD_PP),
     )
     return parser.parse_args()
 
@@ -467,6 +641,24 @@ def main():
         "forecasts": new_forecasts
     }
     
+    # Auto-merge path — rewrites cb_forecasts.json directly with anomaly gate
+    if args.merge:
+        merged, blocked = merge_into_main(new_forecasts, dry_run=args.dry_run)
+        if merged:
+            print(f"\n✅ Auto-merged {len(merged)} countr{'y' if len(merged)==1 else 'ies'} into cb_forecasts.json:")
+            for m in merged:
+                print(f"   - {m['country']} ({m['bank']}): {m['projections']}")
+        if blocked:
+            print(f"\n⚠️  {len(blocked)} block(s) written to draft for review:")
+            for b in blocked:
+                print(f"   - {b.get('country','?')}: {b.get('reason')}")
+        if args.dry_run:
+            print("\n🏁 Dry run — no writes.")
+            return
+        # If any blocked, still write the draft for them
+        if not blocked:
+            return
+
     if args.dry_run:
         print("\n🏁 Dry run complete. No files written.")
         print(f"   Forecasts extracted: {len(new_forecasts)}")

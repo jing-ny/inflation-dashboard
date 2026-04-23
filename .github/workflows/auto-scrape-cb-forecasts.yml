@@ -11,7 +11,7 @@ on:
         type: boolean
         default: false
       country:
-        description: 'Specific country to check (AU, EA, UK, CA, NZ, ZA, or leave blank for all)'
+        description: 'Specific country to check (US, AU, EA, UK, CA, NZ, ZA, or leave blank for all)'
         type: string
         required: false
       dry_run:
@@ -44,8 +44,8 @@ jobs:
         run: |
           echo "=== Starting Central Bank Forecast Scraper ==="
           
-          CMD="python scripts/auto_scrape_cb_forecasts.py"
-          
+          CMD="python scripts/auto_scrape_cb_forecasts.py --merge"
+
           if [ "${{ inputs.force }}" = "true" ]; then
             CMD="$CMD --force"
           fi
@@ -109,8 +109,8 @@ jobs:
           resend.Emails.send({
               'from': 'Inflation Dashboard <onboarding@resend.dev>',
               'to': os.environ['NOTIFICATION_EMAIL'],
-              'subject': 'CB forecast scraper found updates',
-              'text': 'The central bank forecast scraper detected changes. Review the draft in docs/data/cb_forecasts_draft.json.'
+              'subject': 'CB forecasts auto-updated',
+              'text': 'The central bank scraper detected forecast changes and auto-merged them into cb_forecasts.json (changes >1pp/year are blocked and still routed to the draft for manual review).'
           })
           "
           fi
