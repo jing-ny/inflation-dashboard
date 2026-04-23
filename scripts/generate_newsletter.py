@@ -80,7 +80,7 @@ def build_prompt(changes: list, cb_forecasts: dict, imf_forecasts: dict) -> str:
             "2026": entry.get("forecasts", {}).get("2026"),
         }
 
-    return f"""You are writing a concise inflation newsletter draft (300-500 words).
+    return f"""You are writing a short, sharp, Substack-style inflation newsletter — the kind a policy-literate reader would forward. Target 300–400 words of polished publication-ready English. A reader should grasp the whole piece in under 2 minutes.
 
 ## Data provided
 
@@ -99,19 +99,26 @@ def build_prompt(changes: list, cb_forecasts: dict, imf_forecasts: dict) -> str:
 ### IMF WEO 2026 forecasts (per country)
 {json.dumps(imf_summary, indent=2)}
 
-## Instructions
-- Structure: **Key Changes**, **Trend Summary**, **What to Watch**
-- Tone: professional, factual, no predictions or opinions
-- Include specific numbers (inflation rates, changes in pp) with source attributions
-- Mention relevant central bank and IMF forecast context where useful
-- **CRITICAL — do not cite any IMF figures other than the numbers in the "IMF WEO 2026 forecasts" block above.** Do not recall figures from prior WEO editions, news articles, or pre-training. When you attribute an IMF number, it MUST come from the provided data.
-- **CRITICAL — do not cite CB forecasts other than the numbers in the "Central bank forecasts" block above.** When you say "X vs Y" comparisons between CB and IMF, compute them from the provided data only.
+## Editorial voice
+- Open with a punchy, high-signal lead — a little narrative tension, professional and source-first, no hype.
+- Anchor the piece around the 3–4 moves that matter most this period. Default anchors are **Euro Area, Mexico, Brazil, and China** unless the data clearly demands different ones. Do NOT try to cover every country in equal detail.
+- Treat the IMF WEO revisions as ONE clean paragraph, not a data dump.
+- Close with a tight "what to watch" — only the 1–3 most decision-relevant divergences or upcoming releases.
+- Keep section headings light. Use a heading only if it materially helps scan-ability; otherwise flow prose. Do not use rigid "Key Changes / Trend Summary / What to Watch" labels.
+- Short paragraphs. Avoid bullet overload.
+- No filler, no generic macro commentary, no AI-slop phrasing. Cut on sight: "provided relief", "apparent comfort zone", "the standout remains", "warrants continued attention", "exactly matching", "first full WEO reflecting", and similar.
+- Do not overclaim. Avoid causal language ("driven by X", "due to Y", "reflecting Z") unless the causation is directly and unambiguously stated in the data notes above.
+- Describe older CPI readings by their specific period (e.g. "Japan's 1.3% in February") — never "held steady" or "current" when the data isn't the most recent month.
+
+## CRITICAL data rules (these override style)
+- Do not cite any IMF figures other than the numbers in the "IMF WEO 2026 forecasts" block above. Do not recall figures from prior WEO editions, news articles, or pre-training. When you attribute an IMF number, it MUST come from the provided data.
+- Do not cite CB forecasts other than the numbers in the "Central bank forecasts" block above. Any "CB vs IMF" comparison must be computed from the provided numbers only.
 - When citing CB forecasts, prefer the `publication_date` field as the vintage; do not assume a forecast is current if its publication_date is older than 3 months.
-- If a country's latest CPI reading is older than the current newsletter date (see `current_period` in the changes block), describe the value as being from that specific month/quarter, not "held steady" or "current".
-- End with a pointer to the dashboard for full data: {DASHBOARD_URL}
-- Output valid Markdown
-- Do NOT add a title — the caller will prepend one
-- Stay within 300-500 words"""
+
+## Output
+- Valid Markdown, 300–400 words (prefer the lower end).
+- Do NOT add a title — the caller prepends one.
+- End with a compact pointer to the dashboard: {DASHBOARD_URL}"""
 
 
 def generate_draft(prompt: str) -> str:
@@ -161,10 +168,8 @@ def main():
     title = f"# Inflation Newsletter — {today}\n\n"
     disclaimer = (
         "\n\n---\n\n"
-        "*Some data points in this newsletter are compiled with AI assistance. "
-        "Figures should be verified against the original official sources (linked on each "
-        f"country page at {DASHBOARD_URL}) before any formal, professional, or published use. "
-        "This newsletter is for informational purposes only and is not investment advice.*\n"
+        "*Compiled with AI assistance. Verify figures against the original official sources "
+        f"(linked at [the dashboard]({DASHBOARD_URL})) before any formal use. Not investment advice.*\n"
     )
     draft = title + body + disclaimer
 
