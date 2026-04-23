@@ -147,7 +147,7 @@
 
 | # | Task | Source | Scope | Status |
 |---|------|--------|-------|--------|
-| 6.1 | Fed SEP scraper | federalreserve.gov (static HTML table) | Quarterly (Mar/Jun/Sep/Dec). Writes to `cb_forecasts.json[US]`. Integrate into `auto_scrape_cb_forecasts.py`. | To Do |
+| 6.1 | Fed SEP scraper | federalreserve.gov (static HTML table) | Quarterly (Mar/Jun/Sep/Dec). Writes to `cb_forecasts.json[US]`. Integrate into `auto_scrape_cb_forecasts.py`. Also added `--merge` mode so scrapes auto-commit instead of just drafting; 1pp anomaly gate falls through to draft review. | **Done** (Apr 23) |
 | 6.2 | BoJ Outlook scraper | boj.or.jp (HTML + PDF table) | Quarterly (Jan/Apr/Jul/Oct). Writes to `cb_forecasts.json[JP]`. | To Do |
 | 6.3 | BCB Focus survey fetcher | BCB open data API (JSON) | Weekly survey + quarterly Inflation Report. Writes to `cb_forecasts.json[BR]`. | To Do |
 | 6.4 | BLS CPI API fetcher | `api.bls.gov/publicAPI/v2/...` (free tier: 25/day; with key: 500/day) | Monthly. Replaces FRED lag for US; precise within 30 min of BLS release. Extend `fetch_historical_cpi.py`. | To Do |
