@@ -53,8 +53,23 @@ When updating CPI data:
 2. [ ] Find the press release for the target month
 3. [ ] Locate the headline YoY inflation rate
 4. [ ] Note: US uses CPI-U, UK uses CPI (not CPIH), EA uses HICP
-5. [ ] Update using: `python3 update_cpi.py -c XX -d YYYY-MM -v X.X`
-6. [ ] Verify the dashboard displays correctly
+5. [ ] **Do not copy the "vs. X.XX% a year ago" number** — press releases often print a comparison figure from the prior year in the same paragraph. That is not the current-month value. (This was the 2026-02 BR/MX miscapture pattern.)
+6. [ ] Update using: `python3 update_cpi.py -c XX -d YYYY-MM -v X.X`
+7. [ ] If the anomaly gate fires (>1pp MoM step or exact prior-year-same-period match), re-verify against source before using `--confirm-anomaly`
+8. [ ] Verify the dashboard displays correctly
+
+## Data Quality Gates
+
+`update_cpi.py` and `scripts/fetch_historical_cpi.py` both run two automatic checks on every new reading:
+
+| Check | Fires when | Catches |
+|-------|-----------|---------|
+| MoM step | `|new − previous| > 1.0 pp` | Fat-finger entries, wrong-country mixups, unit errors |
+| Prior-year match | `|new − same-month-prior-year| < 0.01 pp` | Comparison-text miscapture (BR/MX 2026-02 pattern) |
+
+**Manual path (`update_cpi.py`):** Gate blocks the write and prints both warnings. Re-run with `--confirm-anomaly` after verifying the number against the official source.
+
+**Automated path (`scripts/fetch_historical_cpi.py`):** Anomalies are written to `docs/data/cpi_anomalies.json` and the script exits 2, so GitHub Actions surfaces them rather than silently merging bad data.
 
 ## Common Gotchas
 

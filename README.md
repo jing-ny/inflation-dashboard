@@ -181,6 +181,13 @@ python3 -m http.server 8000 --directory docs
 
 ## Changelog
 
+### April 2026
+- Advanced CPI data to March 2026 for 8 countries; Feb backfill for UK and AU; Q1 2026 for NZ
+- Refreshed IMF forecasts to WEO April 2026 (broad upside revisions from Middle East oil shock)
+- Fixed BR/MX data contamination where prior-year comparison-text values were stored as current readings
+- Added anomaly detection gates in `update_cpi.py` and `scripts/fetch_historical_cpi.py` (MoM step >1pp and exact prior-year match)
+- Fixed `fetch_imf_forecasts.py`: 9→15 countries, corrected EA group code (`EURO`), fixed output directory
+
 ### March 2026
 - Added Brazil and Mexico (now 15 countries)
 - Updated all countries to Jan/Feb 2026 CPI data

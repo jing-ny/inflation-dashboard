@@ -1,6 +1,6 @@
 # Inflation Dashboard - Project Plan & Architecture
 
-**Last Updated:** March 25, 2026
+**Last Updated:** April 23, 2026
 **Purpose:** Reference document to maintain consistency across sessions.
 
 ---
@@ -52,32 +52,38 @@
 
 ---
 
-## Current State (as of March 24, 2026)
+## Current State (as of April 23, 2026)
 
 ### What Works
 - Dashboard fully deployed on GitHub Pages, all 15 country pages render correctly
 - `fetch_historical_cpi.py` covers all 15 countries via FRED + ECB APIs
+- `fetch_imf_forecasts.py` now covers all 15 countries (EA uses `EURO` group code)
 - 5 GitHub Actions workflows running on schedule
-- `update_cpi.py` and `batch_update_cpi.py` manual update tools functional
+- `update_cpi.py` and `batch_update_cpi.py` manual update tools functional, with anomaly gates
 - Substack newsletter signup embedded on homepage
 - CB forecasts and IMF forecasts populated for all 15 countries
 - 10-year CPI history with Chart.js visualization on country pages
-- CPI data current through Feb 2026 for most countries (updated Mar 24)
+- CPI data current through March 2026 for countries that have released (see table below)
 - CB forecasts updated to latest meetings (Mar 24)
+- IMF WEO refreshed to April 2026 edition (Apr 22)
 
 ### Data Freshness
 
-**Live site data as of March 24, 2026:**
+**Live site data as of April 23, 2026:**
 
-| Data | Last Updated | Should Be | Gap |
-|------|-------------|-----------|-----|
-| CPI (10 countries) | Feb 2026 | Feb 2026 | OK |
-| CPI (UK, AU) | Jan 2026 | Jan 2026 | OK (Feb releasing Mar 25) |
-| CPI (NZ) | Q4 2025 | Q4 2025 | OK (quarterly) |
-| CB Forecasts | Mar 2026 | Mar 2026 | OK |
-| IMF WEO | Oct 2025 | Oct 2025 | OK (next: Apr 2026) |
+| Data | Latest | Notes |
+|------|--------|-------|
+| CPI US, EA, CA, CN, IN, KR, BR, MX | Mar 2026 | All with official releases |
+| CPI UK, AU | Feb 2026 | UK March release 22 Apr not yet ingested; AU March due ~28 Apr |
+| CPI JP, SG, ZA | Feb 2026 | JP releases Apr 24; SG ~Apr 23; ZA March release pending |
+| CPI NZ | Q1 2026 | Released 21 Apr |
+| CPI VE | Feb 2026 | BCV releases irregularly |
+| CB Forecasts | Mar 2026 | No new MPC projections since Mar round |
+| IMF WEO | April 2026 | Refreshed Apr 22 |
 
 **Ongoing concern:** FRED API lags official releases by 1-6 months for most international series. The automated `update-data.yml` workflow runs every Monday and succeeds, but FRED has no new data to pull, so nothing gets committed. Manual updates via `update_cpi.py` remain necessary for timely data.
+
+**New in Apr 2026:** BR and MX had 2026-01/02 values that were contaminated with prior-year same-month figures from IBGE/INEGI comparison text. Fix shipped with corrections + anomaly-detection gates in both the manual entry script and automation pipeline (see Phase 5).
 
 ### Workflow Status
 
@@ -122,6 +128,17 @@
 | 3.3 | GitHub Actions integration | New `newsletter-draft.yml`. Triggers on `historical_cpi.json` changes or manual dispatch. Generates draft, commits to `docs/drafts/`, optional email notification. Requires `ANTHROPIC_API_KEY` secret. | **Done** (Mar 24) |
 | 3.4 | Wire weekly alert workflow | Rewired `weekly-alert.yml` to call `send_weekly_alert.py`. Added snapshot commit step, proper env vars, permissions. | **Done** (Mar 24) |
 
+### Phase 5: Data Quality Hardening (Priority: High)
+
+| # | Task | Details | Status |
+|---|------|---------|--------|
+| 5.1 | Fix BR/MX 2026-01 and 2026-02 miscaptures | Prior-year values (BR 5.06%, MX 3.77%, etc.) from comparison text were stored as current-month readings. Corrected per IBGE/INEGI releases. | **Done** (Apr 22) |
+| 5.2 | Add anomaly gate to `update_cpi.py` | Blocks MoM step >1.0pp or exact prior-year-same-period match. `--confirm-anomaly` override. | **Done** (Apr 22) |
+| 5.3 | Add anomaly logging to `fetch_historical_cpi.py` | Same two checks; writes `docs/data/cpi_anomalies.json` and exits 2 so CI surfaces them. | **Done** (Apr 22) |
+| 5.4 | Fix `fetch_imf_forecasts.py` coverage | Script only fetched 9 countries with wrong EA code (`EMU` → empty) and wrong output dir. Now 15 countries, `EURO` code, `docs/data/` path; preserves curated `note`/`display_order`/`url`. | **Done** (Apr 23) |
+| 5.5 | Preserve emoji encoding in `update_cpi.py` | `save_data` now uses `ensure_ascii=False` so raw unicode flags survive, preventing rebase conflicts with bot commits. | **Done** (Apr 22) |
+| 5.6 | Deeper BR/MX history audit | Spot-checked 2026-01/02. Full 2025 audit still pending. | To Do |
+
 ### Phase 4: Expansion & Polish (Priority: Low)
 
 | # | Task | Details | Status |
@@ -143,6 +160,13 @@
 |---|-----|--------|------|
 *None — all known bugs resolved.*
 
+### Watch list
+
+| # | Item | Notes |
+|---|------|-------|
+| W1 | BR/MX 2025 history may have older miscaptures | Only 2026-01/02 were corrected. Values from 2025 should be spot-audited vs IBGE/INEGI archives. |
+| W2 | NZ Q2 2026 may spike | RBNZ guidance suggests ~4.2% driven by Mid-East conflict energy pass-through. Watch for anomaly-gate trip. |
+
 ### Resolved (since Feb 2026)
 
 | Bug | Resolution | Date |
@@ -157,6 +181,9 @@
 | B8 | Re-enabled SSL verification in CB scraper | Mar 2026 |
 | B9 | Removed hardcoded 2024 URLs; scrapers discover latest from index pages | Mar 2026 |
 | B10 | Switched JP/KR to COICOP 2018 FRED series with fallback | Mar 2026 |
+| B11 | BR/MX 2026-01/02 contaminated with prior-year comparison values; added anomaly gates | Apr 2026 |
+| B12 | `fetch_imf_forecasts.py` covered only 9/15 countries, wrong EA code, wrong output dir | Apr 2026 |
+| B13 | `update_cpi.py` wrote escaped unicode flags, causing rebase conflicts with bot commits | Apr 2026 |
 | Live site out of sync (2 commits, 8 countries) | Full codebase pushed to GitHub | Feb 2026 |
 | Venezuela page "Error loading data" | Null target handling fixed in country.js | Jan 2026 |
 | Quarterly date format crash in monitor | Fixed AU/NZ `2025-Q4` format | Jan 2026 |

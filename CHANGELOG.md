@@ -4,6 +4,28 @@ All notable changes to the Inflation Dashboard project are documented here.
 
 ---
 
+## [1.3.0] - 2026-04-22
+
+### Changed
+- **CPI Data:** Advanced all 15 countries to March 2026 where releases were available:
+  - **March 2026**: US (3.26% precise), EA 2.6% (final), CA 2.4%, CN 1.0%, IN 3.4%, KR 2.2%, BR 4.14%, MX 4.59%
+  - **February 2026 backfill**: UK 3.0% (prior round missed this), AU 3.7% (monthly indicator)
+  - **Q1 2026**: NZ 3.1%
+  - Still pending at release: UK March, JP (releases Apr 24), SG (~Apr 23), ZA (release lag), VE (irregular)
+- **IMF Forecasts:** Updated to WEO April 2026 (released Apr 14). Broad upside revisions driven by Middle East conflict oil-price shock: US +0.8pp, EA +0.7pp, UK +0.7pp, AU/NZ +1.0pp, SG +0.8pp, VE re-rated to 387.4%.
+
+### Fixed
+- **BR/MX miscapture (data-quality):** Corrected BR 2026-02 (5.06% → 3.81%) and MX 2026-02 (3.77% → 4.02%). Prior values were the same-month prior-year figures referenced in IBGE/INEGI comparison text, accidentally stored as the current-month reading. BR/MX 2026-01 similarly corrected (BR 4.56% → 4.44%, MX 3.59% → 3.79%).
+- **`fetch_imf_forecasts.py`**: covered only 9 countries, used wrong Euro Area code (`EMU` returns empty; correct code is `EURO` group), and wrote to `./data/` instead of `./docs/data/`. Now covers all 15 countries with correct codes and path; preserves curated `note`, `display_order`, and `url` on refresh.
+- **`update_cpi.py` emoji encoding:** `save_data` now writes `ensure_ascii=False`, preventing rebase conflicts with automated commits that use raw unicode flag emojis.
+
+### Added
+- **Anomaly detection gates (data-quality hardening):**
+  - `update_cpi.py` blocks manual updates where MoM step > 1.0pp **or** the new value exactly matches the same month one year earlier (the BR/MX miscapture pattern). Override with `--confirm-anomaly`.
+  - `scripts/fetch_historical_cpi.py` logs the same anomalies to `docs/data/cpi_anomalies.json` and exits 2 so CI surfaces bad pulls instead of silently merging them.
+
+---
+
 ## [1.2.0] - 2026-03-24
 
 ### Changed
