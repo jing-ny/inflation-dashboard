@@ -376,6 +376,116 @@ def scrape_fed():
     }
 
 
+def _discover_boj_outlook_pdf():
+    """Find the URL of the most recent BoJ Outlook full-text PDF.
+
+    Returns (url, pub_date) or (None, None).
+    """
+    index_url = "https://www.boj.or.jp/en/mopo/outlook/index.htm"
+    html = fetch_url(index_url)
+    if not html:
+        return None, None
+
+    # Full-text PDFs end in 'b.pdf'; summaries in 'a.pdf'. Pattern: gor<YY><MM>b.pdf
+    links = re.findall(r'href="([^"]*?/gor(\d{2})(\d{2})b\.pdf)"', html)
+    if not links:
+        return None, None
+
+    # Convert 2-digit year to 4-digit; sort descending by YYYYMM
+    def sort_key(item):
+        yy, mm = int(item[1]), int(item[2])
+        year = 2000 + yy if yy < 90 else 1900 + yy
+        return year * 100 + mm
+
+    links.sort(key=sort_key, reverse=True)
+    rel, yy, mm = links[0]
+    if rel.startswith("http"):
+        url = rel
+    elif rel.startswith("/"):
+        url = "https://www.boj.or.jp" + rel
+    else:
+        url = "https://www.boj.or.jp/en/mopo/outlook/" + rel
+
+    pub_date = f"20{yy}-{mm}-01"
+    return url, pub_date
+
+
+def _fetch_pdf_text(url):
+    """Download a PDF and return concatenated text of all pages."""
+    try:
+        req = Request(url, headers=HEADERS)
+        with urlopen(req, timeout=60, context=ssl_context) as response:
+            pdf_bytes = response.read()
+    except URLError as e:
+        print(f"  ❌ Failed to fetch PDF {url}: {e}")
+        return None
+
+    try:
+        from pypdf import PdfReader
+    except ImportError:
+        print("  ❌ pypdf not installed — add it to workflow requirements")
+        return None
+
+    import io
+    reader = PdfReader(io.BytesIO(pdf_bytes))
+    return "\n".join((page.extract_text() or "") for page in reader.pages)
+
+
+def scrape_boj():
+    """Scrape BoJ Outlook for the Majority of the Policy Board Members' median
+    CPI (all items less fresh food) forecasts. Fiscal-year basis."""
+    print("📊 Scraping BoJ Outlook...")
+
+    url, pub_date = _discover_boj_outlook_pdf()
+    if not url:
+        print("  ⚠️  Could not discover BoJ Outlook PDF from index")
+        return None
+
+    text = _fetch_pdf_text(url)
+    if not text:
+        return None
+
+    # Confirm we're on the right table
+    if "CPI (all items less fresh food)" not in text:
+        print("  ⚠️  Forecast table (CPI less fresh food) not found in PDF")
+        return None
+
+    # Per fiscal year, the row has three [median] brackets in order:
+    # 1) Real GDP, 2) CPI (all items less fresh food), 3) CPI less fresh food & energy.
+    # We want #2. Pattern allows flexible whitespace that pypdf inserts.
+    row_pattern = re.compile(
+        r'Fiscal\s+(\d{4})\b'                  # fiscal year
+        r'[^\[]*?\[\s*([+-]?\d+\.\d+)\s*\]'     # first median (GDP)
+        r'[^\[]*?\[\s*([+-]?\d+\.\d+)\s*\]'     # second median (CPI less fresh food)
+        r'[^\[]*?\[\s*([+-]?\d+\.\d+)\s*\]',    # third median (core-core)
+        re.DOTALL,
+    )
+
+    projections = []
+    seen_years = set()
+    for year, _gdp, cpi, _cc in row_pattern.findall(text):
+        if year in seen_years:
+            continue
+        seen_years.add(year)
+        # Strip leading '+' but preserve negative sign
+        value = float(cpi)
+        projections.append({"year": year, "value": round(value, 2)})
+
+    if not projections:
+        print("  ⚠️  Could not parse forecast rows")
+        return None
+
+    return {
+        "bank": "Bank of Japan",
+        "country": "JP",
+        "metric": "CPI excluding fresh food (Median Policy Board projection, fiscal year)",
+        "source": "BoJ Outlook for Economic Activity and Prices",
+        "source_url": url,
+        "source_date": pub_date,
+        "projections": projections,
+    }
+
+
 def scrape_sarb():
     """Scrape SARB MPC Statement."""
     print("📊 Scraping SARB...")
@@ -458,6 +568,7 @@ def compare_forecasts(current, new):
 
 COUNTRY_SCRAPERS = {
     "US": scrape_fed,
+    "JP": scrape_boj,
     "EA": scrape_ecb,
     "UK": scrape_boe,
     "AU": scrape_rba,
