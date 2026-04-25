@@ -486,6 +486,75 @@ def scrape_boj():
     }
 
 
+def scrape_bcb():
+    """Fetch the latest Focus survey median IPCA forecasts via BCB Olinda API.
+
+    Focus is published every Monday and tracks market-consensus expectations.
+    We pull the most recent business day's medians for 2026..2028.
+    """
+    print("📊 Scraping BCB Focus survey...")
+
+    # Olinda OData endpoint for annual market expectations.
+    # baseCalculo=0 = full sample; we want the most recent observation per year.
+    base = ("https://olinda.bcb.gov.br/olinda/servico/Expectativas/versao/v1/odata/"
+            "ExpectativasMercadoAnuais")
+    # Pre-encoded filter to avoid quote escaping pitfalls in urlencode.
+    today_year = datetime.now().year
+    query = (
+        f"?$top=200"
+        f"&$filter=Indicador%20eq%20'IPCA'"
+        f"%20and%20baseCalculo%20eq%200"
+        f"%20and%20DataReferencia%20ge%20'{today_year}'"
+        f"%20and%20DataReferencia%20le%20'{today_year + 4}'"
+        f"&$orderby=Data%20desc"
+        f"&$format=application/json"
+    )
+    url = base + query
+
+    raw = fetch_url(url)
+    if not raw:
+        return None
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as e:
+        print(f"  ⚠️  Could not decode Focus JSON: {e}")
+        return None
+
+    rows = data.get("value", [])
+    if not rows:
+        print("  ⚠️  Focus API returned no records")
+        return None
+
+    # Keep only the most recent median per reference year.
+    latest_by_year = {}
+    latest_obs_date = None
+    for row in rows:
+        year = row.get("DataReferencia")
+        if year not in latest_by_year and row.get("Mediana") is not None:
+            latest_by_year[year] = row
+            if latest_obs_date is None:
+                latest_obs_date = row.get("Data")
+
+    if not latest_by_year:
+        return None
+
+    projections = []
+    for year in sorted(latest_by_year):
+        v = latest_by_year[year]
+        projections.append({"year": year, "value": round(float(v["Mediana"]), 2)})
+
+    return {
+        "bank": "Banco Central do Brasil",
+        "country": "BR",
+        "metric": "IPCA — Focus survey median",
+        "source": "BCB Focus Market Readout (Olinda API)",
+        "source_url": "https://www.bcb.gov.br/en/publications/focusmarketreadout",
+        "source_date": latest_obs_date,
+        "projections": projections,
+    }
+
+
 def scrape_sarb():
     """Scrape SARB MPC Statement."""
     print("📊 Scraping SARB...")
@@ -569,6 +638,7 @@ def compare_forecasts(current, new):
 COUNTRY_SCRAPERS = {
     "US": scrape_fed,
     "JP": scrape_boj,
+    "BR": scrape_bcb,
     "EA": scrape_ecb,
     "UK": scrape_boe,
     "AU": scrape_rba,

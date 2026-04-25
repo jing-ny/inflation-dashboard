@@ -11,7 +11,7 @@ on:
         type: boolean
         default: false
       country:
-        description: 'Specific country to check (US, JP, AU, EA, UK, CA, NZ, ZA, or leave blank for all)'
+        description: 'Specific country to check (US, JP, BR, AU, EA, UK, CA, NZ, ZA, or leave blank for all)'
         type: string
         required: false
       dry_run:
