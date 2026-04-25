@@ -1,6 +1,6 @@
 # Inflation Dashboard - Project Plan & Architecture
 
-**Last Updated:** April 23, 2026
+**Last Updated:** April 25, 2026
 **Purpose:** Reference document to maintain consistency across sessions.
 
 ---
@@ -52,15 +52,16 @@
 
 ---
 
-## Current State (as of April 23, 2026)
+## Current State (as of April 25, 2026)
 
 ### What Works
 - Dashboard fully deployed on GitHub Pages, all 15 country pages render correctly
-- `fetch_historical_cpi.py` covers all 15 countries via FRED + ECB APIs
-- `fetch_imf_forecasts.py` now covers all 15 countries (EA uses `EURO` group code)
+- `fetch_historical_cpi.py` covers all 15 countries; **US/UK/CA now hit official APIs directly** (BLS, ONS, StatCan) bypassing FRED lag; EA continues on ECB; rest still on FRED
+- `fetch_imf_forecasts.py` covers all 15 countries (EA uses `EURO` group code)
+- `auto_scrape_cb_forecasts.py` now covers **9/15 central banks** with `--merge` mode that auto-commits clean scrapes (1pp anomaly gate falls through to draft review): US (Fed SEP), JP (BoJ Outlook PDF), BR (BCB Focus API), EA, UK, AU, CA, NZ, ZA
 - 5 GitHub Actions workflows running on schedule
-- `update_cpi.py` and `batch_update_cpi.py` manual update tools functional, with anomaly gates
-- Substack newsletter signup embedded on homepage
+- `update_cpi.py` and `batch_update_cpi.py` manual tools functional, with anomaly gates (MoM step >1pp + prior-year-match)
+- Substack newsletter signup embedded on homepage; AI-assistance disclaimer on all pages and email templates
 - CB forecasts and IMF forecasts populated for all 15 countries
 - 10-year CPI history with Chart.js visualization on country pages
 - CPI data current through March 2026 for countries that have released (see table below)
@@ -141,7 +142,9 @@
 
 ### Phase 6: Eliminate Manual Updates (Priority: High)
 
-**Goal:** Drive the manual update surface to near-zero. Today 9/15 central banks and most fresh CPI values require human entry. Build direct-API fetchers and official-source scrapers so automation catches releases without human intervention.
+**Status: Tier 1 complete (Apr 23–25). Tier 2 paused — see "Pause rationale" below.**
+
+**Goal:** Drive the manual update surface to near-zero. Today 6/15 central banks and most fresh CPI values still require human entry (down from 9/15 before this phase). Build direct-API fetchers and official-source scrapers so automation catches releases without human intervention.
 
 **Tier 1 — ship first (highest payoff, lowest friction):**
 
@@ -155,24 +158,31 @@
 | 6.6 | ONS UK CPI API fetcher | ONS Beta API JSON | Monthly. UK now uses series `d7g7` on dataset `mm23` (already YoY). Bonus: confirmed UK Mar 2026 = 3.3% (was pending). | **Done** (Apr 25) |
 | 6.7 | StatCan CPI API fetcher | StatCan WDS vector API | Monthly. CA now uses vector V41690973 (NSA index, computes YoY). | **Done** (Apr 25) |
 
-**Tier 2 — defer (medium effort, medium payoff):**
+**Tier 2 — paused (medium effort, lower marginal payoff):**
 
-| # | Task | Source | Scope | Status |
-|---|------|--------|-------|--------|
-| 6.8 | Banxico scraper | banxico.org.mx Quarterly Inflation Report (PDF) | 4x/year | To Do |
-| 6.9 | BOK scraper | bok.or.kr Economic Outlook (PDF) | 4x/year | To Do |
-| 6.10 | RBI scraper | rbi.org.in Monetary Policy Report (PDF) | 6x/year | To Do |
-| 6.11 | MAS scraper | mas.gov.sg Macroeconomic Review (PDF) | 2x/year | To Do |
+| # | Task | Source | Cadence | Status |
+|---|------|--------|---------|--------|
+| 6.8 | Banxico scraper | banxico.org.mx Quarterly Inflation Report (PDF) | 4x/year | Paused |
+| 6.9 | BOK scraper | bok.or.kr Economic Outlook (PDF) | 4x/year | Paused |
+| 6.10 | RBI scraper | rbi.org.in Monetary Policy Report (PDF) | 6x/year | Paused |
+| 6.11 | MAS scraper | mas.gov.sg Macroeconomic Review (PDF) | 2x/year | Paused |
+
+**Pause rationale (2026-04-25):** Tier 1 already removed ~80 manual updates per year. The four Tier 2 banks publish 2–6 times per year combined, so finishing Tier 2 only removes ~16 more updates per year — much lower marginal payoff per hour of work than Tier 1. Better to let the new pipeline (BLS / ONS / StatCan / Fed / BoJ / BCB) run for a couple of cycles and prove itself before stacking more PDF parsers on top. Each Tier 2 bank can still be updated through `./update.sh forecast` after meetings; the anomaly gates from Phase 5 prevent the old BR/MX-style miscapture pattern. Revisit Tier 2 if any of these banks turn out to publish more often than expected or the manual cadence becomes annoying.
 
 **Explicit non-goals:**
 - **PBoC**: China does not publish numerical inflation forecasts in a standardized schedule. Track policy rate manually; skip forecast scraping.
 - **BCV**: Venezuela publishes irregularly and inconsistently. Keep manual.
 - **CPI for 11 countries without clean APIs**: Continue WebSearch + manual gate via `update_cpi.py` (anomaly gates now prevent past BR/MX-style miscaptures).
 
+**Current automation surface (after Tier 1):**
+- **CB forecasts auto-updated**: US, JP, BR, EA, UK, AU, CA, NZ, ZA (9/15)
+- **CB forecasts still manual**: CN, IN, KR, SG, MX, VE — but PBoC and BCV are explicit non-goals, so the realistic remaining surface is 4 banks (Banxico, BOK, RBI, MAS).
+- **CPI direct-from-source**: US (BLS), EA (ECB), UK (ONS), CA (StatCan) — the four largest economies, no FRED lag.
+- **CPI via FRED with lag**: AU, NZ, ZA, JP, CN, IN, KR, SG, BR, MX, VE — supplemented by manual `update_cpi.py` when fresh values are needed.
+
 **Success criteria (when Phase 6 closes):**
-- Monthly CPI updates require manual entry only for NZ (quarterly), ZA, JP, CN, IN, KR, SG, AU, BR, MX, VE — and JP/CN/IN/KR/SG/BR/MX we'll target via API if an API exists by then.
-- CB forecast updates require manual entry only for PBoC + BCV (and Tier 2 banks until those ship).
-- The automated weekly workflow picks up 90%+ of release cadence on its own.
+- The automated Mon/Thu workflows pick up 90%+ of release cadence on their own.
+- Manual updates are confined to: PBoC + BCV (non-goals), Tier 2 banks until they ship, and CPI for the 11 non-API countries when fresh values are needed before FRED catches up.
 
 ### Phase 4: Expansion & Polish (Priority: Low)
 
