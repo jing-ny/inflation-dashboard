@@ -31,6 +31,7 @@ jobs:
       - name: Fetch latest inflation data
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          BLS_API_KEY: ${{ secrets.BLS_API_KEY }}  # optional; unkeyed BLS API works for ~10y window
         run: |
           python scripts/fetch_historical_cpi.py
           python scripts/fetch_imf_forecasts.py

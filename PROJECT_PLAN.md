@@ -150,7 +150,7 @@
 | 6.1 | Fed SEP scraper | federalreserve.gov (static HTML table) | Quarterly (Mar/Jun/Sep/Dec). Writes to `cb_forecasts.json[US]`. Integrate into `auto_scrape_cb_forecasts.py`. Also added `--merge` mode so scrapes auto-commit instead of just drafting; 1pp anomaly gate falls through to draft review. | **Done** (Apr 23) |
 | 6.2 | BoJ Outlook scraper | boj.or.jp (PDF table, `pypdf`) | Quarterly (Jan/Apr/Jul/Oct). Writes to `cb_forecasts.json[JP]`. Extracts median Policy Board forecast for CPI less fresh food, fiscal-year basis. | **Done** (Apr 24) |
 | 6.3 | BCB Focus survey fetcher | BCB Olinda OData API (JSON) | Pulls weekly Focus median IPCA forecasts via `ExpectativasMercadoAnuais` endpoint. Writes to `cb_forecasts.json[BR]`. Selic (policy rate) updates still manual. | **Done** (Apr 25) |
-| 6.4 | BLS CPI API fetcher | `api.bls.gov/publicAPI/v2/...` (free tier: 25/day; with key: 500/day) | Monthly. Replaces FRED lag for US; precise within 30 min of BLS release. Extend `fetch_historical_cpi.py`. | To Do |
+| 6.4 | BLS CPI API fetcher | `api.bls.gov/publicAPI/v2/...` (free tier: 25/day; with key: 500/day) | Monthly. Replaces FRED lag for US; precise within 30 min of BLS release. Extend `fetch_historical_cpi.py`. New `fetch_bls_series()` + US `api: BLS` route; FRED fallback retained for outages. Optional `BLS_API_KEY` env for higher rate limit + full window. | **Done** (Apr 25) |
 | 6.5 | Eurostat HICP API fetcher | Eurostat SDMX / REST JSON | Monthly. Flash + final. | To Do |
 | 6.6 | ONS UK CPI API fetcher | ONS Beta API JSON | Monthly. | To Do |
 | 6.7 | StatCan CPI API fetcher | StatCan WDS vector API | Monthly. | To Do |

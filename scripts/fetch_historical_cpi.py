@@ -80,7 +80,9 @@ COUNTRIES = {
         "target": 2.0,
         "source": "BLS",
         "source_url": "https://www.bls.gov/cpi/",
-        "fred_series": "CPIAUCNS",  # CPI-U All Urban Consumers, NSA (index)
+        "api": "BLS",
+        "series_id": "CUUR0000SA0",  # CPI-U All Urban Consumers, NSA (index) — same series as FRED CPIAUCNS
+        "fred_series": "CPIAUCNS",  # FRED fallback if BLS API fails
         "frequency": "monthly",
         "data_type": "index",  # Need to calculate YoY
     },
@@ -283,6 +285,62 @@ def fetch_fred_series(series_id: str, start_date: str = "2015-01-01") -> List[Di
     return observations
 
 
+def fetch_bls_series(series_id: str, start_year: int = 2015) -> List[Dict]:
+    """Fetch a CPI index series from the BLS Public Data API.
+
+    Without a key the API serves up to 10 years; with BLS_API_KEY set in env,
+    we POST and request the full window since `start_year`.
+
+    Returns observations as a list of {"date": "YYYY-MM-DD", "value": float}
+    sorted ascending. Missing months (BLS uses "-") are skipped.
+    """
+    api_key = os.environ.get("BLS_API_KEY")
+    end_year = datetime.now().year
+
+    if api_key:
+        url = "https://api.bls.gov/publicAPI/v2/timeseries/data/"
+        payload = {
+            "seriesid": [series_id],
+            "startyear": str(start_year),
+            "endyear": str(end_year),
+            "registrationkey": api_key,
+        }
+        resp = requests.post(url, json=payload, timeout=30)
+    else:
+        # Unkeyed GET — returns last ~10 years for the series
+        url = f"https://api.bls.gov/publicAPI/v2/timeseries/data/{series_id}"
+        resp = requests.get(url, timeout=30)
+
+    resp.raise_for_status()
+    data = resp.json()
+
+    if data.get("status") != "REQUEST_SUCCEEDED":
+        msg = data.get("message", ["unknown"])
+        raise RuntimeError(f"BLS API error: {msg}")
+
+    series_list = data.get("Results", {}).get("series", [])
+    if not series_list:
+        return []
+
+    observations = []
+    for obs in series_list[0].get("data", []):
+        if obs.get("value") in (None, "", "-"):
+            continue
+        period = obs.get("period", "")
+        # BLS monthly periods are M01..M12; M13 is annual average — skip annual.
+        if not period.startswith("M") or period == "M13":
+            continue
+        try:
+            month = int(period[1:])
+        except ValueError:
+            continue
+        date_str = f"{obs['year']}-{month:02d}-01"
+        observations.append({"date": date_str, "value": float(obs["value"])})
+
+    observations.sort(key=lambda x: x["date"])
+    return observations
+
+
 def fetch_ecb_series(series_id: str, start_date: str = "2015-01-01") -> List[Dict]:
     """
     Fetch HICP YoY rate from ECB SDMX API.
@@ -395,8 +453,23 @@ def fetch_country_data(code: str) -> Optional[Dict]:
     try:
         if config.get("api") == "ECB":
             raw_data = fetch_ecb_series(config["series_id"])
-            yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)} 
+            yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)}
                        for obs in raw_data]
+        elif config.get("api") == "BLS":
+            # Direct BLS Public Data API — no FRED lag.
+            try:
+                raw_data = fetch_bls_series(config["series_id"])
+                if not raw_data:
+                    raise ValueError(f"No data returned from BLS for {config['series_id']}")
+                yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
+            except Exception as e:
+                # Fall back to FRED if BLS API fails (transient outages, rate limit, etc.)
+                if config.get("fred_series"):
+                    print(f"(BLS failed: {e}; falling back to FRED)...", end=" ")
+                    raw_data = fetch_fred_series(config["fred_series"])
+                    yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
+                else:
+                    raise
         else:
             # FRED API - try primary series, fall back to alt if available
             series_id = config.get("fred_series")
