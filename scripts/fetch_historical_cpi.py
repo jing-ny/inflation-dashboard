@@ -103,9 +103,11 @@ COUNTRIES = {
         "target": 2.0,
         "source": "ONS",
         "source_url": "https://www.ons.gov.uk/economy/inflationandpriceindices",
-        "fred_series": "GBRCPIALLMINMEI",  # OECD index
+        "api": "ONS",
+        "series_id": "d7g7",  # CPI ALL ITEMS 12-month rate (already YoY)
+        "fred_series": "GBRCPIALLMINMEI",  # FRED fallback if ONS API fails
         "frequency": "monthly",
-        "data_type": "index",
+        "data_type": "yoy",  # ONS d7g7 is already YoY
         "lag_months": 2,  # FRED typically lags ONS by 1-2 months
     },
     "CA": {
@@ -114,7 +116,9 @@ COUNTRIES = {
         "target": 2.0,
         "source": "Statistics Canada",
         "source_url": "https://www.statcan.gc.ca/",
-        "fred_series": "CANCPIALLMINMEI",  # OECD index
+        "api": "StatCan",
+        "series_id": 41690973,  # All-items CPI, monthly NSA index (vector V41690973)
+        "fred_series": "CANCPIALLMINMEI",  # FRED fallback if StatCan API fails
         "frequency": "monthly",
         "data_type": "index",
         "lag_months": 2,
@@ -341,6 +345,82 @@ def fetch_bls_series(series_id: str, start_year: int = 2015) -> List[Dict]:
     return observations
 
 
+def fetch_ons_series(timeseries_id: str, dataset: str = "mm23") -> List[Dict]:
+    """Fetch a YoY rate series from the ONS Beta API.
+
+    Series IDs of interest:
+      - 'd7g7' on dataset 'mm23' = CPI ALL ITEMS, 12-month rate (UK CPI YoY).
+
+    Returns observations as a list of {"date": "YYYY-MM-DD", "value": float}
+    sorted ascending. Values are already YoY rates (no index calc needed).
+    """
+    url = (f"https://api.beta.ons.gov.uk/v1/data"
+           f"?uri=/economy/inflationandpriceindices/timeseries/{timeseries_id}/{dataset}")
+    resp = requests.get(url, timeout=30)
+    resp.raise_for_status()
+    data = resp.json()
+
+    months = data.get("months", [])
+    observations = []
+    for m in months:
+        # 'date' format: '2026 MAR' — parse to YYYY-MM-01
+        date_str = m.get("date", "")
+        try:
+            year, mon_abbr = date_str.split()
+            month_num = {
+                "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
+                "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12,
+            }[mon_abbr.upper()]
+        except (ValueError, KeyError):
+            continue
+        try:
+            value = float(m.get("value"))
+        except (TypeError, ValueError):
+            continue
+        observations.append({
+            "date": f"{int(year):04d}-{month_num:02d}-01",
+            "value": value,
+        })
+
+    observations.sort(key=lambda x: x["date"])
+    return observations
+
+
+def fetch_statcan_series(vector_id: int, latest_n: int = 240) -> List[Dict]:
+    """Fetch an index series from the Statistics Canada Web Data Service.
+
+    Vector IDs of interest:
+      - 41690973 = All-items CPI, monthly, NSA, Canada (index, 2002=100).
+
+    Returns observations as a list of {"date": "YYYY-MM-DD", "value": float}.
+    Caller computes YoY from the index (same path as BLS).
+    """
+    url = "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods"
+    payload = [{"vectorId": int(vector_id), "latestN": int(latest_n)}]
+    resp = requests.post(url, json=payload, timeout=30)
+    resp.raise_for_status()
+    data = resp.json()
+
+    if not data or data[0].get("status") != "SUCCESS":
+        msg = data[0].get("object") if data else "no response"
+        raise RuntimeError(f"StatCan WDS error: {msg}")
+
+    points = data[0].get("object", {}).get("vectorDataPoint", [])
+    observations = []
+    for p in points:
+        ref = p.get("refPer", "")  # 'YYYY-MM-DD'
+        if not ref:
+            continue
+        try:
+            value = float(p.get("value"))
+        except (TypeError, ValueError):
+            continue
+        observations.append({"date": ref, "value": value})
+
+    observations.sort(key=lambda x: x["date"])
+    return observations
+
+
 def fetch_ecb_series(series_id: str, start_date: str = "2015-01-01") -> List[Dict]:
     """
     Fetch HICP YoY rate from ECB SDMX API.
@@ -463,9 +543,37 @@ def fetch_country_data(code: str) -> Optional[Dict]:
                     raise ValueError(f"No data returned from BLS for {config['series_id']}")
                 yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
             except Exception as e:
-                # Fall back to FRED if BLS API fails (transient outages, rate limit, etc.)
                 if config.get("fred_series"):
                     print(f"(BLS failed: {e}; falling back to FRED)...", end=" ")
+                    raw_data = fetch_fred_series(config["fred_series"])
+                    yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
+                else:
+                    raise
+        elif config.get("api") == "ONS":
+            # Direct ONS Beta API — series d7g7 is the headline CPI YoY.
+            try:
+                raw_data = fetch_ons_series(config["series_id"])
+                if not raw_data:
+                    raise ValueError(f"No data returned from ONS for {config['series_id']}")
+                yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)}
+                           for obs in raw_data]
+            except Exception as e:
+                if config.get("fred_series"):
+                    print(f"(ONS failed: {e}; falling back to FRED)...", end=" ")
+                    raw_data = fetch_fred_series(config["fred_series"])
+                    yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
+                else:
+                    raise
+        elif config.get("api") == "StatCan":
+            # Direct Statistics Canada Web Data Service — index, compute YoY.
+            try:
+                raw_data = fetch_statcan_series(config["series_id"])
+                if not raw_data:
+                    raise ValueError(f"No data returned from StatCan for vector {config['series_id']}")
+                yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
+            except Exception as e:
+                if config.get("fred_series"):
+                    print(f"(StatCan failed: {e}; falling back to FRED)...", end=" ")
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:

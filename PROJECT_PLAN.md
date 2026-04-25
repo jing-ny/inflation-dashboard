@@ -151,9 +151,9 @@
 | 6.2 | BoJ Outlook scraper | boj.or.jp (PDF table, `pypdf`) | Quarterly (Jan/Apr/Jul/Oct). Writes to `cb_forecasts.json[JP]`. Extracts median Policy Board forecast for CPI less fresh food, fiscal-year basis. | **Done** (Apr 24) |
 | 6.3 | BCB Focus survey fetcher | BCB Olinda OData API (JSON) | Pulls weekly Focus median IPCA forecasts via `ExpectativasMercadoAnuais` endpoint. Writes to `cb_forecasts.json[BR]`. Selic (policy rate) updates still manual. | **Done** (Apr 25) |
 | 6.4 | BLS CPI API fetcher | `api.bls.gov/publicAPI/v2/...` (free tier: 25/day; with key: 500/day) | Monthly. Replaces FRED lag for US; precise within 30 min of BLS release. Extend `fetch_historical_cpi.py`. New `fetch_bls_series()` + US `api: BLS` route; FRED fallback retained for outages. Optional `BLS_API_KEY` env for higher rate limit + full window. | **Done** (Apr 25) |
-| 6.5 | Eurostat HICP API fetcher | Eurostat SDMX / REST JSON | Monthly. Flash + final. | To Do |
-| 6.6 | ONS UK CPI API fetcher | ONS Beta API JSON | Monthly. | To Do |
-| 6.7 | StatCan CPI API fetcher | StatCan WDS vector API | Monthly. | To Do |
+| 6.5 | Eurostat HICP API fetcher | Eurostat REST JSON | Skipped. Existing ECB API path is fresher (Eurostat `prc_hicp_manr` lagged Dec 2025 when probed Apr 25 2026; ECB feed already had Mar 2026). EA stays on `api: "ECB"`. | **Skipped** (Apr 25) |
+| 6.6 | ONS UK CPI API fetcher | ONS Beta API JSON | Monthly. UK now uses series `d7g7` on dataset `mm23` (already YoY). Bonus: confirmed UK Mar 2026 = 3.3% (was pending). | **Done** (Apr 25) |
+| 6.7 | StatCan CPI API fetcher | StatCan WDS vector API | Monthly. CA now uses vector V41690973 (NSA index, computes YoY). | **Done** (Apr 25) |
 
 **Tier 2 — defer (medium effort, medium payoff):**
 
