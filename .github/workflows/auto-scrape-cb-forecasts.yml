@@ -19,6 +19,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: write
+
 jobs:
   scrape-forecasts:
     runs-on: ubuntu-latest
