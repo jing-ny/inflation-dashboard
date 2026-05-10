@@ -118,12 +118,30 @@ def scrape_ecb():
 
 
 def scrape_boe():
-    """Scrape Bank of England Monetary Policy Report."""
+    """Scrape Bank of England Monetary Policy Report.
+
+    Note: HTML prose extraction is currently disabled. The MPR mentions
+    headline CPI, services inflation, food price inflation, AWE wage
+    growth, world GDP, etc. all in the same paragraph style — regex over
+    prose cannot reliably distinguish them and was silently overwriting
+    curated forecasts with values like "food price inflation 4.6% by
+    September 2026" reinterpreted as headline CPI.
+
+    The URL-discovery half still runs so that:
+      - the workflow no longer fails on a 404 index page, and
+      - we surface a clear log line pointing at the MPR for human review.
+
+    Returning None keeps the existing curated UK entry intact.
+    Proper structured-table extraction tracked in #10.
+    """
     print("📊 Scraping BoE...")
-    
-    # Try to find latest MPR from index page
+
+    # The dedicated /monetary-policy-report index page was retired sometime
+    # before 2026-04-30 (it now 404s). The /monetary-policy hub page links
+    # to the latest MPR with the same /monetary-policy-report/YYYY/<month>
+    # URL scheme, so we use it as the index instead.
     url = None
-    index_url = "https://www.bankofengland.co.uk/monetary-policy-report"
+    index_url = "https://www.bankofengland.co.uk/monetary-policy"
     index_html = fetch_url(index_url)
 
     if index_html:
@@ -134,37 +152,11 @@ def scrape_boe():
     if not url:
         print("  ⚠️  Could not find BoE MPR URL from index page")
         return None
-    
-    html = fetch_url(url)
-    if not html:
-        return None
-    
-    result = {
-        "bank": "Bank of England",
-        "country": "UK",
-        "metric": "CPI Inflation",
-        "source": "Monetary Policy Report",
-        "source_url": url,
-        "projections": []
-    }
-    
-    # BoE often shows projections in format like "2.5% in 2025"
-    pattern = r'(\d\.\d)%?\s*(?:in|for)?\s*(202[4-9])'
-    matches = re.findall(pattern, html)
-    
-    if matches:
-        seen_years = set()
-        for value, year in matches:
-            if year not in seen_years and 0 < float(value) < 10:
-                result["projections"].append({"year": year, "value": float(value)})
-                seen_years.add(year)
-    
-    # Extract date from URL
-    date_match = re.search(r'/(\w+-\d{4})/?$', url)
-    if date_match:
-        result["source_date"] = date_match.group(1).replace('-', ' ').title()
-    
-    return result if result["projections"] else None
+
+    print(f"  ℹ️  Found latest MPR: {url}")
+    print("  ⏸️  scrape_boe: extractor disabled until structured-table parsing lands; "
+          "preserving curated UK forecast")
+    return None
 
 
 def scrape_rba():
