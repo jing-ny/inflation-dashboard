@@ -19,6 +19,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: write
+
 jobs:
   scrape-forecasts:
     runs-on: ubuntu-latest
@@ -84,7 +87,7 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          git add docs/data/cb_forecasts.json docs/data/scraper_state.json
+          git add docs/data/cb_forecasts.json
           
           UPDATED=$(grep "Updated:" scraper_output.txt | head -1 || echo "Updated: auto")
           git commit -m "Auto-update CB forecasts $(date +'%Y-%m-%d')

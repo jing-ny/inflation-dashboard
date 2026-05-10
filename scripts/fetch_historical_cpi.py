@@ -719,15 +719,22 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
     
     # Get existing dates for quick lookup
     existing_dates = {h["date"] for h in merged.get("history", [])}
-    
+    existing_latest_date = max(existing_dates) if existing_dates else ""
+
     # Add new history points from FRED
     new_points = 0
     for point in fetched.get("history", []):
         if point["date"] not in existing_dates:
-            # Anomaly check vs. existing history before appending
-            hist_so_far = sorted(merged.get("history", []), key=lambda x: x["date"])
-            prev = hist_so_far[-1] if hist_so_far else None
-            detect_anomalies(code, point, prev, hist_so_far)
+            # Only run anomaly detection on points newer than what we already
+            # have. Backfill points (e.g. StatCan returning 20yrs of CA when
+            # local history starts at 2016) come from the source's own
+            # authoritative archive — flagging real historical volatility as
+            # an "anomaly" just adds noise and trips CI.
+            if point["date"] > existing_latest_date:
+                hist_so_far = sorted(merged.get("history", []), key=lambda x: x["date"])
+                prior = [h for h in hist_so_far if h["date"] < point["date"]]
+                prev = prior[-1] if prior else None
+                detect_anomalies(code, point, prev, hist_so_far)
             merged.setdefault("history", []).append(point)
             new_points += 1
     
