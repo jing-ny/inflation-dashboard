@@ -724,9 +724,13 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
     new_points = 0
     for point in fetched.get("history", []):
         if point["date"] not in existing_dates:
-            # Anomaly check vs. existing history before appending
+            # Anomaly check vs. existing history before appending.
+            # Compare against the chronologically prior point, not the latest —
+            # otherwise historical backfill (e.g. StatCan returning 20yrs of CA)
+            # gets compared to current YoY and flags every old point.
             hist_so_far = sorted(merged.get("history", []), key=lambda x: x["date"])
-            prev = hist_so_far[-1] if hist_so_far else None
+            prior = [h for h in hist_so_far if h["date"] < point["date"]]
+            prev = prior[-1] if prior else None
             detect_anomalies(code, point, prev, hist_so_far)
             merged.setdefault("history", []).append(point)
             new_points += 1
