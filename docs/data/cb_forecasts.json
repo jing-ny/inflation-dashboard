@@ -1,11 +1,27 @@
 {
   "metadata": {
-    "last_updated": "March 2026",
+    "last_updated": "May 2026",
     "notes": "Central bank inflation forecasts and policy rates",
     "context": "The Iran war (Mar 2026) has sharply divided the inflation outlook. The ECB and Fed both revised 2026 inflation up (ECB: 1.9%→2.6%, Fed: 2.5%→2.7%) citing energy supply disruption via the Strait of Hormuz. Oil briefly hit $120/bbl. Meanwhile, the RBA hiked rates after Australian inflation surprised to the upside, while most other central banks held steady. IMF pre-conflict projections (Jan 2026 WEO) now look optimistic — the April 2026 WEO will likely revise upward. JP Morgan expects 'disparate outcomes' across regions: US inflation accelerating above 3%, Europe moderating to 2%, Asia subdued.",
     "imf_baseline": "IMF WEO January 2026 Update (pre-conflict)"
   },
-  "display_order": ["US", "EA", "UK", "CA", "AU", "NZ", "ZA", "BR", "MX", "JP", "KR", "SG", "IN", "CN", "VE"],
+  "display_order": [
+    "US",
+    "EA",
+    "UK",
+    "CA",
+    "AU",
+    "NZ",
+    "ZA",
+    "BR",
+    "MX",
+    "JP",
+    "KR",
+    "SG",
+    "IN",
+    "CN",
+    "VE"
+  ],
   "forecasts": {
     "US": {
       "flag": "🇺🇸",
@@ -236,13 +252,16 @@
       "flag": "🇧🇷",
       "source": "BCB",
       "source_full": "Banco Central do Brasil - Focus Survey",
-      "source_url": "https://www.bcb.gov.br/en/monetarypolicy",
-      "publication_date": "March 2026",
+      "source_url": "https://www.bcb.gov.br/en/publications/focusmarketreadout",
+      "publication_date": "April 2026",
       "forecast_type": "Focus Survey median (IPCA)",
       "note": "BCB raised Selic to 14.25% in Mar 2026 amid persistent inflation. Focus survey median sees IPCA at 5.7% for 2026, well above the 3% target midpoint.",
       "projections": {
-        "2026": 5.7,
-        "2027": 4.0
+        "2026": 4.89,
+        "2027": 4.0,
+        "2028": 3.63,
+        "2029": 3.5,
+        "2030": 3.5
       },
       "key_quote": "Inflation expectations remain above target; tightening cycle continues",
       "policy_rate": {
