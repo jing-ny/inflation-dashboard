@@ -760,6 +760,26 @@ COUNTRY_SCRAPERS = {
 MERGE_THRESHOLD_PP = 1.0  # any year-over-year change larger than this blocks auto-merge
 
 
+def _normalise_publication_date(source_date: str) -> str:
+    """Render a scraper-provided source_date as 'Month YYYY' for the UI.
+
+    Different scrapers emit different formats — Fed/BoJ use YYYY-MM-DD,
+    RBA/BoC use 'May 2026', ECB historically used 'Mar 2026'. The dashboard
+    renders this string verbatim ([docs/index.html:347](docs/index.html)),
+    so we normalise to the long-form 'Month YYYY' style used by the
+    curated entries and fall back to the raw string if parsing fails.
+    """
+    s = (source_date or "").strip()
+    if not s:
+        return s
+    for fmt in ("%Y-%m-%d", "%Y-%m", "%B %Y", "%b %Y", "%B-%Y", "%b-%Y"):
+        try:
+            return datetime.strptime(s, fmt).strftime("%B %Y")
+        except ValueError:
+            continue
+    return s
+
+
 def merge_into_main(new_forecasts, dry_run=False):
     """Merge scraped forecasts directly into cb_forecasts.json.
 
@@ -813,11 +833,7 @@ def merge_into_main(new_forecasts, dry_run=False):
         if fc.get("source_url"):
             entry["source_url"] = fc["source_url"]
         if fc.get("source_date"):
-            try:
-                d = datetime.strptime(fc["source_date"], "%Y-%m-%d")
-                entry["publication_date"] = d.strftime("%B %Y")
-            except ValueError:
-                pass
+            entry["publication_date"] = _normalise_publication_date(fc["source_date"])
         merged.append({
             "country": country,
             "bank": fc.get("bank"),
