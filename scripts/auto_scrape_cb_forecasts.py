@@ -548,38 +548,35 @@ def scrape_bcb():
 
 
 def scrape_sarb():
-    """Scrape SARB MPC Statement."""
+    """Scrape SARB MPC Statement.
+
+    Note: extraction is currently disabled. Two compounding issues:
+      1. The previous URL (.../monetary-policy-statements/{YEAR}) 404s — that
+         path scheme was retired. The replacement landing page
+         /en/home/publications/statements/mpc-statements returns HTTP 200 but
+         is JS/AEM-rendered: at time of writing it even shows "We are
+         currently experiencing technical difficulties" on its own listing
+         widget and exposes no individual statement links in static HTML.
+      2. The original prose regex was a generic "decimal-near-year" match,
+         which on a real MPC statement also catches policy-rate references,
+         GDP growth, and core/food/services inflation — silently overwriting
+         curated forecasts.
+
+    We hit the new landing page so the workflow no longer 404s, then return
+    None to preserve the curated ZA entry. Proper extraction (PDF parsing
+    once individual statement links are reachable) tracked in #12.
+    """
     print("📊 Scraping SARB...")
-    
-    # SARB publishes forecasts in MPC statements (PDFs), harder to scrape
-    # Try the main monetary policy page for any HTML summaries
-    url = f"https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements/{CURRENT_YEAR}"
-    
-    html = fetch_url(url)
+
+    index_url = "https://www.resbank.co.za/en/home/publications/statements/mpc-statements"
+    html = fetch_url(index_url)
     if not html:
         return None
-    
-    result = {
-        "bank": "South African Reserve Bank",
-        "country": "ZA",
-        "metric": "CPI Inflation",
-        "source": "MPC Statement",
-        "source_url": url,
-        "projections": []
-    }
-    
-    # SARB often mentions forecasts like "inflation is expected to average X% in 202Y"
-    pattern = r'(?:inflation|CPI).*?(\d\.\d)%?\s*(?:in|for|by)?\s*(202[4-9])'
-    matches = re.findall(pattern, html, re.IGNORECASE)
-    
-    if matches:
-        seen_years = set()
-        for value, year in matches:
-            if year not in seen_years:
-                result["projections"].append({"year": year, "value": float(value)})
-                seen_years.add(year)
-    
-    return result if result["projections"] else None
+
+    print(f"  ℹ️  SARB MPC statements landing page reachable: {index_url}")
+    print("  ⏸️  scrape_sarb: extractor disabled — listing page is JS-rendered "
+          "and lacks static statement links; preserving curated ZA forecast")
+    return None
 
 
 def load_current_forecasts():
