@@ -85,13 +85,15 @@
       "flag": "🇨🇦",
       "source": "BoC",
       "source_full": "Bank of Canada - Monetary Policy Report",
-      "source_url": "https://www.bankofcanada.ca/publications/mpr/mpr-2026-01-28/",
+      "source_url": "https://www.bankofcanada.ca/publications/mpr/mpr-2026-04-29/projections/",
       "publication_date": "January 2026",
       "forecast_type": "Staff projection (CPI)",
       "note": "BoC expects inflation near 2% target. Trade uncertainty elevated due to US tariff review. Growth modest at 1.1% for 2026.",
       "projections": {
-        "2026": 2.0,
-        "2027": 2.0
+        "2025": 2.1,
+        "2026": 2.3,
+        "2027": 2.1,
+        "2028": 2.0
       },
       "key_quote": "Inflation expected to stay close to 2% target; trade risks elevated",
       "policy_rate": {
