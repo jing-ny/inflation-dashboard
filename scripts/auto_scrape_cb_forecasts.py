@@ -160,45 +160,101 @@ def scrape_boe():
 
 
 def scrape_rba():
-    """Scrape RBA Statement on Monetary Policy."""
+    """Scrape RBA Statement on Monetary Policy.
+
+    The RBA SMP folder layout is /publications/smp/YYYY/<month>/ containing
+    overview.html, contents.html, and a PDF — there is no per-chapter
+    economic-outlook.html in recent SMPs (the old URL we used 404s).
+
+    overview.html contains a clean projection table with year-ended Dec/June
+    columns. We parse the "Trimmed mean inflation" row (RBA's preferred
+    underlying measure) and emit only the Dec columns as year-keyed values.
+    """
     print("📊 Scraping RBA...")
-    
-    # Try to find latest SoMP from index page
-    url = None
+
     index_url = "https://www.rba.gov.au/publications/smp/"
     index_html = fetch_url(index_url)
-
-    if index_html:
-        links = re.findall(r'href="(/publications/smp/\d{4}/\w+/)"', index_html)
-        if links:
-            url = "https://www.rba.gov.au" + links[0] + "economic-outlook.html"
-
-    if not url:
-        print("  ⚠️  Could not find RBA SoMP URL from index page")
+    if not index_html:
         return None
-    
+
+    folder_links = re.findall(r'href="(/publications/smp/\d{4}/\w+/)"', index_html)
+    if not folder_links:
+        print("  ⚠️  Could not find RBA SMP folder from index page")
+        return None
+
+    folder = folder_links[0]
+    url = "https://www.rba.gov.au" + folder + "overview.html"
+
     html = fetch_url(url)
     if not html:
         return None
-    
+
+    # Strip tags + normalise whitespace; the projection table is in plain
+    # text once HTML is removed.
+    clean = re.sub(r'<script\b[^<]*(?:(?!</script>)<[^<]*)*</script>', ' ', html, flags=re.I)
+    clean = re.sub(r'<style\b[^<]*(?:(?!</style>)<[^<]*)*</style>', ' ', clean, flags=re.I)
+    text = re.sub(r'<[^>]+>', ' ', clean)
+    text = re.sub(r'&nbsp;', ' ', text)
+    text = re.sub(r'\s+', ' ', text)
+
+    header_match = re.search(
+        r'Year-?ended\s+'
+        r'((?:(?:Dec|June|March|Sept(?:ember)?)\s+\d{4}\s*){4,8})',
+        text)
+    if not header_match:
+        print("  ⚠️  Could not locate 'Year-ended' header in RBA overview")
+        return None
+
+    month_years = re.findall(r'(Dec|June|March|Sept(?:ember)?)\s+(\d{4})',
+                             header_match.group(1))
+    n = len(month_years)
+    if n < 4:
+        print(f"  ⚠️  RBA header had only {n} columns; expected ≥4")
+        return None
+
+    row_match = re.search(
+        r'Trimmed mean inflation\s+' + r'(\d+\.\d+)\s+' * (n - 1) + r'(\d+\.\d+)',
+        text)
+    if not row_match:
+        print("  ⚠️  Could not locate 'Trimmed mean inflation' row in RBA overview")
+        return None
+
+    values = [float(v) for v in row_match.groups()]
+
+    projections = []
+    seen_years = set()
+    for (month, year), val in zip(month_years, values):
+        if month != 'Dec':
+            continue
+        if not (0 < val < 15):
+            continue
+        if year in seen_years:
+            continue
+        projections.append({"year": year, "value": val})
+        seen_years.add(year)
+
+    if not projections:
+        print("  ⚠️  RBA overview parsed but no usable Dec projections")
+        return None
+
+    # Pretty source date: e.g. "May 2026" from "/publications/smp/2026/may/"
+    folder_match = re.search(r'/(\d{4})/(\w+)/$', folder)
+    source_date = None
+    if folder_match:
+        year_str, month_str = folder_match.groups()
+        source_date = f"{month_str.title()} {year_str}"
+
     result = {
         "bank": "Reserve Bank of Australia",
         "country": "AU",
-        "metric": "CPI Inflation",
+        "metric": "Trimmed mean inflation",
         "source": "Statement on Monetary Policy",
         "source_url": url,
-        "projections": []
+        "projections": projections,
     }
-    
-    # RBA shows forecasts in tables, look for CPI/inflation rows
-    values = extract_numbers(html, r'trimmed.mean|underlying.*inflation|CPI', 4)
-    
-    if values:
-        # RBA typically shows Jun and Dec for each year
-        years = [str(CURRENT_YEAR), str(CURRENT_YEAR + 1), str(CURRENT_YEAR + 2)]
-        result["projections"] = [{"year": y, "value": v} for y, v in zip(years, values[:3])]
-    
-    return result if result["projections"] else None
+    if source_date:
+        result["source_date"] = source_date
+    return result
 
 
 def scrape_boc():
