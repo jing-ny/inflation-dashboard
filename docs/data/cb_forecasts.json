@@ -86,7 +86,7 @@
       "source": "BoC",
       "source_full": "Bank of Canada - Monetary Policy Report",
       "source_url": "https://www.bankofcanada.ca/publications/mpr/mpr-2026-04-29/projections/",
-      "publication_date": "January 2026",
+      "publication_date": "April 2026",
       "forecast_type": "Staff projection (CPI)",
       "note": "BoC expects inflation near 2% target. Trade uncertainty elevated due to US tariff review. Growth modest at 1.1% for 2026.",
       "projections": {
@@ -106,7 +106,7 @@
       "source": "RBA",
       "source_full": "Reserve Bank of Australia - Statement on Monetary Policy",
       "source_url": "https://www.rba.gov.au/publications/smp/2026/may/overview.html",
-      "publication_date": "February 2026",
+      "publication_date": "May 2026",
       "forecast_type": "Staff projection (trimmed mean)",
       "note": "RBA hiked twice in 2026: +25bp in Feb to 3.85%, +25bp in Mar to 4.10%, after inflation surprised to upside. Trimmed mean to peak 3.7% mid-2026, above 2-3% target band until early 2027.",
       "projections": {
