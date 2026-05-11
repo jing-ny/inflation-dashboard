@@ -103,13 +103,14 @@
       "flag": "🇦🇺",
       "source": "RBA",
       "source_full": "Reserve Bank of Australia - Statement on Monetary Policy",
-      "source_url": "https://www.rba.gov.au/publications/smp/2026/feb/",
+      "source_url": "https://www.rba.gov.au/publications/smp/2026/may/overview.html",
       "publication_date": "February 2026",
       "forecast_type": "Staff projection (trimmed mean)",
       "note": "RBA hiked twice in 2026: +25bp in Feb to 3.85%, +25bp in Mar to 4.10%, after inflation surprised to upside. Trimmed mean to peak 3.7% mid-2026, above 2-3% target band until early 2027.",
       "projections": {
-        "2026": 3.7,
-        "2027": 2.7
+        "2025": 3.4,
+        "2026": 3.5,
+        "2027": 2.6
       },
       "key_quote": "Underlying inflation revised up; expected to peak at 3.7% in mid-2026",
       "policy_rate": {
