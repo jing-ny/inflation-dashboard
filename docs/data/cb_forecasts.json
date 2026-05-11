@@ -256,11 +256,11 @@
       "source": "BCB",
       "source_full": "Banco Central do Brasil - Focus Survey",
       "source_url": "https://www.bcb.gov.br/en/publications/focusmarketreadout",
-      "publication_date": "April 2026",
+      "publication_date": "May 2026",
       "forecast_type": "Focus Survey median (IPCA)",
       "note": "BCB raised Selic to 14.25% in Mar 2026 amid persistent inflation. Focus survey median sees IPCA at 5.7% for 2026, well above the 3% target midpoint.",
       "projections": {
-        "2026": 4.89,
+        "2026": 4.91,
         "2027": 4.0,
         "2028": 3.63,
         "2029": 3.5,
