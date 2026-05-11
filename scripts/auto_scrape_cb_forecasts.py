@@ -258,44 +258,109 @@ def scrape_rba():
 
 
 def scrape_boc():
-    """Scrape Bank of Canada Monetary Policy Report."""
+    """Scrape Bank of Canada Monetary Policy Report.
+
+    BoC restructured its MPR URLs: old reports lived at
+    /YYYY/MM/mpr-YYYY-MM-DD/ but current ones are at
+    /publications/mpr/mpr-YYYY-MM-DD/. The MPR is split across chapter
+    sub-pages; the projection tables live on the /projections/ sub-page.
+
+    Table 2 (annual) is the cleanest source: header is plain "2025 2026
+    2027 2028" and the row label is "CPI inflation". We strip the
+    previous-report comparison values (in parens) and align values to
+    years from the header.
+    """
     print("📊 Scraping BoC...")
-    
-    # Try to find latest MPR from index page
-    url = None
+
     index_url = "https://www.bankofcanada.ca/publications/mpr/"
     index_html = fetch_url(index_url)
+    if not index_html:
+        return None
 
-    if index_html:
-        links = re.findall(r'href="(https://www\.bankofcanada\.ca/\d{4}/\d{2}/mpr-[^"]+)"', index_html)
-        if links:
-            url = links[0]
-
-    if not url:
+    # New URL scheme. Pattern: /publications/mpr/mpr-YYYY-MM-DD/
+    links = re.findall(
+        r'href="(https://www\.bankofcanada\.ca/publications/mpr/mpr-\d{4}-\d{2}-\d{2}/)"',
+        index_html,
+    )
+    if not links:
         print("  ⚠️  Could not find BoC MPR URL from index page")
         return None
-    
-    html = fetch_url(url)
+
+    mpr_url = links[0]
+    projections_url = mpr_url.rstrip("/") + "/projections/"
+
+    html = fetch_url(projections_url)
     if not html:
         return None
-    
+
+    clean = re.sub(r'<script\b[^<]*(?:(?!</script>)<[^<]*)*</script>', ' ', html, flags=re.I)
+    clean = re.sub(r'<style\b[^<]*(?:(?!</style>)<[^<]*)*</style>', ' ', clean, flags=re.I)
+    text = re.sub(r'<[^>]+>', ' ', clean)
+    text = re.sub(r'&nbsp;', ' ', text)
+    text = re.sub(r'&ndash;|&minus;', '-', text)
+    text = re.sub(r'\s+', ' ', text)
+
+    # Capture the CPI inflation row of Table 2 (annual). It ends at the
+    # next memo / footnote / source marker.
+    row_match = re.search(
+        r'CPI inflation\s+([\d\.\s\(\)\-]+?)(?=Core inflation|\* Numbers|Sources)',
+        text,
+    )
+    if not row_match:
+        print("  ⚠️  Could not locate 'CPI inflation' row in BoC projections page")
+        return None
+
+    # Strip paren content (previous-report comparison values).
+    row_clean = re.sub(r'\([^)]*\)', ' ', row_match.group(1))
+    raw_values = [float(v) for v in re.findall(r'\d+\.\d+', row_clean)]
+    if not raw_values:
+        print("  ⚠️  BoC CPI row matched but no numeric values parsed")
+        return None
+
+    # Find the year header that precedes the CPI row — pick the last
+    # sequence of 4+ consecutive years (YYYY YYYY ...) before the match.
+    header_iter = list(
+        re.finditer(r'((?:20\d{2}\s+){3,7}20\d{2})', text, 0)
+    )
+    header_iter = [h for h in header_iter if h.end() <= row_match.start()]
+    if not header_iter:
+        print("  ⚠️  Could not locate year header before BoC CPI row")
+        return None
+
+    years = re.findall(r'20\d{2}', header_iter[-1].group(1))
+    n = min(len(years), len(raw_values))
+    projections = []
+    seen_years = set()
+    for year, val in zip(years[:n], raw_values[:n]):
+        if not (0 < val < 15) or year in seen_years:
+            continue
+        projections.append({"year": year, "value": val})
+        seen_years.add(year)
+
+    if not projections:
+        print("  ⚠️  BoC projection row parsed but no usable year/value pairs")
+        return None
+
+    # Pretty source date from URL: "April 2026" from /mpr-2026-04-29/
+    date_match = re.search(r'/mpr-(\d{4})-(\d{2})-\d{2}/', mpr_url)
+    source_date = None
+    if date_match:
+        from datetime import date
+        year_str, month_str = date_match.groups()
+        month_name = date(int(year_str), int(month_str), 1).strftime("%B")
+        source_date = f"{month_name} {year_str}"
+
     result = {
         "bank": "Bank of Canada",
         "country": "CA",
         "metric": "CPI Inflation",
         "source": "Monetary Policy Report",
-        "source_url": url,
-        "projections": []
+        "source_url": projections_url,
+        "projections": projections,
     }
-    
-    # BoC format varies, look for projection tables
-    values = extract_numbers(html, r'CPI.*inflation|inflation.*projection', 4)
-    
-    if values:
-        years = [str(CURRENT_YEAR + i) for i in range(len(values))]
-        result["projections"] = [{"year": y, "value": v} for y, v in zip(years, values)]
-    
-    return result if result["projections"] else None
+    if source_date:
+        result["source_date"] = source_date
+    return result
 
 
 def scrape_rbnz():
