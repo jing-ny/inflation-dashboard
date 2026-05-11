@@ -103,19 +103,48 @@ jobs:
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
+          REPO: ${{ github.repository }}
         run: |
           if [ -n "$RESEND_API_KEY" ] && [ -n "$NOTIFICATION_EMAIL" ]; then
             pip install resend
-            python -c "
-          import resend, os
+            COMMIT_SHA=$(git rev-parse HEAD)
+            export COMMIT_SHA
+            python <<'PY'
+          import os, re, pathlib, resend
+
+          repo = os.environ.get('REPO', '')
+          sha = os.environ.get('COMMIT_SHA', '')
+          short_sha = sha[:7] if sha else '?'
+
+          changes_path = pathlib.Path("docs/data/cb_forecasts_changes.md")
+          summary = changes_path.read_text(encoding='utf-8') if changes_path.exists() else ""
+
+          # Pull country codes out of summary headings: "### Bank Name (XX)"
+          countries = re.findall(r'^###\s+.*?\(([A-Z]{2,3})\)', summary, re.M)
+          country_list = ", ".join(dict.fromkeys(countries)) or "unknown"
+
+          commit_url = f"https://github.com/{repo}/commit/{sha}" if repo and sha else ""
+          subject = f"CB forecasts updated — {country_list} ({short_sha})"
+
+          body_parts = [
+              f"Auto-scraper committed forecast updates ({short_sha}).",
+              f"Commit: {commit_url}" if commit_url else "",
+              "",
+              summary or "(no cb_forecasts_changes.md on disk; check the workflow log)",
+              "",
+              "Changes >1pp/year are blocked from auto-merge and routed to "
+              "docs/data/cb_forecasts_draft.json for manual review.",
+          ]
+          body = "\n".join(p for p in body_parts if p is not None)
+
           resend.api_key = os.environ['RESEND_API_KEY']
           resend.Emails.send({
               'from': 'Inflation Dashboard <onboarding@resend.dev>',
               'to': os.environ['NOTIFICATION_EMAIL'],
-              'subject': 'CB forecasts auto-updated',
-              'text': 'The central bank scraper detected forecast changes and auto-merged them into cb_forecasts.json (changes >1pp/year are blocked and still routed to the draft for manual review).'
+              'subject': subject,
+              'text': body,
           })
-          "
+          PY
           fi
 
       - name: Summary

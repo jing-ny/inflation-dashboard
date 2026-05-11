@@ -61,19 +61,58 @@ jobs:
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
+          REPO: ${{ github.repository }}
         run: |
           if [ -n "$NOTIFICATION_EMAIL" ]; then
             pip install resend
-            python -c "
-          import resend, os
+            COMMIT_SHA=$(git rev-parse HEAD)
+            export COMMIT_SHA
+            python <<'PY'
+          import json, os, pathlib, resend
+
+          repo = os.environ.get('REPO', '')
+          sha = os.environ.get('COMMIT_SHA', '')
+          short_sha = sha[:7] if sha else '?'
+
+          data = json.loads(pathlib.Path("docs/data/historical_cpi.json").read_text())
+          meta = data.get("metadata", {})
+          last_updated = meta.get("last_updated", "?")
+
+          rows = []
+          for code, country in data.items():
+              if code == "metadata" or not isinstance(country, dict):
+                  continue
+              latest = country.get("latest") or {}
+              if not latest:
+                  continue
+              flag = country.get("flag", "")
+              target = country.get("target")
+              target_str = f"target {target}%" if target is not None else ""
+              rows.append(
+                  f"  {flag} {code}: {latest.get('value','?')}% "
+                  f"({latest.get('date','?')}) {target_str}".rstrip()
+              )
+
+          commit_url = f"https://github.com/{repo}/commit/{sha}" if repo and sha else ""
+          subject = f"CPI data updated — {last_updated} ({short_sha})"
+
+          body_parts = [
+              f"FRED/ECB/BLS/ONS/StatCan pull completed for {last_updated} ({short_sha}).",
+              f"Commit: {commit_url}" if commit_url else "",
+              "",
+              "Latest YoY by country:",
+              *rows,
+          ]
+          body = "\n".join(p for p in body_parts if p is not None)
+
           resend.api_key = os.environ['RESEND_API_KEY']
           resend.Emails.send({
               'from': 'Inflation Dashboard <onboarding@resend.dev>',
               'to': os.environ['NOTIFICATION_EMAIL'],
-              'subject': 'FRED/ECB data updated',
-              'text': 'New CPI data was fetched from FRED/ECB and committed to the dashboard.'
+              'subject': subject,
+              'text': body,
           })
-          "
+          PY
           fi
 
       - name: Summary
