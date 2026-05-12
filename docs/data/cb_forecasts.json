@@ -161,14 +161,14 @@
       "flag": "🇯🇵",
       "source": "BoJ",
       "source_full": "Bank of Japan - Outlook for Economic Activity and Prices",
-      "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/mpr_2026/k260319a.pdf",
-      "publication_date": "March 2026",
+      "source_url": "https://www.boj.or.jp/en/mopo/outlook/gor2604b.pdf",
+      "publication_date": "April 2026",
       "forecast_type": "Median Policy Board forecast (core CPI ex-fresh food)",
       "note": "BoJ held rate at 0.75% (8-1 vote). CPI expected to dip below 2% temporarily before rising on energy costs. Will continue raising rates if outlook holds.",
       "projections": {
-        "2025": 2.7,
-        "2026": 2.0,
-        "2027": 2.0
+        "2026": 2.8,
+        "2027": 2.3,
+        "2028": 2.0
       },
       "key_quote": "CPI to dip below 2% temporarily; upward pressure from energy prices ahead",
       "policy_rate": {
