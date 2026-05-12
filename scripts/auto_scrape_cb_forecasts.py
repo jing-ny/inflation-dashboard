@@ -59,36 +59,80 @@ def extract_numbers(text, around_pattern, count=4):
     return values[:count]
 
 
+def _ecb_cell_text(cell_html):
+    """Strip tags + decode common entities + normalise whitespace in a table cell."""
+    t = re.sub(r'<[^>]+>', '', cell_html)
+    t = t.replace('&nbsp;', ' ').replace('\xa0', ' ').replace('&amp;', '&')
+    return re.sub(r'\s+', ' ', t).strip()
+
+
+def _ecb_row_cells(tr_html):
+    """Extract plain-text cells from a single <tr>...</tr> chunk."""
+    cells_raw = re.findall(r'<t[dh]\b[^>]*>(.*?)</t[dh]>', tr_html, re.DOTALL | re.IGNORECASE)
+    return [_ecb_cell_text(c) for c in cells_raw]
+
+
+def _ecb_parse_float(s):
+    """Parse an inflation-rate-like float. Reject obvious year strings."""
+    s = s.strip()
+    if re.fullmatch(r'20\d{2}', s):  # year, not a value
+        return None
+    try:
+        v = float(s)
+    except (ValueError, TypeError):
+        return None
+    # Headline HICP rarely strays outside ±20pp. Anything wider is suspicious.
+    return v if -20.0 <= v <= 20.0 else None
+
+
 def scrape_ecb():
-    """Scrape ECB Staff Projections.
+    """Scrape ECB Staff Projections — headline HICP, baseline scenario.
 
-    Note: the prose-fallback path has been disabled (#3 in fix series). The
-    primary `HICP[^<]*</t[dh]>...` regex doesn't match the current ECB
-    projections page structure, and the old fallback `extract_numbers(html,
-    r'HICP.*?inflation|inflation.*?HICP', 4)` was happy to scrape decimals out
-    of narrative paragraphs — e.g. "The euro area economy grew by 0.2% at the
-    end of last year" — and emit them as HICP inflation forecasts. Same
-    failure mode as scrape_boe: regex over prose cannot reliably distinguish
-    headline HICP from GDP, oil prices, or scenario-comparison deltas. The
-    anomaly detector caught it (every step >1pp routed to draft), but the
-    scraper was silently producing garbage on every run.
+    Parses the canonical summary table at the bottom of the ECB Staff
+    Macroeconomic Projections page. Strategy: walk every <tr>; find a
+    year-header row (>=4 consecutive cells matching ``20\\d{2}``); look at
+    the next few rows for one whose first cell text is exactly ``"HICP"``
+    (not ``"HICP excluding..."``, ``"HICP energy"``, etc.); take the 4
+    numeric cells after the label, pair them with the year-header cells.
 
-    Until the structured-table extractor lands (#3 in fix series), return None
-    on any miss and preserve the curated/last-known EA forecast.
+    Two reasons for the structured approach (vs. the prior regex-over-HTML
+    and prose-fallback paths):
+
+    1. ECB pages have many narrative paragraphs that mention "inflation" in
+       close proximity to "HICP". Regex over prose happily picked up GDP
+       growth, oil prices, etc. and emitted them as HICP values — same
+       failure mode scrape_boe documents.
+
+    2. The page actually contains multiple "HICP" cells: the alternative-
+       scenarios table at the top has a sparse year structure (one year per
+       row), while the projections-summary table at the bottom has the
+       full 4-year horizon in one row. Anchoring on "year-header above,
+       HICP-row beneath" reliably selects the summary table.
+
+    Publication date is parsed from the URL (``projectionsYYYYMM``) so it
+    survives even when the page-prose date wording changes.
     """
     print("📊 Scraping ECB...")
-    # Fallback URL; the index page scrape below usually finds the latest
     url = None
+    pub_year = pub_month = None
 
-    # Try to find the latest projections page
+    # Discover the latest projections page from the index
     index_url = "https://www.ecb.europa.eu/pub/projections/html/index.en.html"
     index_html = fetch_url(index_url)
-
     if index_html:
-        # Find latest projection link
-        links = re.findall(r'href="([^"]*projections\d{6}[^"]*\.en\.html)"', index_html)
+        links = re.findall(
+            r'href="([^"]*projections(\d{4})(\d{2})[^"]*\.en\.html)"', index_html
+        )
         if links:
-            url = "https://www.ecb.europa.eu" + links[0] if links[0].startswith('/') else links[0]
+            rel, pub_year_str, pub_month_str = links[0]
+            if rel.startswith('http'):
+                url = rel
+            elif rel.startswith('/'):
+                url = "https://www.ecb.europa.eu" + rel
+            else:
+                url = "https://www.ecb.europa.eu/" + rel
+            pub_year = int(pub_year_str)
+            pub_month = int(pub_month_str)
 
     if not url:
         print("  ⚠️  Could not find ECB projections URL from index page")
@@ -98,34 +142,69 @@ def scrape_ecb():
     if not html:
         return None
 
-    # Try to extract from table structure
-    # Pattern: look for HICP followed by year values
-    hicp_match = re.search(r'HICP[^<]*</t[dh]>[^<]*(?:<t[dh][^>]*>[^<]*(\d\.\d)[^<]*</t[dh]>[^<]*){2,4}', html, re.IGNORECASE | re.DOTALL)
+    # Walk every <tr>; cache cells.
+    trs = re.findall(r'<tr\b[^>]*>(.*?)</tr>', html, re.DOTALL | re.IGNORECASE)
+    rows = [_ecb_row_cells(tr) for tr in trs]
 
-    if not hicp_match:
-        print("  ⏸️  scrape_ecb: primary HICP table regex did not match; "
-              "prose fallback disabled — preserving curated EA forecast")
+    # Find (year-header, HICP-row) pairs. Prefer the first one we find;
+    # the summary table sits near the bottom of the page and is the only
+    # spot where 4 consecutive years immediately precede a standalone
+    # "HICP" cell with >=4 numeric values trailing.
+    is_year = lambda s: bool(re.fullmatch(r'20\d{2}', s))
+
+    chosen = None
+    for i, cells in enumerate(rows):
+        # Look for >=4 consecutive year cells starting somewhere in this row
+        for start in range(len(cells)):
+            run = []
+            for c in cells[start:]:
+                if is_year(c):
+                    run.append(c)
+                else:
+                    break
+            if len(run) < 4:
+                continue
+            # Year header found. Search the next few rows for "HICP" exactly.
+            for j in range(i + 1, min(i + 5, len(rows))):
+                nxt = rows[j]
+                if 'HICP' not in nxt:
+                    continue
+                idx = nxt.index('HICP')
+                vals = []
+                for c in nxt[idx + 1:]:
+                    v = _ecb_parse_float(c)
+                    if v is not None:
+                        vals.append(v)
+                    if len(vals) >= 4:
+                        break
+                if len(vals) >= 4:
+                    chosen = {'years': run[:4], 'values': vals[:4]}
+                    break
+            if chosen:
+                break
+        if chosen:
+            break
+
+    if not chosen:
+        print("  ⚠️  scrape_ecb: could not locate canonical HICP summary table "
+              "(year-header row followed by 'HICP' row with >=4 numeric cells)")
         return None
+
+    projections = [
+        {"year": y, "value": v} for y, v in zip(chosen['years'], chosen['values'])
+    ]
 
     result = {
         "bank": "European Central Bank",
         "country": "EA",
-        "metric": "HICP Inflation",
+        "metric": "HICP Inflation (Baseline)",
         "source": "ECB Staff Projections",
         "source_url": url,
-        "projections": [],
+        "projections": projections,
     }
-
-    values = re.findall(r'>(\d\.\d)<', hicp_match.group(0))
-    years = [str(CURRENT_YEAR + i) for i in range(len(values))]
-    result["projections"] = [{"year": y, "value": float(v)} for y, v in zip(years, values)]
-
-    # Extract date from URL or page
-    date_match = re.search(r'(\w+)\s+20\d{2}.*?projections', html, re.IGNORECASE)
-    if date_match:
-        result["source_date"] = date_match.group(0)[:20]
-
-    return result if result["projections"] else None
+    if pub_year and pub_month:
+        result["source_date"] = f"{pub_year}-{pub_month:02d}-01"
+    return result
 
 
 def scrape_boe():
