@@ -48,38 +48,100 @@ jobs:
           $CMD
 
       - name: Commit draft if generated
+        id: commit
         if: inputs.dry_run != true
         run: |
           if [ -z "$(git status --porcelain docs/drafts/)" ]; then
             echo "No new draft files"
+            echo "committed=false" >> $GITHUB_OUTPUT
           else
             git config --local user.email "github-actions[bot]@users.noreply.github.com"
             git config --local user.name "github-actions[bot]"
             git add docs/drafts/
             git commit -m "Add newsletter draft $(date +'%Y-%m-%d')"
             git push
+            echo "committed=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Send email notification
-        if: inputs.dry_run != true && env.RESEND_API_KEY != ''
+        if: steps.commit.outputs.committed == 'true' && inputs.dry_run != true
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
+          REPO: ${{ github.repository }}
         run: |
-          if [ -n "$NOTIFICATION_EMAIL" ]; then
-            echo "Sending notification to $NOTIFICATION_EMAIL"
-            python -c "
-          import resend, os
+          if [ -n "$RESEND_API_KEY" ] && [ -n "$NOTIFICATION_EMAIL" ]; then
+            pip install resend
+            COMMIT_SHA=$(git rev-parse HEAD)
+            export COMMIT_SHA
+            python <<'PY'
+          import os, pathlib, re, resend
+
+          repo = os.environ.get('REPO', '')
+          sha = os.environ.get('COMMIT_SHA', '')
+          short_sha = sha[:7] if sha else '?'
+
+          # Pick the most recently modified newsletter draft. The default name
+          # is newsletter_YYYY-MM-DD.md but --output can override; glob the dir
+          # and take the freshest match either way.
+          drafts_dir = pathlib.Path("docs/drafts")
+          candidates = sorted(
+              drafts_dir.glob("newsletter_*.md"),
+              key=lambda p: p.stat().st_mtime,
+              reverse=True,
+          )
+          if not candidates:
+              candidates = sorted(
+                  drafts_dir.glob("*.md"),
+                  key=lambda p: p.stat().st_mtime,
+                  reverse=True,
+              )
+          draft_path = candidates[0] if candidates else None
+          draft_text = draft_path.read_text(encoding='utf-8') if draft_path else ""
+
+          # Extract the issue date from the filename (newsletter_YYYY-MM-DD.md)
+          # or fall back to the H1 line, or the commit date.
+          date_label = "?"
+          if draft_path:
+              m = re.search(r'(\d{4}-\d{2}-\d{2})', draft_path.name)
+              if m:
+                  date_label = m.group(1)
+              else:
+                  first_line = draft_text.splitlines()[0] if draft_text else ""
+                  m = re.search(r'(\d{4}-\d{2}-\d{2})', first_line)
+                  if m:
+                      date_label = m.group(1)
+
+          commit_url = f"https://github.com/{repo}/commit/{sha}" if repo and sha else ""
+          file_url = (f"https://github.com/{repo}/blob/{sha}/{draft_path.as_posix()}"
+                      if repo and sha and draft_path else "")
+
+          subject = f"Newsletter draft — {date_label} ({short_sha})"
+
+          header_lines = [
+              f"A new inflation newsletter draft was generated and committed ({short_sha}).",
+              f"File: {draft_path.as_posix()}" if draft_path else "",
+              f"View on GitHub: {file_url}" if file_url else "",
+              f"Commit: {commit_url}" if commit_url else "",
+              "",
+              "Review the draft below and decide whether to send to subscribers.",
+              "─" * 60,
+              "",
+          ]
+          body = "\n".join(p for p in header_lines if p is not None) + (
+              draft_text or "(no draft file found on disk)"
+          )
+
           resend.api_key = os.environ['RESEND_API_KEY']
           resend.Emails.send({
               'from': 'Inflation Dashboard <onboarding@resend.dev>',
               'to': os.environ['NOTIFICATION_EMAIL'],
-              'subject': 'Newsletter draft generated',
-              'text': 'A new newsletter draft has been committed to docs/drafts/.'
+              'subject': subject,
+              'text': body,
           })
-          "
+          PY
           else
-            echo "No NOTIFICATION_EMAIL set, skipping"
+            echo "No RESEND_API_KEY or NOTIFICATION_EMAIL set, skipping"
           fi
 
       - name: Summary
