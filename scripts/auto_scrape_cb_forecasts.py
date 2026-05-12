@@ -60,15 +60,30 @@ def extract_numbers(text, around_pattern, count=4):
 
 
 def scrape_ecb():
-    """Scrape ECB Staff Projections."""
+    """Scrape ECB Staff Projections.
+
+    Note: the prose-fallback path has been disabled (#3 in fix series). The
+    primary `HICP[^<]*</t[dh]>...` regex doesn't match the current ECB
+    projections page structure, and the old fallback `extract_numbers(html,
+    r'HICP.*?inflation|inflation.*?HICP', 4)` was happy to scrape decimals out
+    of narrative paragraphs — e.g. "The euro area economy grew by 0.2% at the
+    end of last year" — and emit them as HICP inflation forecasts. Same
+    failure mode as scrape_boe: regex over prose cannot reliably distinguish
+    headline HICP from GDP, oil prices, or scenario-comparison deltas. The
+    anomaly detector caught it (every step >1pp routed to draft), but the
+    scraper was silently producing garbage on every run.
+
+    Until the structured-table extractor lands (#3 in fix series), return None
+    on any miss and preserve the curated/last-known EA forecast.
+    """
     print("📊 Scraping ECB...")
     # Fallback URL; the index page scrape below usually finds the latest
     url = None
-    
+
     # Try to find the latest projections page
     index_url = "https://www.ecb.europa.eu/pub/projections/html/index.en.html"
     index_html = fetch_url(index_url)
-    
+
     if index_html:
         # Find latest projection link
         links = re.findall(r'href="([^"]*projections\d{6}[^"]*\.en\.html)"', index_html)
@@ -82,38 +97,34 @@ def scrape_ecb():
     html = fetch_url(url)
     if not html:
         return None
-    
-    # Look for HICP inflation table
-    # ECB format: years in header, HICP row with values
+
+    # Try to extract from table structure
+    # Pattern: look for HICP followed by year values
+    hicp_match = re.search(r'HICP[^<]*</t[dh]>[^<]*(?:<t[dh][^>]*>[^<]*(\d\.\d)[^<]*</t[dh]>[^<]*){2,4}', html, re.IGNORECASE | re.DOTALL)
+
+    if not hicp_match:
+        print("  ⏸️  scrape_ecb: primary HICP table regex did not match; "
+              "prose fallback disabled — preserving curated EA forecast")
+        return None
+
     result = {
         "bank": "European Central Bank",
         "country": "EA",
         "metric": "HICP Inflation",
         "source": "ECB Staff Projections",
         "source_url": url,
-        "projections": []
+        "projections": [],
     }
-    
-    # Try to extract from table structure
-    # Pattern: look for HICP followed by year values
-    hicp_match = re.search(r'HICP[^<]*</t[dh]>[^<]*(?:<t[dh][^>]*>[^<]*(\d\.\d)[^<]*</t[dh]>[^<]*){2,4}', html, re.IGNORECASE | re.DOTALL)
-    
-    if hicp_match:
-        values = re.findall(r'>(\d\.\d)<', hicp_match.group(0))
-        years = [str(CURRENT_YEAR + i) for i in range(len(values))]
-        result["projections"] = [{"year": y, "value": float(v)} for y, v in zip(years, values)]
-    else:
-        # Fallback: extract numbers near "HICP" or "inflation"
-        values = extract_numbers(html, r'HICP.*?inflation|inflation.*?HICP', 4)
-        if values:
-            years = [str(CURRENT_YEAR + i) for i in range(len(values))]
-            result["projections"] = [{"year": y, "value": v} for y, v in zip(years, values)]
-    
+
+    values = re.findall(r'>(\d\.\d)<', hicp_match.group(0))
+    years = [str(CURRENT_YEAR + i) for i in range(len(values))]
+    result["projections"] = [{"year": y, "value": float(v)} for y, v in zip(years, values)]
+
     # Extract date from URL or page
     date_match = re.search(r'(\w+)\s+20\d{2}.*?projections', html, re.IGNORECASE)
     if date_match:
         result["source_date"] = date_match.group(0)[:20]
-    
+
     return result if result["projections"] else None
 
 
