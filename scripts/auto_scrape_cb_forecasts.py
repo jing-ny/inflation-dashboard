@@ -653,15 +653,35 @@ def scrape_boj():
         print("  ⚠️  Forecast table (CPI less fresh food) not found in PDF")
         return None
 
-    # Per fiscal year, the row has three [median] brackets in order:
+    # Per fiscal year, a *forecast* row has three [median] brackets in order:
     # 1) Real GDP, 2) CPI (all items less fresh food), 3) CPI less fresh food & energy.
-    # We want #2. Pattern allows flexible whitespace that pypdf inserts.
+    # We want #2.
+    #
+    # Once a fiscal year's CPI is realised, the BoJ table promotes it to actual
+    # data and the row shape becomes "+X.X to +X.X [+X.X] +Y.Y +Z.Z" — i.e. only
+    # the GDP figure stays bracketed (because real GDP for that FY is still a
+    # provisional median), while CPI and core-core appear as bare numbers. The
+    # April 2026 Outlook is the first publication where FY2025 sits in this
+    # promoted state (note 4: "The CPI figures for fiscal 2025 are actual
+    # values.").
+    #
+    # The original regex required three brackets per row and didn't anchor on
+    # row boundaries, so on the promoted FY it slid into the "Forecasts made
+    # in <month> <year>" comparison row underneath and grabbed that row's GDP
+    # median as if it were the current FY's CPI (e.g. emitted 2025: 0.9% when
+    # the actual figure is 2.7%).
+    #
+    # Fix: forbid the regex from spanning into either the next "Fiscal YYYY"
+    # row or a "Forecasts made in" comparison block. Rows where the CPI cell
+    # has been promoted to actual data won't match (only one bracket inside
+    # the row segment), so we silently skip them — actual CPI is sourced from
+    # historical_cpi.json, not from the forecast appendix.
+    boundary = r'(?:(?!Fiscal\s+\d{4}|Forecasts\s+made\s+in)[\s\S])*?'
     row_pattern = re.compile(
-        r'Fiscal\s+(\d{4})\b'                  # fiscal year
-        r'[^\[]*?\[\s*([+-]?\d+\.\d+)\s*\]'     # first median (GDP)
-        r'[^\[]*?\[\s*([+-]?\d+\.\d+)\s*\]'     # second median (CPI less fresh food)
-        r'[^\[]*?\[\s*([+-]?\d+\.\d+)\s*\]',    # third median (core-core)
-        re.DOTALL,
+        r'Fiscal\s+(\d{4})\b'
+        + boundary + r'\[\s*([+-]?\d+\.\d+)\s*\]'   # GDP median
+        + boundary + r'\[\s*([+-]?\d+\.\d+)\s*\]'   # CPI (less fresh food) median
+        + boundary + r'\[\s*([+-]?\d+\.\d+)\s*\]'   # core-core median
     )
 
     projections = []
