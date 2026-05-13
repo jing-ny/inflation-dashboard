@@ -1059,6 +1059,8 @@ def main():
     }
     
     # Auto-merge path — rewrites cb_forecasts.json directly with anomaly gate
+    merged = []
+    blocked = []
     if args.merge:
         merged, blocked = merge_into_main(new_forecasts, dry_run=args.dry_run)
         if merged:
@@ -1069,54 +1071,89 @@ def main():
             print(f"\n⚠️  {len(blocked)} block(s) written to draft for review:")
             for b in blocked:
                 print(f"   - {b.get('country','?')}: {b.get('reason')}")
-        if args.dry_run:
-            print("\n🏁 Dry run — no writes.")
-            return
-        # If any blocked, still write the draft for them
-        if not blocked:
-            return
 
     if args.dry_run:
-        print("\n🏁 Dry run complete. No files written.")
-        print(f"   Forecasts extracted: {len(new_forecasts)}")
-        print(f"   Changes detected: {len(changes)}")
+        if args.merge:
+            print("\n🏁 Dry run — no writes.")
+        else:
+            print("\n🏁 Dry run complete. No files written.")
+            print(f"   Forecasts extracted: {len(new_forecasts)}")
+            print(f"   Changes detected: {len(changes)}")
         return
 
     os.makedirs("docs/data", exist_ok=True)
 
-    with open("docs/data/cb_forecasts_draft.json", 'w') as f:
-        json.dump(draft, f, indent=2)
-    print(f"\n📄 Draft saved to docs/data/cb_forecasts_draft.json")
+    # Always write the changes-summary markdown after a non-dry run. The
+    # downstream email-notification step in .github/workflows/auto-scrape-cb-
+    # forecasts.yml reads this file to populate the email subject (country
+    # codes) and body (per-country diffs). When --merge succeeded with zero
+    # blocks (the common happy path), skipping this write left the email
+    # showing the "(no cb_forecasts_changes.md on disk)" footer with no
+    # detail at all — observed live in the 2026-05-12 run.
+    blocked_countries = {b.get("country") for b in blocked}
+    changed_countries = {c["country"] for c in changes} | blocked_countries
 
-    # Create changes markdown for PR
-    md = f"# Central Bank Forecast Changes\n\n"
+    md = "# Central Bank Forecast Changes\n\n"
     md += f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M UTC')}\n\n"
-    md += "## ⚠️ Review Required\n\n"
-    md += "The following values were auto-extracted and may need verification:\n\n"
+    if args.merge:
+        if merged:
+            non_block_merged = [m for m in merged if m["country"] not in blocked_countries]
+            md += f"**Auto-merged ({len(non_block_merged)}):** "
+            md += ", ".join(f"{m['country']}" for m in non_block_merged) + "\n\n"
+        if blocked:
+            md += f"**Blocked, written to draft ({len(blocked)}):** "
+            md += ", ".join(f"{b.get('country','?')} ({b.get('reason','')})" for b in blocked) + "\n\n"
+        if not changed_countries:
+            md += "_All scraped values match the curated forecasts — nothing to review._\n\n"
+    else:
+        md += "## ⚠️ Review Required\n\n"
+        md += "The following values were auto-extracted and may need verification:\n\n"
 
+    # Emit `### Bank (CC)` headers only for banks that actually changed.
+    # The email step parses these to build the subject country list, so
+    # listing every scraped bank would produce noisy "updated — US, JP,
+    # BR, EA, AU, CA" subjects every run.
     for forecast in new_forecasts:
-        md += f"### {forecast['bank']} ({forecast['country']})\n"
+        country = forecast["country"]
+        if args.merge and country not in changed_countries:
+            continue
+        md += f"### {forecast['bank']} ({country})\n"
         md += f"- **Source:** [{forecast['source']}]({forecast.get('source_url', '#')})\n"
         md += f"- **Metric:** {forecast['metric']}\n"
+        if forecast.get('source_date'):
+            md += f"- **Publication:** {forecast['source_date']}\n"
         md += "- **Projections:**\n"
         for p in forecast["projections"]:
             md += f"  - {p['year']}: **{p['value']}%**\n"
         md += "\n"
 
-    if changes:
+    # "Changes Detected" section: only value-changes between old and new.
+    # Brand-new years/banks are already itemised under each bank's
+    # projections list above, so duplicating them here as "New bank added"
+    # is noisy and misleading (compare_forecasts emits old=None for both
+    # "country never seen before" and "year never seen before").
+    value_changes = [c for c in changes if c["old"] is not None]
+    new_banks = [c for c in changes if c["old"] is None and c["year"] == "all"]
+    if value_changes or new_banks:
         md += "## Changes Detected\n\n"
-        for change in changes:
-            if change["old"] is None:
-                md += f"- **{change['bank']}**: New bank added\n"
-            else:
-                md += f"- **{change['bank']}** {change['year']}: {change['old']}% → {change['new']}%\n"
-    else:
+        for change in new_banks:
+            md += f"- **{change['bank']}**: new bank added to dataset\n"
+        for change in value_changes:
+            md += f"- **{change['bank']}** {change['year']}: {change['old']}% → {change['new']}%\n"
+    elif args.merge and not blocked:
         md += "## No Changes Detected\n\n"
-        md += "Extracted values match current data.\n"
+        md += "Extracted values match the curated forecasts.\n"
 
     with open("docs/data/cb_forecasts_changes.md", 'w') as f:
         f.write(md)
-    print(f"📄 Changes summary saved to docs/data/cb_forecasts_changes.md")
+    print("\n📄 Changes summary saved to docs/data/cb_forecasts_changes.md")
+
+    # Draft JSON: emit when running without --merge (full draft is the
+    # whole point of that mode) or when --merge produced blocks for review.
+    if (not args.merge) or blocked:
+        with open("docs/data/cb_forecasts_draft.json", 'w') as f:
+            json.dump(draft, f, indent=2)
+        print("📄 Draft saved to docs/data/cb_forecasts_draft.json")
 
     print("\n✅ Done! Review the draft and changes before merging.")
 
