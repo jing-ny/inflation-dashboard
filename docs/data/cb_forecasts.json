@@ -260,9 +260,9 @@
       "forecast_type": "Focus Survey median (IPCA)",
       "note": "BCB raised Selic to 14.25% in Mar 2026 amid persistent inflation. Focus survey median sees IPCA at 5.7% for 2026, well above the 3% target midpoint.",
       "projections": {
-        "2026": 4.91,
+        "2026": 4.92,
         "2027": 4.0,
-        "2028": 3.63,
+        "2028": 3.65,
         "2029": 3.5,
         "2030": 3.5
       },
