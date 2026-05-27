@@ -363,7 +363,7 @@
 
             const displayOrder = forecastData.display_order || DISPLAY_ORDER;
             let html = '';
-            const freshnessCounts = { green: 0, amber: 0, red: 0, unknown: 0 };
+            const freshnessCounts = { green: 0, amber: 0, red: 0, unknown: 0, paused: 0 };
 
             for (const code of displayOrder) {
                 const forecast = forecastData.forecasts[code];
@@ -389,11 +389,24 @@
                     imfCell = `<span${divergeStyle}>${imfCurrentYear.toFixed(1)}%</span>`;
                 }
 
-                // Freshness pill — CB forecasts use the 'forecast' threshold tier
-                const fr = freshnessFor(forecast.publication_date, 'forecast');
-                if (fr) freshnessCounts[fr.tier]++;
-                else freshnessCounts.unknown++;
-                const freshnessCell = freshnessPill(forecast.publication_date, 'forecast') || '—';
+                // Freshness pill. If the scraper for this country is explicitly
+                // disabled (UK/NZ/ZA at time of writing), render a distinct
+                // "paused" pill so the reader sees "we can't auto-update this"
+                // instead of conflating it with a real-world stale source —
+                // CLAUDE.md #4 layer 3.
+                let freshnessCell;
+                if (forecast.scraper_status === 'disabled') {
+                    freshnessCounts.paused++;
+                    freshnessCell = pausedPill(
+                        forecast.scraper_status_issue,
+                        forecast.scraper_status_reason,
+                    );
+                } else {
+                    const fr = freshnessFor(forecast.publication_date, 'forecast');
+                    if (fr) freshnessCounts[fr.tier]++;
+                    else freshnessCounts.unknown++;
+                    freshnessCell = freshnessPill(forecast.publication_date, 'forecast') || '—';
+                }
 
                 html += `
                     <tr onclick="window.location='${page}'" class="clickable-row">
@@ -413,18 +426,23 @@
             // Footer summary
             const footer = document.getElementById('outlookFreshnessFooter');
             if (footer) {
-                const total = freshnessCounts.green + freshnessCounts.amber + freshnessCounts.red + freshnessCounts.unknown;
+                const total = freshnessCounts.green + freshnessCounts.amber + freshnessCounts.red
+                    + freshnessCounts.unknown + freshnessCounts.paused;
                 const today = new Date().toISOString().slice(0, 10);
                 const parts = [
                     `<span class="freshness freshness-green">${freshnessCounts.green}</span> current`,
                     `<span class="freshness freshness-amber">${freshnessCounts.amber}</span> stale`,
                     `<span class="freshness freshness-red">${freshnessCounts.red}</span> very stale`,
                 ];
+                if (freshnessCounts.paused) {
+                    parts.push(`<span class="freshness freshness-paused">${freshnessCounts.paused}</span> scraper paused`);
+                }
                 if (freshnessCounts.unknown) {
                     parts.push(`<span class="freshness freshness-unknown">${freshnessCounts.unknown}</span> unknown`);
                 }
                 footer.innerHTML = `Data freshness as of ${today} — ${parts.join(' · ')} (${total} sources). ` +
-                    `Green ≤ 120d · Amber ≤ 180d · Red &gt; 180d since central-bank publication.`;
+                    `Green ≤ 120d · Amber ≤ 180d · Red &gt; 180d since publication. ` +
+                    `Paused rows are explicitly disabled scrapers awaiting fix; curated value preserved.`;
             }
 
         } catch (error) {

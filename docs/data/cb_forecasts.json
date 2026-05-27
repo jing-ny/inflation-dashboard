@@ -79,7 +79,10 @@
       "policy_rate": {
         "rate": "3.75%",
         "last_change": "— Feb 2026 (hold, 5-4 vote)"
-      }
+      },
+      "scraper_status": "disabled",
+      "scraper_status_issue": "#10",
+      "scraper_status_reason": "BoE scraper: structured-table extraction not yet implemented"
     },
     "CA": {
       "flag": "🇨🇦",
@@ -136,7 +139,10 @@
       "policy_rate": {
         "rate": "2.25%",
         "last_change": "— Feb 2026 (hold)"
-      }
+      },
+      "scraper_status": "disabled",
+      "scraper_status_issue": "#6",
+      "scraper_status_reason": "RBNZ scraper: Cloudflare WAF + restructured pages + PDF tables"
     },
     "ZA": {
       "flag": "🇿🇦",
@@ -155,7 +161,10 @@
       "policy_rate": {
         "rate": "6.75%",
         "last_change": "— Jan 2026 (hold)"
-      }
+      },
+      "scraper_status": "disabled",
+      "scraper_status_issue": "#12",
+      "scraper_status_reason": "SARB scraper: site is JS-rendered (AEM)"
     },
     "JP": {
       "flag": "🇯🇵",

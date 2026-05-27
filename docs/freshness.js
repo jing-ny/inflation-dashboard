@@ -85,3 +85,27 @@ function freshnessPill(publicationDate, kind) {
     if (!fr) return '';
     return `<span class="freshness freshness-${fr.tier}" title="${fr.days} days since publication">${fr.label}</span>`;
 }
+
+/**
+ * Render a "scraper paused" pill — distinct from green/amber/red. Used when
+ * the auto-scraper for a source is explicitly disabled (e.g. UK / NZ / ZA
+ * pending #6 / #10 / #12). The curated value is still shown, but the pill
+ * tells the reader that the freshness signal here is *not* a real-world
+ * stale-source signal — CLAUDE.md #4 layer 3.
+ *
+ * `issue` is an optional GitHub issue reference (e.g. "#10") used to link
+ * the pill to the tracking ticket.
+ */
+function pausedPill(issue, reason) {
+    const href = issue
+        ? `https://github.com/jing-ny/inflation-dashboard/issues/${issue.replace('#', '')}`
+        : null;
+    const title = reason
+        ? `Scraper paused: ${reason}`
+        : 'Scraper paused; curated value preserved';
+    const label = issue ? `⏸ paused (${issue})` : '⏸ paused';
+    if (href) {
+        return `<a href="${href}" target="_blank" class="freshness freshness-paused" title="${title}" style="text-decoration:none;">${label}</a>`;
+    }
+    return `<span class="freshness freshness-paused" title="${title}">${label}</span>`;
+}

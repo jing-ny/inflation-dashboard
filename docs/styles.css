@@ -209,6 +209,13 @@ body {
     background: #f1f5f9;
     color: #475569;
 }
+.freshness-paused {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+a.freshness-paused:hover {
+    background: #c7d2fe;
+}
 .freshness-footer {
     margin-top: 0.5rem;
     font-size: 0.75rem;
