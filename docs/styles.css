@@ -216,6 +216,11 @@ body {
 a.freshness-paused:hover {
     background: #c7d2fe;
 }
+.freshness-pending {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fcd34d;
+}
 .freshness-footer {
     margin-top: 0.5rem;
     font-size: 0.75rem;

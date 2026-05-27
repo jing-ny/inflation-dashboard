@@ -1142,7 +1142,14 @@ def main():
 
     # Draft JSON: emit when running without --merge (full draft is the
     # whole point of that mode) or when --merge produced blocks for review.
+    # When --merge is used, also annotate which countries were blocked so
+    # the dashboard can render only those as "pending review" (#32).
     if (not args.merge) or blocked:
+        if args.merge:
+            draft["_metadata"]["blocked_countries"] = [
+                {"country": b.get("country"), "reason": b.get("reason")}
+                for b in blocked
+            ]
         with open("docs/data/cb_forecasts_draft.json", 'w') as f:
             json.dump(draft, f, indent=2)
         print("📄 Draft saved to docs/data/cb_forecasts_draft.json")

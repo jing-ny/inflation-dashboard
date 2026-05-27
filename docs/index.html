@@ -349,12 +349,55 @@
         document.querySelector('.outlook-year-next').textContent = nextYearStr;
 
         try {
-            const [cbResponse, imfResponse] = await Promise.all([
+            const [cbResponse, imfResponse, draftResponse] = await Promise.all([
                 fetch('data/cb_forecasts.json'),
-                fetch('data/imf_forecasts.json')
+                fetch('data/imf_forecasts.json'),
+                // Draft file may legitimately be 404 — it's only written when
+                // a >1pp jump is blocked by the merge anomaly gate.
+                fetch('data/cb_forecasts_draft.json').catch(() => null),
             ]);
             const forecastData = await cbResponse.json();
             const imfData = await imfResponse.json();
+
+            // Pending-review map: country code -> { bank, delta, newProjections }.
+            // Populated from cb_forecasts_draft.json only for entries that the
+            // scraper actually blocked (>1pp jump). The draft file contains all
+            // scraped forecasts, so we filter against the _metadata.blocked_countries
+            // list emitted alongside.
+            const pendingByCountry = {};
+            if (draftResponse && draftResponse.ok) {
+                try {
+                    const draftData = await draftResponse.json();
+                    const blockedSet = new Set(
+                        (draftData._metadata?.blocked_countries || [])
+                            .map(b => b.country)
+                            .filter(Boolean),
+                    );
+                    if (blockedSet.size) {
+                        const drafts = draftData.forecasts || [];
+                        const iter = Array.isArray(drafts) ? drafts : Object.values(drafts);
+                        for (const d of iter) {
+                            if (!d || !d.country || !blockedSet.has(d.country)) continue;
+                            const newProj = {};
+                            for (const p of (d.projections || [])) newProj[p.year] = p.value;
+                            const oldProj = forecastData.forecasts?.[d.country]?.projections || {};
+                            let maxDelta = 0;
+                            for (const [y, v] of Object.entries(newProj)) {
+                                if (oldProj[y] != null) {
+                                    maxDelta = Math.max(maxDelta, Math.abs(oldProj[y] - v));
+                                }
+                            }
+                            pendingByCountry[d.country] = {
+                                bank: d.bank || d.country,
+                                delta: maxDelta,
+                                newProjections: newProj,
+                            };
+                        }
+                    }
+                } catch (_) {
+                    // Draft file present but unparseable — ignore, don't break the table.
+                }
+            }
 
             // Show geopolitical context note
             if (imfData.note) {
@@ -379,7 +422,7 @@
 
             const displayOrder = forecastData.display_order || DISPLAY_ORDER;
             let html = '';
-            const freshnessCounts = { green: 0, amber: 0, red: 0, unknown: 0, paused: 0 };
+            const freshnessCounts = { green: 0, amber: 0, red: 0, unknown: 0, paused: 0, pending: 0 };
 
             for (const code of displayOrder) {
                 const forecast = forecastData.forecasts[code];
@@ -405,11 +448,16 @@
                     imfCell = `<span${divergeStyle}>${imfCurrentYear.toFixed(1)}%</span>`;
                 }
 
-                // Freshness pill. If the scraper for this country is explicitly
-                // disabled (UK/NZ/ZA at time of writing), render a distinct
-                // "paused" pill so the reader sees "we can't auto-update this"
-                // instead of conflating it with a real-world stale source —
-                // CLAUDE.md #4 layer 3.
+                // Freshness pill. Precedence:
+                //   1. If the scraper is explicitly disabled (UK/NZ/ZA per #31),
+                //      render a distinct "paused" pill so the reader sees "we
+                //      can't auto-update this" instead of conflating with a
+                //      real-world stale source (CLAUDE.md #4 layer 3). A
+                //      disabled scraper can't have produced a pending draft,
+                //      so we short-circuit here.
+                //   2. Otherwise render the green/amber/red freshness pill,
+                //      AND append a "pending review" chip if there's a draft
+                //      blocked by the 1pp anomaly gate (CLAUDE.md #2, #32).
                 let freshnessCell;
                 if (forecast.scraper_status === 'disabled') {
                     freshnessCounts.paused++;
@@ -422,6 +470,11 @@
                     if (fr) freshnessCounts[fr.tier]++;
                     else freshnessCounts.unknown++;
                     freshnessCell = freshnessPill(forecast.publication_date, 'forecast') || '—';
+                    if (pendingByCountry[code]) {
+                        freshnessCounts.pending++;
+                        const p = pendingByCountry[code];
+                        freshnessCell += ' ' + pendingReviewPill(p.delta, p.bank);
+                    }
                 }
 
                 html += `
@@ -453,12 +506,16 @@
                 if (freshnessCounts.paused) {
                     parts.push(`<span class="freshness freshness-paused">${freshnessCounts.paused}</span> scraper paused`);
                 }
+                if (freshnessCounts.pending) {
+                    parts.push(`<span class="freshness freshness-pending">${freshnessCounts.pending}</span> pending review`);
+                }
                 if (freshnessCounts.unknown) {
                     parts.push(`<span class="freshness freshness-unknown">${freshnessCounts.unknown}</span> unknown`);
                 }
                 footer.innerHTML = `Data freshness as of ${today} — ${parts.join(' · ')} (${total} sources). ` +
                     `Green ≤ 120d · Amber ≤ 180d · Red &gt; 180d since publication. ` +
-                    `Paused rows are explicitly disabled scrapers awaiting fix; curated value preserved.`;
+                    `Paused rows are explicitly disabled scrapers awaiting fix; curated value preserved. ` +
+                    `Pending rows have a draft awaiting human review (see cb_forecasts_draft.json).`;
             }
 
         } catch (error) {
