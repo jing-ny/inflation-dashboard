@@ -146,7 +146,10 @@ def fetch_imf_forecasts() -> Dict:
         except (OSError, json.JSONDecodeError):
             existing = {}
 
-    # Build output. Preserve manually curated fields: url, note, display_order.
+    # Build output. Preserve manually curated fields: url, publication_url,
+    # note, display_order. (publication_url points at the specific WEO
+    # edition page rendered in the dashboard footer — must be refreshed
+    # manually on each WEO release.)
     default_url = "https://www.imf.org/external/datamapper/PCPIPCH@WEO"
     result: Dict = {
         "source": "IMF World Economic Outlook",
@@ -156,6 +159,8 @@ def fetch_imf_forecasts() -> Dict:
         "indicator_label": "Inflation rate, average consumer prices (% change)",
         "url": existing.get("url") or default_url,
     }
+    if existing.get("publication_url"):
+        result["publication_url"] = existing["publication_url"]
     if existing.get("note"):
         result["note"] = existing["note"]
     if existing.get("display_order"):

@@ -23,6 +23,9 @@ data/cb_forecasts_changes.md
 data/monitor_summary.json
 data/scraper_state.json
 
+# One-off scraper backups (git is the real backup)
+docs/data/historical_cpi_backup_*.json
+
 # Node
 node_modules/
 data_backup_*/

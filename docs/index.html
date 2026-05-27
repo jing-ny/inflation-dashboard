@@ -140,8 +140,8 @@
                 </tbody>
             </table>
             <p id="outlookFreshnessFooter" class="freshness-footer"></p>
-            <p style="margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280;">
-                CB = Central bank's own projection. IMF = <a href="https://www.imf.org/en/publications/weo/issues/2026/04/14/world-economic-outlook-april-2026" target="_blank" style="color: #6b7280;">IMF WEO April 2026</a> (first full report post-Mid-East conflict).
+            <p id="outlookSourceLegend" style="margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280;">
+                CB = Central bank's own projection.
             </p>
         </section>
 
@@ -359,6 +359,22 @@
             // Show geopolitical context note
             if (imfData.note) {
                 contextDiv.innerHTML = `<strong>⚠ Context:</strong> ${imfData.note}`;
+            }
+
+            // Render the source legend with the IMF link derived from the
+            // imf_forecasts.json metadata so it rolls forward automatically
+            // when fetch_imf_forecasts.py refreshes for a new WEO edition.
+            // Falls back to the IMF datamapper if no edition-specific URL
+            // has been recorded.
+            const legend = document.getElementById('outlookSourceLegend');
+            if (legend && imfData.version) {
+                const imfUrl = imfData.publication_url
+                    || imfData.url
+                    || 'https://www.imf.org/external/datamapper/PCPIPCH@WEO';
+                legend.innerHTML =
+                    `CB = Central bank's own projection. ` +
+                    `IMF = <a href="${imfUrl}" target="_blank" style="color: #6b7280;">` +
+                    `IMF WEO ${imfData.version}</a>.`;
             }
 
             const displayOrder = forecastData.display_order || DISPLAY_ORDER;
