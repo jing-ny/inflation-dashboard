@@ -454,43 +454,25 @@ def scrape_boc():
 
 
 def scrape_rbnz():
-    """Scrape RBNZ Monetary Policy Statement."""
+    """Scrape RBNZ Monetary Policy Statement.
+
+    Disabled — three compounding problems block reliable scraping:
+      1. The whole www.rbnz.govt.nz site is behind a Cloudflare Managed
+         Challenge that rejects non-JS, non-browser-TLS clients with HTTP 403.
+         Bypass requires `curl_cffi` (or a headless browser).
+      2. The old /monetary-policy/monetary-policy-statement page is now a
+         description page; individual MPS releases moved to a new URL scheme.
+      3. The MPS forecast table lives in a PDF whose layout `pypdf` jumbles.
+         A column-aware PDF parser is needed.
+
+    Until the proper fix lands (#6), don't even attempt the fetch — it just
+    pollutes every Mon/Thu workflow log with 403 warnings. Returning None
+    preserves the curated NZ entry, which is the only correct behaviour.
+    """
     print("📊 Scraping RBNZ...")
-    
-    # Try to find latest MPS from index page
-    url = None
-    index_url = "https://www.rbnz.govt.nz/monetary-policy/monetary-policy-statement"
-    index_html = fetch_url(index_url)
-
-    if index_html:
-        links = re.findall(r'href="(/monetary-policy/monetary-policy-statement/mps-[^"]+)"', index_html)
-        if links:
-            url = "https://www.rbnz.govt.nz" + links[0]
-
-    if not url:
-        print("  ⚠️  Could not find RBNZ MPS URL from index page")
-        return None
-    
-    html = fetch_url(url)
-    if not html:
-        return None
-    
-    result = {
-        "bank": "Reserve Bank of New Zealand",
-        "country": "NZ",
-        "metric": "CPI Inflation",
-        "source": "Monetary Policy Statement",
-        "source_url": url,
-        "projections": []
-    }
-    
-    values = extract_numbers(html, r'CPI.*inflation|headline.*inflation', 4)
-    
-    if values:
-        years = [str(CURRENT_YEAR + i) for i in range(len(values))]
-        result["projections"] = [{"year": y, "value": v} for y, v in zip(years, values)]
-    
-    return result if result["projections"] else None
+    print("  ⏸️  scrape_rbnz: extractor disabled — Cloudflare WAF + restructured "
+          "pages + PDF table parsing required (#6); preserving curated NZ forecast")
+    return None
 
 
 def _discover_fed_sep_url():
