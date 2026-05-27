@@ -327,12 +327,21 @@ def scrape_rba():
         print("  ⚠️  RBA overview parsed but no usable Dec projections")
         return None
 
-    # Pretty source date: e.g. "May 2026" from "/publications/smp/2026/may/"
+    # Source date as YYYY-MM-DD (day-1 anchor — RBA SMPs publish in the
+    # first half of the named month; the merge layer converts to display
+    # form for the UI).
     folder_match = re.search(r'/(\d{4})/(\w+)/$', folder)
     source_date = None
     if folder_match:
+        from datetime import date as _date
         year_str, month_str = folder_match.groups()
-        source_date = f"{month_str.title()} {year_str}"
+        months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun',
+                  'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+        try:
+            month_num = months.index(month_str.lower()[:3]) + 1
+            source_date = _date(int(year_str), month_num, 1).strftime("%Y-%m-%d")
+        except (ValueError, IndexError):
+            pass
 
     result = {
         "bank": "Reserve Bank of Australia",
@@ -431,14 +440,13 @@ def scrape_boc():
         print("  ⚠️  BoC projection row parsed but no usable year/value pairs")
         return None
 
-    # Pretty source date from URL: "April 2026" from /mpr-2026-04-29/
-    date_match = re.search(r'/mpr-(\d{4})-(\d{2})-\d{2}/', mpr_url)
+    # Source date as YYYY-MM-DD from the URL (e.g. /mpr-2026-04-29/ →
+    # 2026-04-29). Merge layer converts to display form for the UI.
+    date_match = re.search(r'/mpr-(\d{4})-(\d{2})-(\d{2})/', mpr_url)
     source_date = None
     if date_match:
-        from datetime import date
-        year_str, month_str = date_match.groups()
-        month_name = date(int(year_str), int(month_str), 1).strftime("%B")
-        source_date = f"{month_name} {year_str}"
+        year_str, month_str, day_str = date_match.groups()
+        source_date = f"{year_str}-{month_str}-{day_str}"
 
     result = {
         "bank": "Bank of Canada",
@@ -871,23 +879,25 @@ MERGE_THRESHOLD_PP = 1.0  # any year-over-year change larger than this blocks au
 
 
 def _normalise_publication_date(source_date: str) -> str:
-    """Render a scraper-provided source_date as 'Month YYYY' for the UI.
+    """Render a scraper-provided source_date (YYYY-MM-DD) as 'Month YYYY' for the UI.
 
-    Different scrapers emit different formats — Fed/BoJ use YYYY-MM-DD,
-    RBA/BoC use 'May 2026', ECB historically used 'Mar 2026'. The dashboard
-    renders this string verbatim ([docs/index.html:347](docs/index.html)),
-    so we normalise to the long-form 'Month YYYY' style used by the
-    curated entries and fall back to the raw string if parsing fails.
+    All scrapers now emit `source_date` in canonical YYYY-MM-DD form (see #25).
+    The dashboard renders this string verbatim ([docs/index.html:347](docs/index.html)),
+    so we normalise here to the long-form 'Month YYYY' style used by the
+    curated entries.
+
+    Falls back to the raw string for safety — e.g. if a future scraper emits
+    a different shape, the workflow still completes and the resulting value
+    surfaces in the next email + git diff for human review (CLAUDE.md #5:
+    don't silence the alarm).
     """
     s = (source_date or "").strip()
     if not s:
         return s
-    for fmt in ("%Y-%m-%d", "%Y-%m", "%B %Y", "%b %Y", "%B-%Y", "%b-%Y"):
-        try:
-            return datetime.strptime(s, fmt).strftime("%B %Y")
-        except ValueError:
-            continue
-    return s
+    try:
+        return datetime.strptime(s, "%Y-%m-%d").strftime("%B %Y")
+    except ValueError:
+        return s
 
 
 def merge_into_main(new_forecasts, dry_run=False):
