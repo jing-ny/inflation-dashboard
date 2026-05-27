@@ -2,7 +2,14 @@
 
 Technical documentation for the Inflation Monitor dashboard.
 
-**Last Updated:** March 24, 2026
+**Last Updated:** May 13, 2026
+
+> **Operating principles** that govern how this project handles data quality, automation gaps, and staleness live in **[CLAUDE.md](CLAUDE.md)**. Read that first if you're proposing changes to scrapers or data shape — particularly:
+> - No manual entry as a fallback when a scraper breaks (fix it or defer)
+> - Every number is validated, or labeled as not yet validated
+> - Every record carries provenance (`source_url` + a date field)
+> - Stale data must be visibly stale (see Freshness Indicators below)
+> - Trust the anomaly detector — don't silence the alarm
 
 ---
 
@@ -11,6 +18,23 @@ Technical documentation for the Inflation Monitor dashboard.
 This project fetches official inflation statistics and central bank forecasts from public APIs and official sources, stores them in JSON files, and displays them on a static dashboard hosted via GitHub Pages.
 
 All data is stored in `docs/data/` as the single source of truth.
+
+---
+
+## Freshness Indicators
+
+Every data point displayed on the dashboard is rendered with a colored "freshness pill" that ages green → amber → red against the source's expected publication cadence. This is enforced by [`docs/freshness.js`](docs/freshness.js) and is the visible side of CLAUDE.md principle #4.
+
+| Data type | Green | Amber | Red |
+|---|---|---|---|
+| **Monthly CPI** (Current Inflation table, country-page hero) | ≤ 45 days | ≤ 90 days | > 90 days |
+| **CB forecasts** (Outlook table) | ≤ 120 days | ≤ 180 days | > 180 days |
+
+Each table also has a **footer summary** counting current / stale / very-stale entries, and the threshold definitions are restated for transparency.
+
+Quarterly sources (NZ CPI, IMF WEO) and irregular sources (VE) use the same thresholds — they will naturally read amber/red for most of the cycle, which is the correct signal: "this number is X months old, judge it accordingly."
+
+**Layer 1** of the staleness work (`publication_date` actually refreshes when the scraper auto-merges new projections, instead of staying at the curated value) landed in PR #17. **Layer 2** (per-row UI) landed in PR #34. **Layer 3** ("source disabled" treatment so UK/NZ/ZA aren't conflated with real-world stale sources) is tracked in [#31](https://github.com/jing-ny/inflation-dashboard/issues/31).
 
 ---
 
@@ -147,11 +171,31 @@ This enables tracking how forecasts change over time and comparing forecast accu
 | Weekly Alert | Mon 1 PM UTC | Summary notifications |
 | Newsletter Draft | 1st of month + on CPI push | Generate Claude-powered draft |
 
+### Anomaly Detection
+
+Both the manual entry path (`update_cpi.py`) and the historical fetcher (`fetch_historical_cpi.py`) run two checks on each new value:
+
+- **Step threshold (1.0pp):** any month-over-month YoY change > 1pp is flagged as anomalous. Backfill points are exempt (skipped if their date is older than the existing latest) to prevent false positives when sources widen their history window — see PR #2.
+- **Prior-year-same-period match:** if a new value matches the prior year's same-month value within 0.01pp, it's flagged. This catches the BR/MX 2026-01/02 failure mode where comparison-text values were captured as current readings.
+
+In both scripts, hitting an anomaly **exits non-zero** so CI surfaces it. The auto-scraper has a related but independent **merge-gate** (`MERGE_THRESHOLD_PP = 1.0`) that routes large jumps to `cb_forecasts_draft.json` instead of auto-merging — see [`merge_into_main`](scripts/auto_scrape_cb_forecasts.py).
+
+Per CLAUDE.md #5: when these checks fire, the fix is to investigate *why*, not to raise the threshold.
+
+### Notification emails
+
+Both `auto-scrape-cb-forecasts` and `update-data` send Resend emails on each successful run (PR #15, refined by #22 and #23). Subjects include the affected countries + the commit SHA; bodies embed:
+- The contents of `docs/data/cb_forecasts_changes.md` for the CB pipeline (per-country before→after diffs)
+- The per-country latest YoY + observation date for the FRED/ECB/BLS/ONS/StatCan pipeline
+- The full commit URL so a reader can click through to the exact change
+
+Failure-path emails (`if: failure()`) are tracked in [#28](https://github.com/jing-ny/issues/28).
+
 ### Manual Updates Required
 
-- **Central bank forecasts:** After MPC meetings (see CPI_UPDATE_GUIDE.md)
-- **IMF forecasts:** April and October
-- **CPI verification:** Monthly, using `update_cpi.py`
+- **Central bank forecasts:** Mostly automated (9/15) — see PROJECT_PLAN.md "Scraper status". The remaining banks (CN, IN, KR, SG, MX, VE) are updated manually after MPC meetings (see CPI_UPDATE_GUIDE.md), with PBoC and BCV explicit non-goals.
+- **IMF forecasts:** April and October — `fetch_imf_forecasts.py` pulls the latest WEO.
+- **CPI verification:** Monthly via `update_cpi.py` if FRED hasn't caught up. Direct-source paths (BLS for US, ONS for UK, StatCan for CA, ECB for EA) usually beat FRED to the release.
 
 ---
 

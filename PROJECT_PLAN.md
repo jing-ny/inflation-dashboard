@@ -1,7 +1,9 @@
 # Inflation Dashboard - Project Plan & Architecture
 
-**Last Updated:** April 25, 2026
+**Last Updated:** May 13, 2026
 **Purpose:** Reference document to maintain consistency across sessions.
+
+> **For project principles** (no manual entry as a fallback, validation, provenance, staleness visibility, trust the anomaly detector), see **[CLAUDE.md](CLAUDE.md)**. PRs and refactors are gated on those principles, not just on the to-do list below.
 
 ---
 
@@ -52,48 +54,57 @@
 
 ---
 
-## Current State (as of April 25, 2026)
+## Current State (as of May 13, 2026)
 
 ### What Works
 - Dashboard fully deployed on GitHub Pages, all 15 country pages render correctly
-- `fetch_historical_cpi.py` covers all 15 countries; **US/UK/CA now hit official APIs directly** (BLS, ONS, StatCan) bypassing FRED lag; EA continues on ECB; rest still on FRED
+- `fetch_historical_cpi.py` covers all 15 countries; **US/UK/CA hit official APIs directly** (BLS, ONS, StatCan) bypassing FRED lag; EA on ECB direct; rest on FRED
 - `fetch_imf_forecasts.py` covers all 15 countries (EA uses `EURO` group code)
-- `auto_scrape_cb_forecasts.py` now covers **9/15 central banks** with `--merge` mode that auto-commits clean scrapes (1pp anomaly gate falls through to draft review): US (Fed SEP), JP (BoJ Outlook PDF), BR (BCB Focus API), EA, UK, AU, CA, NZ, ZA
-- 5 GitHub Actions workflows running on schedule
+- `auto_scrape_cb_forecasts.py` covers **9/15 central banks** with `--merge` mode and a 1pp anomaly gate that routes large jumps to `cb_forecasts_draft.json` for review. Of the 9, three (UK / NZ / ZA) currently have **extractor disabled** — URL discovery still runs but no projection values are written (see "Scraper status" below)
+- 5 GitHub Actions workflows running on schedule; **email notifications are now informative** (per-country diffs, freshness, commit URLs) instead of the previous "changes detected" boilerplate
 - `update_cpi.py` and `batch_update_cpi.py` manual tools functional, with anomaly gates (MoM step >1pp + prior-year-match)
 - Substack newsletter signup embedded on homepage; AI-assistance disclaimer on all pages and email templates
 - CB forecasts and IMF forecasts populated for all 15 countries
 - 10-year CPI history with Chart.js visualization on country pages
-- CPI data current through March 2026 for countries that have released (see table below)
-- CB forecasts updated to latest meetings (Mar 24)
-- IMF WEO refreshed to April 2026 edition (Apr 22)
+- **Freshness UI** (CLAUDE.md #4 layer 2): every row in the Current Inflation and Inflation Outlook tables, plus the country-page hero, renders a colored pill aged against the source's expected cadence (45/90d for CPI, 120/180d for forecasts). Footer summarises N current / M stale / K very stale
+
+### Scraper status (auto_scrape_cb_forecasts.py)
+
+| Country | Source | State |
+|---|---|---|
+| US | Fed SEP | Live ✅ |
+| EA | ECB structured-table parser (#21) | Live ✅ |
+| JP | BoJ Outlook PDF | Live ✅ |
+| BR | BCB Focus API | Live ✅ |
+| AU | RBA SMP overview parser (#14) | Live ✅ |
+| CA | BoC MPR projections page parser (#16) | Live ✅ |
+| UK | BoE | **Disabled** — URL found, structured-table parser pending (#10) |
+| NZ | RBNZ | **Disabled** — Cloudflare WAF + HTML restructure + PDF tables (#6) |
+| ZA | SARB | **Disabled** — site is JS-rendered, listing widget broken upstream (#12) |
 
 ### Data Freshness
 
-**Live site data as of April 23, 2026:**
+**Live site data as of May 13, 2026** (now also visible to readers via the per-row freshness pill):
 
-| Data | Latest | Notes |
+| Data | Latest | Status |
 |------|--------|-------|
-| CPI US, EA, CA, CN, IN, KR, BR, MX | Mar 2026 | All with official releases |
-| CPI UK, AU | Feb 2026 | UK March release 22 Apr not yet ingested; AU March due ~28 Apr |
-| CPI JP, SG, ZA | Feb 2026 | JP releases Apr 24; SG ~Apr 23; ZA March release pending |
-| CPI NZ | Q1 2026 | Released 21 Apr |
-| CPI VE | Feb 2026 | BCV releases irregularly |
-| CB Forecasts | Mar 2026 | No new MPC projections since Mar round |
+| CPI US / EA / UK / CA / BR / MX / CN / IN / KR | Mar 2026 | Amber on dashboard (Apr release awaiting fetch) |
+| CPI AU / JP / ZA / SG / VE | Feb 2026 | Red on dashboard (known lagging or quarterly cadence) |
+| CPI NZ | 2026-Q1 | Amber (quarterly) |
+| CB Forecasts | Most: Apr-May 2026 (auto-merged); UK / NZ / ZA frozen at curated Feb-Jan 2026 | Mixed |
 | IMF WEO | April 2026 | Refreshed Apr 22 |
 
-**Ongoing concern:** FRED API lags official releases by 1-6 months for most international series. The automated `update-data.yml` workflow runs every Monday and succeeds, but FRED has no new data to pull, so nothing gets committed. Manual updates via `update_cpi.py` remain necessary for timely data.
-
-**New in Apr 2026:** BR and MX had 2026-01/02 values that were contaminated with prior-year same-month figures from IBGE/INEGI comparison text. Fix shipped with corrections + anomaly-detection gates in both the manual entry script and automation pipeline (see Phase 5).
+**Ongoing concern (carried forward):** FRED still lags. The auto-fetcher catches up on Mondays. The freshness UI now makes that lag visible to readers rather than implicit.
 
 ### Workflow Status
 
 | Workflow | Last Run | Status |
 |----------|----------|--------|
-| Update Inflation Data | 2026-03-23 | Success (no new data from FRED) |
-| Monitor & Update Data | 2026-03-23 | Failure (commit step — no changes to commit) |
-| Auto-Scrape CB Forecasts | 2026-03-23 | Success (no changes detected) |
-| Weekly Alert | 2026-03-23 | Success |
+| Update Inflation Data | 2026-05-11 | Success |
+| Auto-Scrape CB Forecasts | 2026-05-11 | Success (publication_date self-healed on AU + CA + ECB) |
+| Monitor & Update Data | 2026-05-11 | Success |
+| Newsletter Draft | 2026-05-12 | Success — now embeds full draft in email (#22) |
+| Weekly Alert | 2026-05-11 | Success |
 
 ---
 
@@ -195,15 +206,48 @@
 | 4.5 | Clean up legacy files | Removed 11 legacy scripts, `inflation_data.js`, 4 semi-redundant fetch scripts. | **Done** (Mar 24) |
 | 4.6 | Consolidate duplicate workflows | Removed `auto-scrape-forecasts.yml` (kept `auto-scrape-cb-forecasts.yml`). | **Done** (Mar 24) |
 
+### Phase 7: CI Repair + CLAUDE.md Principles + Staleness Automation (Priority: High)
+
+Triggered by the May 7 CI outage report; expanded into a broader correctness/visibility push.
+
+| # | Task | Details | Status |
+|---|------|---------|--------|
+| 7.1 | Fix CI Auto-Scrape commit step (#2 / PR #2) | Workflow was `git add`-ing `docs/data/scraper_state.json` which the scraper never writes. Also fixed CPI anomaly detector that compared backfill points against `latest` instead of chronologically prior — generated false positives across CA's 2009-2015 history when StatCan widened its window. | **Done** (May 10) |
+| 7.2 | CLAUDE.md project principles | 5 principles: no manual entry as fallback, validated-or-marked, provenance on every record, stale data visibly stale, trust the anomaly detector. Saved as both repo doc and global memory so future sessions inherit. | **Done** (May 10) |
+| 7.3 | BoE / SARB / RBA / BoC scraper rewrites | PRs #11, #13, #14, #16. URL pattern updates + structured-table parsers where possible (RBA/BoC) + explicit-disabled pattern where not (BoE/SARB pending #10, #12). RBA produces real headline data for the first time in 2+ years. | **Done** (May 10-11) |
+| 7.4 | Informative email notifications | PRs #15, #22, #23. Subjects include country codes + short SHA; bodies embed per-country diffs, draft summary, commit URL; newsletter draft email embeds the full draft. Replaces hardcoded "changes detected" boilerplate. | **Done** (May 11-13) |
+| 7.5 | `publication_date` actually refreshes on auto-merge (#17) | Layer 1 of staleness automation: `_normalise_publication_date` accepts all scraper formats and writes the result back. Bot self-heals drift on next cron. | **Done** (May 11) |
+| 7.6 | ECB structured-table parser (PR #21) | Replaces prose extractor that was silently overwriting curated EA; PR #18 first disabled the unsafe path, #21 lands the real parser. | **Done** (May 12) |
+| 7.7 | BoJ row-spanning fix (PR #19) | Handles FY-promoted-to-actual where row boundaries shift. | **Done** (May 12) |
+| 7.8 | Freshness UI (#30 / PR #34) | Layer 2 of staleness automation: per-row colored pills + footer summary on both index tables and country-page hero. CPI cadence 45/90d; forecast cadence 120/180d. | **Done** (May 13) |
+| 7.9 | "Source disabled" UI treatment (#31) | Layer 3: distinguish scraper-paused (UK/NZ/ZA) from real-world stale so the red signal isn't diluted by known-disabled scrapers. | To Do |
+| 7.10 | Workflow-failure email alerts (#28) | All 5 weekly cron workflows currently silent on hard failure; add `if: failure()` step that emails when a run crashes. | To Do |
+| 7.11 | Refresh PROJECT_PLAN + METHODOLOGY (#29 / this PR) | ~3 weeks of unrecorded May 2026 work, plus alignment with CLAUDE.md and the new freshness layer. | **Done** (May 13) |
+
+**Open follow-ups from Phase 7:** #6 (RBNZ proper fix), #10 (BoE structured extraction), #12 (SARB AEM/PDF), #24 (RBNZ scraper noise cleanup), #25 (source_date format normalization), #26 (gitignore backup JSONs), #27 (IMF WEO hardcode), #32 (surface draft entries), #33 (extract inline index.html JS).
+
 ---
 
 ## Known Bugs
 
 ### Active
 
-| # | Bug | Impact | File |
-|---|-----|--------|------|
-*None — all known bugs resolved.*
+Tracked as GitHub issues — see the [issue list](https://github.com/jing-ny/inflation-dashboard/issues) for current state. As of May 13, 2026:
+
+| # | Issue | Notes |
+|---|---|---|
+| #6 | RBNZ scraper Cloudflare-walled + page restructured | Deferred. Needs `curl_cffi` + new URL pattern + PDF table extraction. |
+| #10 | BoE structured-table extraction | Follow-up after #11 disabled the noisy prose extractor. Likely needs `pdfplumber`. |
+| #12 | SARB AEM JSON or PDF parsing | Follow-up after #13 disabled the noisy extractor. Site itself was showing "technical difficulties" at probe time. |
+| #24 | `scrape_rbnz` still hits 403 URL each run | Cleanup — align with the disabled-extractor pattern used by BoE/SARB. |
+| #25 | `source_date` format inconsistency across scrapers | Fed/BoJ emit YYYY-MM-DD; RBA/BoC emit "Month YYYY"; ECB historic emits "Mon YYYY". `_normalise_publication_date` papers over it but the source-side should be normalized. |
+| #26 | `historical_cpi_backup_*.json` checked in | Gitignore the pattern; remove the one stale file. |
+| #27 | Hardcoded "IMF WEO April 2026" in index.html footer | Will drift on next WEO release (Oct 2026). Derive from data. |
+| #28 | No email alert on workflow **failure** | Notifications only fire on data changes; hard failures silent. |
+| #29 | Doc refresh (this PR closes it) | PROJECT_PLAN.md + METHODOLOGY.md alignment. |
+| #31 | "Source disabled" UI treatment (layer 3) | Distinguish scraper-paused from real-stale. Depends on #30. |
+| #32 | Surface draft entries in the UI | `cb_forecasts_draft.json` pending review still invisible to readers. |
+| #33 | Extract inline `<script>` from index.html → docs/index.js | Refactor. Currently ~350 inline LOC. |
 
 ### Watch list
 
@@ -211,10 +255,11 @@
 |---|------|-------|
 | W1 | BR/MX 2025 history may have older miscaptures | Only 2026-01/02 were corrected. Values from 2025 should be spot-audited vs IBGE/INEGI archives. |
 | W2 | NZ Q2 2026 may spike | RBNZ guidance suggests ~4.2% driven by Mid-East conflict energy pass-through. Watch for anomaly-gate trip. |
+| W3 | Tier 2 manual-only banks (Banxico, BOK, RBI, MAS) | Paused per Phase 6 rationale; revisit if cadence becomes annoying. |
 
 ### Resolved (since Feb 2026)
 
-| Bug | Resolution | Date |
+| Bug / PR | Resolution | Date |
 |-----|-----------|------|
 | B1 | CSS deduplicated (1279 → 604 lines) | Mar 2026 |
 | B2 | Removed bare `test` text from index.html | Mar 2026 |
@@ -229,6 +274,20 @@
 | B11 | BR/MX 2026-01/02 contaminated with prior-year comparison values; added anomaly gates | Apr 2026 |
 | B12 | `fetch_imf_forecasts.py` covered only 9/15 countries, wrong EA code, wrong output dir | Apr 2026 |
 | B13 | `update_cpi.py` wrote escaped unicode flags, causing rebase conflicts with bot commits | Apr 2026 |
+| PR #2 | CI Auto-Scrape commit step missing-pathspec + CPI anomaly detector backfill false-positives | May 2026 |
+| PR #9 | Added CLAUDE.md project principles | May 2026 |
+| PR #11 | BoE scraper: URL fix + disabled unsafe prose extractor (closes #4) | May 2026 |
+| PR #13 | SARB scraper: working landing page + disabled extractor (closes #7) | May 2026 |
+| PR #14 | RBA scraper: SMP overview structured-table parser, first real data in 2+ years (closes #5) | May 2026 |
+| PR #15 | Email notifications: informative bodies with per-country diffs + commit URL | May 2026 |
+| PR #16 | BoC scraper: new URL pattern + projections page Table-2 parser (closes #8) | May 2026 |
+| PR #17 | `publication_date` actually refreshes when projections do (CLAUDE.md #4 layer 1) | May 2026 |
+| PR #18 | Disabled ECB prose fallback that was silently overwriting curated EA | May 2026 |
+| PR #19 | BoJ row-spanning fix (FY promoted to actual) | May 2026 |
+| PR #21 | ECB structured-table parser replaces prose extractor | May 2026 |
+| PR #22 | Embed full newsletter draft in notification email | May 2026 |
+| PR #23 | Always emit `cb_forecasts_changes.md` after merge run | May 2026 |
+| PR #34 | Freshness UI: per-row pills + footer summary (CLAUDE.md #4 layer 2, closes #30) | May 2026 |
 | Live site out of sync (2 commits, 8 countries) | Full codebase pushed to GitHub | Feb 2026 |
 | Venezuela page "Error loading data" | Null target handling fixed in country.js | Jan 2026 |
 | Quarterly date format crash in monitor | Fixed AU/NZ `2025-Q4` format | Jan 2026 |
@@ -265,9 +324,10 @@ Python Scripts (fetch / update data)
 
 | File | Purpose |
 |------|---------|
-| `index.html` | Overview — inflation table, CB outlook, policy rates |
-| `country.js` | Shared JS module for all 15 country detail pages |
-| `styles.css` | Shared styles |
+| `index.html` | Overview — Current Inflation table, CB Outlook table, Policy Rates grid. Each table has a per-row freshness pill + footer summary (CLAUDE.md #4). |
+| `country.js` | Shared JS module for all 15 country detail pages. Renders the freshness pill on the hero "current value" date. |
+| `freshness.js` | Shared helpers — `parsePublicationDate`, `freshnessFor`, `freshnessPill`. Loaded by index.html and each country page. |
+| `styles.css` | Shared styles, including `.freshness-{green,amber,red,unknown}` palette. |
 | `{code}.html` | Country detail pages (us, ea, uk, ca, au, nz, za, br, mx, jp, kr, sg, in, cn, ve) |
 
 ---
