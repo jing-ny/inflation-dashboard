@@ -74,11 +74,18 @@ jobs:
         id: changes
         if: inputs.dry_run != true
         run: |
-          if git diff --quiet docs/data/cb_forecasts.json 2>/dev/null; then
+          # We commit on any of three artifacts changing:
+          #   - cb_forecasts.json (auto-merged updates)
+          #   - cb_forecasts_draft.json (>1pp jumps routed to draft review, #32)
+          #   - cb_forecasts_changes.md (per-merge summary)
+          # so that pending drafts become visible to the dashboard, not just
+          # the email recipient.
+          paths="docs/data/cb_forecasts.json docs/data/cb_forecasts_draft.json docs/data/cb_forecasts_changes.md"
+          if git diff --quiet $paths 2>/dev/null; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
             echo "changed=true" >> $GITHUB_OUTPUT
-            git diff --stat docs/data/cb_forecasts.json
+            git diff --stat $paths
           fi
 
       - name: Commit and push if changed
@@ -86,16 +93,25 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          
-          git add docs/data/cb_forecasts.json
-          
+
+          # Stage only files that actually exist — draft + changes are
+          # written only when a >1pp jump is detected.
+          for path in \
+              docs/data/cb_forecasts.json \
+              docs/data/cb_forecasts_draft.json \
+              docs/data/cb_forecasts_changes.md; do
+            if [ -f "$path" ]; then
+              git add "$path"
+            fi
+          done
+
           UPDATED=$(grep "Updated:" scraper_output.txt | head -1 || echo "Updated: auto")
           git commit -m "Auto-update CB forecasts $(date +'%Y-%m-%d')
-          
+
           $UPDATED
-          
+
           Automated scrape of central bank forecast publications."
-          
+
           git push
 
       - name: Send email notification

@@ -109,3 +109,20 @@ function pausedPill(issue, reason) {
     }
     return `<span class="freshness freshness-paused" title="${title}">${label}</span>`;
 }
+
+/**
+ * Render a "pending review" chip — used when the auto-scraper produced a
+ * new value but the change exceeded the 1pp anomaly gate and was routed
+ * to cb_forecasts_draft.json for manual review (CLAUDE.md #2: this row's
+ * curated value is now known to be at-odds with the latest source data).
+ *
+ * `delta` is the largest absolute pp delta between old and new projections;
+ * `bank` is the entity name shown in the tooltip.
+ */
+function pendingReviewPill(delta, bank) {
+    const tip = bank && delta != null
+        ? `Pending review: ${bank} produced a new projection ${delta.toFixed(2)}pp from the curated value`
+        : 'Pending review — see cb_forecasts_draft.json';
+    const label = delta != null ? `⚠ pending (Δ${delta.toFixed(1)}pp)` : '⚠ pending';
+    return `<span class="freshness freshness-pending" title="${tip}">${label}</span>`;
+}
