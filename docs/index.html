@@ -106,12 +106,14 @@
                         <th>Target</th>
                         <th>Status</th>
                         <th>As Of</th>
+                        <th>Freshness</th>
                     </tr>
                 </thead>
                 <tbody id="inflationTableBody">
-                    <tr><td colspan="7" class="loading">Loading data...</td></tr>
+                    <tr><td colspan="8" class="loading">Loading data...</td></tr>
                 </tbody>
             </table>
+            <p id="inflationFreshnessFooter" class="freshness-footer"></p>
         </section>
 
         <!-- Central Bank Outlook Table - DYNAMICALLY LOADED -->
@@ -129,13 +131,15 @@
                         <th class="outlook-year-cb"></th>
                         <th class="outlook-year-imf"></th>
                         <th class="outlook-year-next"></th>
+                        <th>Freshness</th>
                         <th class="assessment-header">Key Assessment</th>
                     </tr>
                 </thead>
                 <tbody id="outlookTableBody">
-                    <tr><td colspan="6" class="loading">Loading forecasts...</td></tr>
+                    <tr><td colspan="7" class="loading">Loading forecasts...</td></tr>
                 </tbody>
             </table>
+            <p id="outlookFreshnessFooter" class="freshness-footer"></p>
             <p style="margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280;">
                 CB = Central bank's own projection. IMF = <a href="https://www.imf.org/en/publications/weo/issues/2026/04/14/world-economic-outlook-april-2026" target="_blank" style="color: #6b7280;">IMF WEO April 2026</a> (first full report post-Mid-East conflict).
             </p>
@@ -178,6 +182,7 @@
         </div>
     </footer>
 
+    <script src="freshness.js"></script>
     <script>
     /**
      * Index Page - Dynamic Data Loading
@@ -225,6 +230,7 @@
             const cpiData = await response.json();
 
             let html = '';
+            const inflationFreshnessCounts = { green: 0, amber: 0, red: 0, unknown: 0 };
             for (const code of DISPLAY_ORDER) {
                 const data = cpiData[code];
                 if (!data) continue;
@@ -275,9 +281,15 @@
                 }
 
                 // Target display with optional "NEW" badge for recent changes
-                const targetDisplay = target.recentChange 
+                const targetDisplay = target.recentChange
                     ? `${target.display} <span class="target-new-badge" title="Target changed Nov 2025">NEW</span>`
                     : target.display;
+
+                // Freshness pill — CPI is monthly cadence (45d/90d thresholds)
+                const fr = freshnessFor(currentDate, 'cpi');
+                if (fr) inflationFreshnessCounts[fr.tier]++;
+                else inflationFreshnessCounts.unknown++;
+                const freshnessCell = freshnessPill(currentDate, 'cpi') || '—';
 
                 html += `
                     <tr onclick="window.location='${page}'" class="clickable-row">
@@ -288,15 +300,33 @@
                         <td>${targetDisplay}</td>
                         <td><span class="${statusClass}">${statusText}</span></td>
                         <td>${formatDate(currentDate)}</td>
+                        <td>${freshnessCell}</td>
                     </tr>
                 `;
             }
 
             tbody.innerHTML = html;
 
+            // Footer summary for the Current Inflation table
+            const inflationFooter = document.getElementById('inflationFreshnessFooter');
+            if (inflationFooter) {
+                const total = inflationFreshnessCounts.green + inflationFreshnessCounts.amber + inflationFreshnessCounts.red + inflationFreshnessCounts.unknown;
+                const today = new Date().toISOString().slice(0, 10);
+                const parts = [
+                    `<span class="freshness freshness-green">${inflationFreshnessCounts.green}</span> current`,
+                    `<span class="freshness freshness-amber">${inflationFreshnessCounts.amber}</span> stale`,
+                    `<span class="freshness freshness-red">${inflationFreshnessCounts.red}</span> very stale`,
+                ];
+                if (inflationFreshnessCounts.unknown) {
+                    parts.push(`<span class="freshness freshness-unknown">${inflationFreshnessCounts.unknown}</span> unknown`);
+                }
+                inflationFooter.innerHTML = `Data freshness as of ${today} — ${parts.join(' · ')} (${total} countries). ` +
+                    `Green ≤ 45d · Amber ≤ 90d · Red &gt; 90d since CPI release.`;
+            }
+
         } catch (error) {
             console.error('Error loading inflation data:', error);
-            tbody.innerHTML = '<tr><td colspan="7" class="error">Error loading data. Please refresh.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="error">Error loading data. Please refresh.</td></tr>';
         }
     }
 
@@ -333,6 +363,7 @@
 
             const displayOrder = forecastData.display_order || DISPLAY_ORDER;
             let html = '';
+            const freshnessCounts = { green: 0, amber: 0, red: 0, unknown: 0 };
 
             for (const code of displayOrder) {
                 const forecast = forecastData.forecasts[code];
@@ -358,6 +389,12 @@
                     imfCell = `<span${divergeStyle}>${imfCurrentYear.toFixed(1)}%</span>`;
                 }
 
+                // Freshness pill — CB forecasts use the 'forecast' threshold tier
+                const fr = freshnessFor(forecast.publication_date, 'forecast');
+                if (fr) freshnessCounts[fr.tier]++;
+                else freshnessCounts.unknown++;
+                const freshnessCell = freshnessPill(forecast.publication_date, 'forecast') || '—';
+
                 html += `
                     <tr onclick="window.location='${page}'" class="clickable-row">
                         <td class="country-cell">${forecast.flag} ${code}</td>
@@ -365,6 +402,7 @@
                         <td><strong>${cbCurrentYear !== null && cbCurrentYear !== undefined ? cbCurrentYear.toFixed(1) + '%' : '—'}</strong></td>
                         <td>${imfCell}</td>
                         <td>${proj[nextYearStr] !== null && proj[nextYearStr] !== undefined ? proj[nextYearStr].toFixed(1) + '%' : '—'}</td>
+                        <td>${freshnessCell}</td>
                         <td class="assessment-cell">"${forecast.key_quote}"</td>
                     </tr>
                 `;
@@ -372,9 +410,26 @@
 
             tbody.innerHTML = html;
 
+            // Footer summary
+            const footer = document.getElementById('outlookFreshnessFooter');
+            if (footer) {
+                const total = freshnessCounts.green + freshnessCounts.amber + freshnessCounts.red + freshnessCounts.unknown;
+                const today = new Date().toISOString().slice(0, 10);
+                const parts = [
+                    `<span class="freshness freshness-green">${freshnessCounts.green}</span> current`,
+                    `<span class="freshness freshness-amber">${freshnessCounts.amber}</span> stale`,
+                    `<span class="freshness freshness-red">${freshnessCounts.red}</span> very stale`,
+                ];
+                if (freshnessCounts.unknown) {
+                    parts.push(`<span class="freshness freshness-unknown">${freshnessCounts.unknown}</span> unknown`);
+                }
+                footer.innerHTML = `Data freshness as of ${today} — ${parts.join(' · ')} (${total} sources). ` +
+                    `Green ≤ 120d · Amber ≤ 180d · Red &gt; 180d since central-bank publication.`;
+            }
+
         } catch (error) {
             console.error('Error loading forecast data:', error);
-            tbody.innerHTML = '<tr><td colspan="6" class="error">Error loading forecasts. Please refresh.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="error">Error loading forecasts. Please refresh.</td></tr>';
         }
     }
 

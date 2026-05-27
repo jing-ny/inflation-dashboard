@@ -182,6 +182,43 @@ body {
     font-weight: 500;
 }
 
+/* Freshness indicator — CLAUDE.md #4. Same palette family as .status-*. */
+.freshness {
+    display: inline-block;
+    padding: 0.1rem 0.4rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+}
+.freshness-green {
+    background: #dcfce7;
+    color: #166534;
+}
+.freshness-amber {
+    background: #fef3c7;
+    color: #92400e;
+}
+.freshness-red {
+    background: #fee2e2;
+    color: #991b1b;
+}
+.freshness-unknown {
+    background: #f1f5f9;
+    color: #475569;
+}
+.freshness-footer {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+    line-height: 1.6;
+}
+.freshness-footer .freshness {
+    margin: 0 0.1rem;
+}
+
 /* Outlook Table */
 .outlook-table .source-cell {
     font-size: 0.8rem;
