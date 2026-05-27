@@ -158,3 +158,35 @@ jobs:
           else
             echo "ℹ️ **No updates needed**" >> $GITHUB_STEP_SUMMARY
           fi
+
+      - name: Send failure alert email
+        if: failure()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
+          WORKFLOW: ${{ github.workflow }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          SERVER_URL: ${{ github.server_url }}
+        run: |
+          if [ -z "$RESEND_API_KEY" ] || [ -z "$NOTIFICATION_EMAIL" ]; then
+            echo "Notification secrets not set; skipping failure alert"
+            exit 0
+          fi
+          pip install --quiet resend
+          python <<'PY'
+          import os, resend
+          resend.api_key = os.environ['RESEND_API_KEY']
+          run_url = f"{os.environ['SERVER_URL']}/{os.environ['REPO']}/actions/runs/{os.environ['RUN_ID']}"
+          workflow = os.environ['WORKFLOW']
+          resend.Emails.send({
+              'from': 'Inflation Dashboard <onboarding@resend.dev>',
+              'to': os.environ['NOTIFICATION_EMAIL'],
+              'subject': f"❌ {workflow} failed",
+              'text': (
+                  f"GitHub Actions workflow '{workflow}' failed on the most recent run.\n\n"
+                  f"Run URL: {run_url}\n\n"
+                  "Click through to see which step(s) failed and view the logs.\n"
+              ),
+          })
+          PY
