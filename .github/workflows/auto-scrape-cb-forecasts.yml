@@ -80,12 +80,23 @@ jobs:
           #   - cb_forecasts_changes.md (per-merge summary)
           # so that pending drafts become visible to the dashboard, not just
           # the email recipient.
-          paths="docs/data/cb_forecasts.json docs/data/cb_forecasts_draft.json docs/data/cb_forecasts_changes.md"
-          if git diff --quiet $paths 2>/dev/null; then
+          #
+          # Use `git status --porcelain`, NOT `git diff`: the draft + changes
+          # files are only written when a >1pp jump trips the gate, so they're
+          # often absent. `git diff <missing-path>` exits 128 ("no such path
+          # in the working tree") and fails the run. `git status --porcelain`
+          # tolerates absent paths AND detects newly-created untracked files
+          # (which `git diff` would miss entirely — a draft-only change would
+          # otherwise be a false-negative).
+          changed_status="$(git status --porcelain -- \
+            docs/data/cb_forecasts.json \
+            docs/data/cb_forecasts_draft.json \
+            docs/data/cb_forecasts_changes.md 2>/dev/null)"
+          if [ -z "$changed_status" ]; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
             echo "changed=true" >> $GITHUB_OUTPUT
-            git diff --stat $paths
+            echo "$changed_status"
           fi
 
       - name: Commit and push if changed
