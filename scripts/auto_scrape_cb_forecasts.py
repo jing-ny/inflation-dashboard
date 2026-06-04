@@ -867,11 +867,6 @@ def _discover_mas_spf_pdf():
     return pdf_url, pub_date
 
 
-def _mas_cell_norm(s):
-    """Normalise a label cell for matching: lowercase, collapse spaces/hyphens."""
-    return re.sub(r'[\s\-]+', '', (s or '').lower())
-
-
 def scrape_mas():
     """Scrape the MAS Survey of Professional Forecasters — headline
     'CPI-All Items Inflation' median.
@@ -905,94 +900,57 @@ def scrape_mas():
         return None
 
     import io
-    projections = []
-    table_count = 0
-    cpi_like_rows = []  # diagnostics: any row mentioning CPI, in case the
-                        # exact-label anchor misses (helps tighten the parser)
-    cpi_pages = {}      # diagnostics: extracted text of pages carrying CPI
+    # The SPF write-up summarises each forecast year in an annual table titled
+    #   "Forecasts of GDP Growth and CPI-All Items Inflation for <YEAR>"
+    # with columns "Median Mean Min Max" and a row beginning "CPI-All Items".
+    # pdfplumber's *table* extraction stuffs whole columns into single newline-
+    # joined cells, but its *text* extraction renders those tables as clean
+    # lines (e.g. "CPI-All Items 1.7 1.6 1.0 2.0"). So we read the text, anchor
+    # on the table title + the Median/Mean/Min/Max header, and take the Median
+    # column — the published headline figure, never MAS Core / GDP / a quarterly
+    # sub-row. If the structure isn't found we emit nothing (CLAUDE.md #2).
     try:
         with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
-            for pno, page in enumerate(pdf.pages):
-                for table in (page.extract_tables() or []):
-                    table_count += 1
-                    for r in table:
-                        if r and any(c and 'cpi' in (c or '').lower() for c in r):
-                            cpi_like_rows.append((pno + 1, r))
-                            cpi_pages.setdefault(pno + 1, page.extract_text() or "")
-                    # Locate the CPI-All Items row within this table.
-                    cpi_row = next(
-                        (r for r in table
-                         if r and r[0] and 'cpiallitems' in _mas_cell_norm(r[0])),
-                        None,
-                    )
-                    if not cpi_row:
-                        continue
-
-                    # Header row carries the forecast years (e.g. "2026").
-                    header = next(
-                        (r for r in table
-                         if r and any(c and re.search(r'20\d{2}', c) for c in r)),
-                        None,
-                    )
-                    print(f"  🔎 page {pno + 1}: CPI-All Items row = {cpi_row}")
-                    print(f"      header row = {header}")
-
-                    if header:
-                        for col, hcell in enumerate(header):
-                            ym = hcell and re.search(r'(20\d{2})', hcell)
-                            if not ym or col >= len(cpi_row):
-                                continue
-                            vm = re.search(r'-?\d+\.\d+', cpi_row[col] or '')
-                            if vm:
-                                val = float(vm.group())
-                                if -5.0 <= val <= 15.0:  # SG CPI sanity band
-                                    projections.append({"year": ym.group(1),
-                                                        "value": round(val, 2)})
-                    if projections:
-                        break
-                if projections:
-                    break
+            text = "\n".join((page.extract_text() or "") for page in pdf.pages)
     except Exception as e:  # pdfplumber can raise on malformed/scanned PDFs
         print(f"  ⚠️  pdfplumber failed to parse SPF PDF: {type(e).__name__}: {e}")
         return None
 
-    # De-dup years, keep first occurrence.
-    seen, deduped = set(), []
-    for p in projections:
-        if p["year"] not in seen:
-            seen.add(p["year"])
-            deduped.append(p)
+    projections = []
+    seen = set()
+    title_re = re.compile(
+        r'Forecasts of GDP Growth and CPI-All Items Inflation for\s+(20\d{2})',
+        re.IGNORECASE)
+    for m in title_re.finditer(text):
+        year = m.group(1)
+        if year in seen or int(year) < CURRENT_YEAR:
+            continue
+        window = text[m.end(): m.end() + 500]
+        # Confirm the column order before trusting position 1 = Median.
+        hdr = re.search(r'Median\s+Mean\s+Min\s+Max', window, re.IGNORECASE)
+        if not hdr:
+            continue  # unexpected layout — don't guess (CLAUDE.md #2)
+        row = re.search(
+            r'CPI-All Items\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)',
+            window[hdr.start():], re.IGNORECASE)
+        if not row:
+            continue
+        median = float(row.group(1))  # Median is the first of the four columns
+        if -5.0 <= median <= 15.0:    # SG CPI sanity band
+            seen.add(year)
+            projections.append({"year": year, "value": round(median, 2)})
 
-    if not deduped:
-        print(f"  ⏸️  scrape_mas: CPI-All Items median not extracted "
-              f"({table_count} table(s) scanned).")
-        # Surface what we *did* see so the parser can be tightened without
-        # another blind round-trip.
-        for pno, r in cpi_like_rows[:6]:
-            print(f"      [diag] page {pno} CPI-ish row: {r}")
-        for pno, txt in list(cpi_pages.items())[-2:]:
-            snippet = re.sub(r'[ \t]+', ' ', txt)[:1800]
-            print(f"      [diag] page {pno} TEXT >>>\n{snippet}\n<<< end page {pno}")
-        if not cpi_like_rows:
-            text = ""
-            try:
-                from pypdf import PdfReader
-                text = "\n".join((pg.extract_text() or "")
-                                 for pg in PdfReader(io.BytesIO(pdf_bytes)).pages)
-            except Exception:
-                pass
-            idx = text.lower().find('cpi-all items')
-            if idx == -1:
-                idx = text.lower().find('cpi')
-            if idx != -1:
-                snippet = re.sub(r'\s+', ' ', text[idx:idx + 260])
-                print(f"      [diag] text near CPI: {snippet}")
-            else:
-                print("      [diag] no 'CPI' text found — PDF may be scanned/image-based")
-        print("  ⏸️  preserving curated SG forecast")
+    if not projections:
+        print("  ⏸️  scrape_mas: annual 'CPI-All Items' median table not found; "
+              "preserving curated SG forecast")
+        idx = text.find('CPI-All Items')
+        if idx != -1:
+            print("      [diag] near CPI-All Items: "
+                  + re.sub(r'\s+', ' ', text[idx:idx + 120]))
         return None
 
-    print(f"  ✅ MAS SPF CPI-All Items median: {deduped}")
+    projections.sort(key=lambda p: p["year"])
+    print(f"  ✅ MAS SPF CPI-All Items median: {projections}")
     return {
         "bank": "Monetary Authority of Singapore",
         "country": "SG",
@@ -1000,7 +958,7 @@ def scrape_mas():
         "source": "MAS Survey of Professional Forecasters",
         "source_url": pdf_url,
         "source_date": pub_date,
-        "projections": deduped,
+        "projections": projections,
     }
 
 
