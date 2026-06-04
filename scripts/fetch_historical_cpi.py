@@ -742,22 +742,26 @@ def fetch_nbs_cpi_series() -> List[Dict]:
     headers = {"User-Agent": _BROWSER_UA,
                "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
                "Accept-Language": "en-US,en;q=0.9"}
-    listing = "https://www.stats.gov.cn/english/PressRelease/"
-    try:
-        r = requests.get(listing, headers=headers, timeout=30)
-        print(f"    [diag] NBS listing {listing} -> {r.status_code}, {len(r.content)} bytes")
-        html = r.text if r.status_code == 200 else ""
-    except Exception as e:
-        print(f"    [diag] NBS listing unreachable: {type(e).__name__}: {e}")
-        return []
-
-    # Candidate detail links (href + nearby text); flag the CPI/price ones.
-    links = _re.findall(r'href="([^"]+\.html)"[^>]*>([^<]{0,120})', html)
+    # The press-release index is dominated by high-frequency price-monitoring
+    # bulletins, so the monthly CPI release is often a page or two back. Scan a
+    # few index pages and match the specific "Consumer Price Index for <Month>"
+    # title (not the broad "prices").
+    base = "https://www.stats.gov.cn/english/PressRelease/"
+    pages = [base, base + "index_1.html", base + "index_2.html", base + "index_3.html"]
+    links = []
+    for pg in pages:
+        try:
+            r = requests.get(pg, headers=headers, timeout=30)
+            print(f"    [diag] NBS listing {pg} -> {r.status_code}, {len(r.content)} bytes")
+            if r.status_code == 200:
+                links += _re.findall(r'href="([^"]+\.html)"[^>]*>([^<]{0,140})', r.text)
+        except Exception as e:
+            print(f"    [diag] listing {pg} error: {type(e).__name__}")
     cpi_links = [(h, t.strip()) for h, t in links
-                 if _re.search(r'consumer price|\bCPI\b|prices', t, _re.I)]
-    print(f"    [diag] {len(links)} html link(s), {len(cpi_links)} price/CPI-ish")
+                 if _re.search(r'consumer price index', t, _re.I)]
+    print(f"    [diag] {len(links)} link(s) total, {len(cpi_links)} CPI release(s)")
     for h, t in cpi_links[:6]:
-        print(f"      [diag] link: {h}  ::  {t[:80]}")
+        print(f"      [diag] link: {h}  ::  {t[:90]}")
 
     # Try the first CPI detail page (resolve relative URLs against the host).
     detail = None
@@ -768,7 +772,7 @@ def fetch_nbs_cpi_series() -> List[Dict]:
         elif href.startswith("/"):
             detail = "https://www.stats.gov.cn" + href
         else:
-            detail = listing + href.lstrip("./")
+            detail = base + href.lstrip("./")
     if not detail:
         print("    [diag] no CPI detail link found on listing")
         return []
