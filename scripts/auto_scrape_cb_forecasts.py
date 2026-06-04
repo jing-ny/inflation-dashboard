@@ -819,69 +819,51 @@ def scrape_sarb():
     return None
 
 
-MAS_SPF_INDEX = "https://www.mas.gov.sg/publications/survey-of-professional-forecasters"
+MAS_SPF_INDEX = "https://www.mas.gov.sg/monetary-policy/mas-survey-of-professional-forecasters"
 
-_MONTHS = {
-    'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6,
-    'july': 7, 'august': 8, 'september': 9, 'october': 10, 'november': 11,
-    'december': 12,
+_MON_ABBR = {
+    'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+    'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
 }
 
 
 def _discover_mas_spf_pdf():
-    """Find the latest MAS Survey of Professional Forecasters results PDF.
+    """Find the latest MAS Survey of Professional Forecasters write-up PDF.
 
-    The SPF is published quarterly (Mar/Jun/Sep/Dec). The listing page links
-    out to per-release detail pages of the form
+    The SPF is published quarterly (Mar/Jun/Sep/Dec). The landing page links
+    each release's write-up PDF directly, hosted under the media library as
 
-        /publications/survey-of-professional-forecasters/<year>/<...-month-year>
+        .../mas-survey-of-professional-forecasters/<year>/survey-writeup-<mon>-<year>-web.pdf
 
-    each of which embeds the results PDF (hosted under the mas-media-library).
-    We pick the newest detail page by (year, month) parsed from its slug, then
-    pull the first .pdf link off that page.
+    (e.g. survey-writeup-mar-2026-web.pdf). We date each link off the
+    <mon>-<year> in its filename and pick the newest.
 
     Returns (pdf_url, 'YYYY-MM-01') or (None, None). Heavily logged because
     the MAS markup is only observable from a network that can reach it (#42).
     """
     html = fetch_url(MAS_SPF_INDEX, headers=BROWSER_HEADERS)
     if not html:
-        print("  ⚠️  MAS SPF listing page not reachable")
+        print("  ⚠️  MAS SPF landing page not reachable")
         return None, None
-    print(f"  ℹ️  MAS SPF listing fetched ({len(html)} bytes)")
+    print(f"  ℹ️  MAS SPF landing fetched ({len(html)} bytes)")
 
-    # Detail-page links carry the year as a path segment and a "<month>-<year>"
-    # slug we can date off. Accept absolute or root-relative hrefs.
     candidates = []
-    for href in re.findall(r'href="([^"]*survey-of-professional-forecasters[^"]*)"', html, re.I):
-        m = re.search(r'/(\d{4})/', href)
-        slug = href.lower()
-        month = next((n for name, n in _MONTHS.items() if name in slug), None)
-        if m and month:
-            candidates.append((int(m.group(1)), month, href))
-    # De-dup and rank newest first.
+    for href in re.findall(r'href="([^"]+\.pdf[^"]*)"', html, re.I):
+        m = re.search(r'survey-writeup-([a-z]{3})[a-z]*-(\d{4})', href, re.I)
+        if not m:
+            continue
+        month = _MON_ABBR.get(m.group(1).lower())
+        if month:
+            candidates.append((int(m.group(2)), month, href))
     candidates = sorted(set(candidates), key=lambda c: (c[0], c[1]), reverse=True)
-    print(f"  ℹ️  {len(candidates)} dated SPF detail link(s) found"
+    print(f"  ℹ️  {len(candidates)} SPF write-up PDF link(s) found"
           + (f"; latest → {candidates[0][2]}" if candidates else ""))
     if not candidates:
         return None, None
 
     year, month, href = candidates[0]
-    detail_url = href if href.startswith("http") else "https://www.mas.gov.sg" + href
+    pdf_url = href if href.startswith("http") else "https://www.mas.gov.sg" + href
     pub_date = f"{year:04d}-{month:02d}-01"
-
-    detail_html = fetch_url(detail_url, headers=BROWSER_HEADERS)
-    if not detail_html:
-        print(f"  ⚠️  SPF detail page not reachable: {detail_url}")
-        return None, None
-
-    pdf_links = re.findall(r'href="([^"]+\.pdf[^"]*)"', detail_html, re.I)
-    print(f"  ℹ️  {len(pdf_links)} PDF link(s) on detail page"
-          + (f"; first → {pdf_links[0]}" if pdf_links else ""))
-    if not pdf_links:
-        return None, None
-
-    pdf = pdf_links[0]
-    pdf_url = pdf if pdf.startswith("http") else "https://www.mas.gov.sg" + pdf
     return pdf_url, pub_date
 
 
@@ -924,10 +906,17 @@ def scrape_mas():
 
     import io
     projections = []
+    table_count = 0
+    cpi_like_rows = []  # diagnostics: any row mentioning CPI, in case the
+                        # exact-label anchor misses (helps tighten the parser)
     try:
         with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
             for pno, page in enumerate(pdf.pages):
                 for table in (page.extract_tables() or []):
+                    table_count += 1
+                    for r in table:
+                        if r and any(c and 'cpi' in (c or '').lower() for c in r):
+                            cpi_like_rows.append((pno + 1, r))
                     # Locate the CPI-All Items row within this table.
                     cpi_row = next(
                         (r for r in table
@@ -973,8 +962,29 @@ def scrape_mas():
             deduped.append(p)
 
     if not deduped:
-        print("  ⏸️  scrape_mas: CPI-All Items row not located in SPF tables; "
-              "preserving curated SG forecast (see diagnostics above)")
+        print(f"  ⏸️  scrape_mas: CPI-All Items median not extracted "
+              f"({table_count} table(s) scanned).")
+        # Surface what we *did* see so the parser can be tightened without
+        # another blind round-trip.
+        for pno, r in cpi_like_rows[:6]:
+            print(f"      [diag] page {pno} CPI-ish row: {r}")
+        if not cpi_like_rows:
+            text = ""
+            try:
+                from pypdf import PdfReader
+                text = "\n".join((pg.extract_text() or "")
+                                 for pg in PdfReader(io.BytesIO(pdf_bytes)).pages)
+            except Exception:
+                pass
+            idx = text.lower().find('cpi-all items')
+            if idx == -1:
+                idx = text.lower().find('cpi')
+            if idx != -1:
+                snippet = re.sub(r'\s+', ' ', text[idx:idx + 260])
+                print(f"      [diag] text near CPI: {snippet}")
+            else:
+                print("      [diag] no 'CPI' text found — PDF may be scanned/image-based")
+        print("  ⏸️  preserving curated SG forecast")
         return None
 
     print(f"  ✅ MAS SPF CPI-All Items median: {deduped}")
