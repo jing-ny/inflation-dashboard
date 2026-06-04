@@ -899,78 +899,117 @@ def scrape_bcb():
     }
 
 
-def scrape_sarb():
-    """Scrape SARB MPC forecast report (#12).
+SARB_DAM_BASE = ("https://www.resbank.co.za/content/dam/sarb/publications/"
+                 "statements/monetary-policy-statements")
 
-    SARB's MPC statement listing is JS-rendered (AEM), but the publications
-    live at predictable /content/dam/sarb/... paths, and each meeting has a
-    dedicated "MPC forecast report" PDF (.../<year>/<month>/forecast.pdf) that
-    carries the QPM headline-CPI projection table. This pass is diagnostic: it
-    probes which URLs the runner can reach and dumps the forecast PDF's CPI
-    rows so the parser can anchor on the headline row (#12 / CLAUDE.md #2).
+# SARB's MPC meets roughly every two months; the forecast report only exists
+# for meeting months, so non-meeting months 404 and are skipped during probing.
+_SARB_MEETING_MONTHS = {1: "january", 3: "march", 5: "may",
+                        7: "july", 9: "september", 11: "november"}
+
+
+def _discover_sarb_forecast_pdf():
+    """Find the latest SARB MPC forecast-report PDF.
+
+    The MPC statement listing is JS-rendered (AEM) and exposes no static links,
+    but each meeting's forecast report lives at the predictable path
+    .../<year>/<month>/forecast.pdf. We walk back from the current month over
+    SARB's bi-monthly meeting calendar and return the newest report that loads.
+
+    Returns (pdf_bytes, pdf_url, 'YYYY-MM-01') or (None, None, None).
+    """
+    from datetime import date
+    today = date.today()
+    y, m = today.year, today.month
+    for _ in range(14):  # ~2 years of months — comfortably finds a meeting
+        month_name = _SARB_MEETING_MONTHS.get(m)
+        if month_name:
+            url = f"{SARB_DAM_BASE}/{y}/{month_name}/forecast.pdf"
+            pdf_bytes = _fetch_pdf_bytes(url, headers=BROWSER_HEADERS)
+            if pdf_bytes:
+                return pdf_bytes, url, f"{y:04d}-{m:02d}-01"
+        m -= 1
+        if m == 0:
+            m, y = 12, y - 1
+    return None, None, None
+
+
+def scrape_sarb():
+    """Scrape SARB's MPC forecast report — headline CPI annual projections (#12).
+
+    SARB publishes a "Summary of selected QPM forecast results" table in each
+    meeting's forecast.pdf. The "1. Headline CPI" row carries quarterly values
+    plus an annual column per year; we align that row to the period header and
+    read the bare-year (annual) columns only. Anchored on the Headline CPI row
+    and the explicit year columns — never prose, never the food/fuel/core rows,
+    and never the parenthesised previous-meeting comparison row (CLAUDE.md #2).
+    Values use SA decimal commas ("3,0" → 3.0).
     """
     print("📊 Scraping SARB...")
 
-    base = "https://www.resbank.co.za"
-    detail_base = base + "/en/home/publications/publication-detail-pages/statements/monetary-policy-statements"
-    dam_base = base + "/content/dam/sarb/publications/statements/monetary-policy-statements"
+    pdf_bytes, pdf_url, pub_date = _discover_sarb_forecast_pdf()
+    if not pdf_bytes:
+        print("  ⏸️  scrape_sarb: no forecast report PDF reachable; preserving curated ZA forecast")
+        return None
+    print(f"  ℹ️  SARB forecast report: {pdf_url} ({len(pdf_bytes)} bytes)")
 
-    # 1) Can we reach the listing / committee pages, and do they expose static
-    #    links to detail pages or dam PDFs?
-    for label, url in [
-        ("mpc-statements landing", base + "/en/home/publications/statements/mpc-statements"),
-        ("committee page", base + "/en/home/what-we-do/monetary-policy/monetary-policy-committee"),
-    ]:
-        html = fetch_url(url, headers=BROWSER_HEADERS)
-        if not html:
-            print(f"  [diag] {label}: NOT reachable")
-            continue
-        dam = sorted(set(re.findall(r'/content/dam/sarb/[^"\']+?\.pdf', html, re.I)))
-        details = sorted(set(re.findall(r'monetary-policy-statements/(20\d{2}/[a-z]+)', html, re.I)))
-        print(f"  [diag] {label}: {len(html)} bytes; {len(dam)} dam-pdf link(s), "
-              f"{len(details)} detail link(s)")
-        for d in dam[:5]:
-            print(f"      [diag] pdf: {d}")
-        for d in details[:8]:
-            print(f"      [diag] detail: {d}")
-
-    # 2) Try the predictable forecast.pdf for recent 2026 meetings and dump the
-    #    CPI rows from the first one that loads.
     try:
         import pdfplumber
     except ImportError:
-        print("  ❌ pdfplumber not installed")
+        print("  ❌ pdfplumber not installed — add it to workflow requirements")
         return None
     import io
-    for month in ("may", "march", "january"):
-        for fname in ("forecast.pdf", f"{month}-statement.pdf"):
-            url = f"{dam_base}/2026/{month}/{fname}"
-            pdf_bytes = _fetch_pdf_bytes(url, headers=BROWSER_HEADERS)
-            if pdf_bytes is None:
-                continue
-            print(f"  [diag] fetched {url} ({len(pdf_bytes)} bytes)")
-            try:
-                with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
-                    text = "\n".join((p.extract_text() or "") for p in pdf.pages)
-            except Exception as e:
-                print(f"  [diag] pdfplumber error: {type(e).__name__}: {e}")
-                continue
-            slines = text.splitlines()
-            for i, l in enumerate(slines):
-                if len(re.findall(r'20\d{2}', l)) >= 3:
-                    print(f"      [diag] yearhdr {i}: " + re.sub(r'\s+', ' ', l).strip()[:180])
-            for i, l in enumerate(slines):
-                if re.search(r'Headline CPI', l, re.I):
-                    for j in range(max(0, i - 6), i + 2):
-                        t = re.sub(r'\s+', ' ', slines[j]).strip()
-                        if t:
-                            print(f"      [diag] {j}: " + t[:180])
-                    print("      [diag] ---")
-            print("  ⏸️  scrape_sarb: diagnostic only — preserving curated ZA forecast")
-            return None
+    try:
+        with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+            text = "\n".join((p.extract_text() or "") for p in pdf.pages)
+    except Exception as e:
+        print(f"  ⚠️  pdfplumber failed to parse SARB PDF: {type(e).__name__}: {e}")
+        return None
 
-    print("  ⏸️  scrape_sarb: no forecast PDF reachable this pass; preserving curated ZA forecast")
-    return None
+    lines = text.splitlines()
+    # Period header: the row carrying the quarter + annual column labels, e.g.
+    # "(year-on-year) 25Q1 25Q2 25Q3 25Q4 2025 26Q1 ... 2028 Steady state".
+    header = next((l for l in lines
+                   if len(re.findall(r'\d{2}Q\d', l)) >= 3
+                   and len(re.findall(r'20\d{2}', l)) >= 2), None)
+    if not header:
+        print("  ⏸️  scrape_sarb: QPM period header not found; preserving curated ZA forecast")
+        return None
+    period_tokens = re.findall(r'\d{2}Q\d|20\d{2}', header)
+
+    # Current-meeting Headline CPI row (not the parenthesised previous-forecast
+    # row, which starts with "(").
+    data = next((l for l in lines
+                 if re.match(r'\s*\d*\.?\s*Headline CPI', l)
+                 and len(re.findall(r'-?\d+,\d+', l)) >= len(period_tokens)), None)
+    if not data:
+        print("  ⏸️  scrape_sarb: Headline CPI row not found; preserving curated ZA forecast")
+        return None
+    values = re.findall(r'-?\d+,\d+', data)
+
+    projections = []
+    for i, tok in enumerate(period_tokens):
+        if re.fullmatch(r'20\d{2}', tok) and i < len(values):
+            year = int(tok)
+            if year >= CURRENT_YEAR:  # drop already-elapsed years
+                val = float(values[i].replace(',', '.'))
+                if -5.0 <= val <= 25.0:  # ZA headline CPI sanity band
+                    projections.append({"year": str(year), "value": round(val, 2)})
+
+    if not projections:
+        print("  ⏸️  scrape_sarb: no annual Headline CPI columns parsed; preserving curated ZA forecast")
+        return None
+
+    print(f"  ✅ SARB Headline CPI (annual): {projections}")
+    return {
+        "bank": "South African Reserve Bank",
+        "country": "ZA",
+        "metric": "Headline CPI (MPC QPM projection, annual average)",
+        "source": "SARB MPC forecast report (QPM)",
+        "source_url": pdf_url,
+        "source_date": pub_date,
+        "projections": projections,
+    }
 
 
 
