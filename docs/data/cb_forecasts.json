@@ -158,23 +158,20 @@
       "flag": "🇿🇦",
       "source": "SARB",
       "source_full": "South African Reserve Bank - MPC Statement",
-      "source_url": "https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements/monetary-policy-statements/2026/january",
-      "publication_date": "January 2026",
-      "forecast_type": "MPC projection (CPI)",
-      "note": "SARB held repo rate at 6.75% (4-2 vote). Jan 2026 QPM revised 2026 inflation down to 3.3% (from 3.6% in Nov QPM) on stronger rand and lower oil. Risks from food (foot-and-mouth) and electricity prices.",
+      "source_url": "https://www.resbank.co.za/content/dam/sarb/publications/statements/monetary-policy-statements/2026/may/forecast.pdf",
+      "publication_date": "May 2026",
+      "forecast_type": "MPC QPM projection (headline CPI, annual avg)",
+      "note": "SARB hiked the repo rate +25bp to 7.00% in May 2026 as the Middle East oil/food shock lifted the inflation outlook. The May QPM projects headline CPI averaging 4.4% in 2026 and 3.7% in 2027, before returning to the 3% target in 2028.",
       "projections": {
-        "2025": 3.2,
-        "2026": 3.3,
-        "2027": 3.0
+        "2026": 4.4,
+        "2027": 3.7,
+        "2028": 3.0
       },
-      "key_quote": "Near-term inflation forecast has fallen; gradual rate cuts expected as inflation subsides",
+      "key_quote": "Headline CPI seen averaging 4.4% in 2026 and 3.7% in 2027, returning to the 3% target by 2028",
       "policy_rate": {
-        "rate": "6.75%",
-        "last_change": "— Jan 2026 (hold)"
-      },
-      "scraper_status": "disabled",
-      "scraper_status_issue": "#12",
-      "scraper_status_reason": "SARB scraper: site is JS-rendered (AEM)"
+        "rate": "7.00%",
+        "last_change": "↑ May 2026"
+      }
     },
     "JP": {
       "flag": "🇯🇵",

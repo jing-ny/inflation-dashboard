@@ -899,36 +899,118 @@ def scrape_bcb():
     }
 
 
+SARB_DAM_BASE = ("https://www.resbank.co.za/content/dam/sarb/publications/"
+                 "statements/monetary-policy-statements")
+
+# SARB's MPC meets roughly every two months; the forecast report only exists
+# for meeting months, so non-meeting months 404 and are skipped during probing.
+_SARB_MEETING_MONTHS = {1: "january", 3: "march", 5: "may",
+                        7: "july", 9: "september", 11: "november"}
+
+
+def _discover_sarb_forecast_pdf():
+    """Find the latest SARB MPC forecast-report PDF.
+
+    The MPC statement listing is JS-rendered (AEM) and exposes no static links,
+    but each meeting's forecast report lives at the predictable path
+    .../<year>/<month>/forecast.pdf. We walk back from the current month over
+    SARB's bi-monthly meeting calendar and return the newest report that loads.
+
+    Returns (pdf_bytes, pdf_url, 'YYYY-MM-01') or (None, None, None).
+    """
+    from datetime import date
+    today = date.today()
+    y, m = today.year, today.month
+    for _ in range(14):  # ~2 years of months — comfortably finds a meeting
+        month_name = _SARB_MEETING_MONTHS.get(m)
+        if month_name:
+            url = f"{SARB_DAM_BASE}/{y}/{month_name}/forecast.pdf"
+            pdf_bytes = _fetch_pdf_bytes(url, headers=BROWSER_HEADERS)
+            if pdf_bytes:
+                return pdf_bytes, url, f"{y:04d}-{m:02d}-01"
+        m -= 1
+        if m == 0:
+            m, y = 12, y - 1
+    return None, None, None
+
+
 def scrape_sarb():
-    """Scrape SARB MPC Statement.
+    """Scrape SARB's MPC forecast report — headline CPI annual projections (#12).
 
-    Note: extraction is currently disabled. Two compounding issues:
-      1. The previous URL (.../monetary-policy-statements/{YEAR}) 404s — that
-         path scheme was retired. The replacement landing page
-         /en/home/publications/statements/mpc-statements returns HTTP 200 but
-         is JS/AEM-rendered: at time of writing it even shows "We are
-         currently experiencing technical difficulties" on its own listing
-         widget and exposes no individual statement links in static HTML.
-      2. The original prose regex was a generic "decimal-near-year" match,
-         which on a real MPC statement also catches policy-rate references,
-         GDP growth, and core/food/services inflation — silently overwriting
-         curated forecasts.
-
-    We hit the new landing page so the workflow no longer 404s, then return
-    None to preserve the curated ZA entry. Proper extraction (PDF parsing
-    once individual statement links are reachable) tracked in #12.
+    SARB publishes a "Summary of selected QPM forecast results" table in each
+    meeting's forecast.pdf. The "1. Headline CPI" row carries quarterly values
+    plus an annual column per year; we align that row to the period header and
+    read the bare-year (annual) columns only. Anchored on the Headline CPI row
+    and the explicit year columns — never prose, never the food/fuel/core rows,
+    and never the parenthesised previous-meeting comparison row (CLAUDE.md #2).
+    Values use SA decimal commas ("3,0" → 3.0).
     """
     print("📊 Scraping SARB...")
 
-    index_url = "https://www.resbank.co.za/en/home/publications/statements/mpc-statements"
-    html = fetch_url(index_url)
-    if not html:
+    pdf_bytes, pdf_url, pub_date = _discover_sarb_forecast_pdf()
+    if not pdf_bytes:
+        print("  ⏸️  scrape_sarb: no forecast report PDF reachable; preserving curated ZA forecast")
+        return None
+    print(f"  ℹ️  SARB forecast report: {pdf_url} ({len(pdf_bytes)} bytes)")
+
+    try:
+        import pdfplumber
+    except ImportError:
+        print("  ❌ pdfplumber not installed — add it to workflow requirements")
+        return None
+    import io
+    try:
+        with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+            text = "\n".join((p.extract_text() or "") for p in pdf.pages)
+    except Exception as e:
+        print(f"  ⚠️  pdfplumber failed to parse SARB PDF: {type(e).__name__}: {e}")
         return None
 
-    print(f"  ℹ️  SARB MPC statements landing page reachable: {index_url}")
-    print("  ⏸️  scrape_sarb: extractor disabled — listing page is JS-rendered "
-          "and lacks static statement links; preserving curated ZA forecast")
-    return None
+    lines = text.splitlines()
+    # Period header: the row carrying the quarter + annual column labels, e.g.
+    # "(year-on-year) 25Q1 25Q2 25Q3 25Q4 2025 26Q1 ... 2028 Steady state".
+    header = next((l for l in lines
+                   if len(re.findall(r'\d{2}Q\d', l)) >= 3
+                   and len(re.findall(r'20\d{2}', l)) >= 2), None)
+    if not header:
+        print("  ⏸️  scrape_sarb: QPM period header not found; preserving curated ZA forecast")
+        return None
+    period_tokens = re.findall(r'\d{2}Q\d|20\d{2}', header)
+
+    # Current-meeting Headline CPI row (not the parenthesised previous-forecast
+    # row, which starts with "(").
+    data = next((l for l in lines
+                 if re.match(r'\s*\d*\.?\s*Headline CPI', l)
+                 and len(re.findall(r'-?\d+,\d+', l)) >= len(period_tokens)), None)
+    if not data:
+        print("  ⏸️  scrape_sarb: Headline CPI row not found; preserving curated ZA forecast")
+        return None
+    values = re.findall(r'-?\d+,\d+', data)
+
+    projections = []
+    for i, tok in enumerate(period_tokens):
+        if re.fullmatch(r'20\d{2}', tok) and i < len(values):
+            year = int(tok)
+            if year >= CURRENT_YEAR:  # drop already-elapsed years
+                val = float(values[i].replace(',', '.'))
+                if -5.0 <= val <= 25.0:  # ZA headline CPI sanity band
+                    projections.append({"year": str(year), "value": round(val, 2)})
+
+    if not projections:
+        print("  ⏸️  scrape_sarb: no annual Headline CPI columns parsed; preserving curated ZA forecast")
+        return None
+
+    print(f"  ✅ SARB Headline CPI (annual): {projections}")
+    return {
+        "bank": "South African Reserve Bank",
+        "country": "ZA",
+        "metric": "Headline CPI (MPC QPM projection, annual average)",
+        "source": "SARB MPC forecast report (QPM)",
+        "source_url": pdf_url,
+        "source_date": pub_date,
+        "projections": projections,
+    }
+
 
 
 MAS_SPF_INDEX = "https://www.mas.gov.sg/monetary-policy/mas-survey-of-professional-forecasters"
