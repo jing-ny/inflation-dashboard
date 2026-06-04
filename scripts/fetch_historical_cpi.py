@@ -216,9 +216,10 @@ COUNTRIES = {
         "name": "Brazil",
         "flag": "🇧🇷",
         "target": 3.0,
+        "api": "IBGE",  # primary national source (SIDRA); fresher than FRED-OECD (#54)
         "source": "IBGE",
         "source_url": "https://www.ibge.gov.br/en/statistics/economic/prices-and-costs.html",
-        "fred_series": "BRACPIALLMINMEI",
+        "fred_series": "BRACPIALLMINMEI",  # fallback if SIDRA is unreachable
         "frequency": "monthly",
         "data_type": "index",
         "notes": "BCB target 3% with 1.5pp tolerance band (1.5-4.5%)",
@@ -476,6 +477,51 @@ def fetch_ecb_series(series_id: str, start_date: str = "2015-01-01") -> List[Dic
 # YoY Calculation
 # -----------------------------------------------------------------------------
 
+def fetch_ibge_ipca_series(table: int = 1737, variable: int = 2266,
+                           last_n: int = 24) -> List[Dict]:
+    """Fetch Brazil's IPCA headline inflation from IBGE's SIDRA API (#54).
+
+    Primary national source — fresher than FRED's OECD relay. No API key.
+    Table 1737 = IPCA historical series; variable 2266 = "variação acumulada
+    em 12 meses" (the 12-month / YoY headline rate), so values are already YoY
+    and need no index calc (like the ONS path).
+
+    SIDRA returns a JSON array whose first element is a header row; each data
+    row has the value under "V" and the period as a YYYYMM code in one of its
+    "*C" fields. We locate the period defensively (the 6-digit 20xxxx value)
+    rather than hard-coding a dimension index.
+
+    Returns observations as [{"date": "YYYY-MM-01", "value": float}] ascending.
+    """
+    url = (f"https://apisidra.ibge.gov.br/values/t/{table}/n1/1"
+           f"/v/{variable}/p/last%20{last_n}")
+    resp = requests.get(url, timeout=30)
+    resp.raise_for_status()
+    data = resp.json()
+
+    observations = []
+    for row in data[1:]:  # row[0] is the human-readable header
+        try:
+            value = float(row.get("V"))
+        except (TypeError, ValueError):
+            continue  # missing periods come back as "..." / "-"
+        period = next((s for s in row.values()
+                       if isinstance(s, str) and len(s) == 6
+                       and s.isdigit() and s.startswith("20")), None)
+        if not period:
+            continue
+        observations.append({
+            "date": f"{period[:4]}-{period[4:6]}-01",
+            "value": round(value, 2),
+        })
+
+    observations.sort(key=lambda x: x["date"])
+    return observations
+
+
+# YoY Calculation
+# -----------------------------------------------------------------------------
+
 def calculate_yoy_from_index(observations: List[Dict], frequency: str = "monthly") -> List[Dict]:
     """
     Calculate Year-over-Year inflation rate from CPI index values.
@@ -560,6 +606,21 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(ONS failed: {e}; falling back to FRED)...", end=" ")
+                    raw_data = fetch_fred_series(config["fred_series"])
+                    yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
+                else:
+                    raise
+        elif config.get("api") == "IBGE":
+            # Direct IBGE SIDRA API — IPCA 12-month rate (already YoY). #54
+            try:
+                raw_data = fetch_ibge_ipca_series()
+                if not raw_data:
+                    raise ValueError("No data returned from IBGE SIDRA")
+                yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)}
+                           for obs in raw_data]
+            except Exception as e:
+                if config.get("fred_series"):
+                    print(f"(IBGE failed: {e}; falling back to FRED)...", end=" ")
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:
