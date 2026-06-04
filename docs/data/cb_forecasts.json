@@ -245,20 +245,22 @@
       "flag": "🇻🇪",
       "source": "IMF",
       "source_full": "IMF World Economic Outlook",
-      "source_url": "https://www.imf.org/en/Publications/WEO",
-      "publication_date": "October 2025",
+      "source_url": "https://www.imf.org/en/publications/weo/issues/2026/04/14/world-economic-outlook-april-2026",
+      "publication_date": "April 2026",
       "forecast_type": "IMF staff projection (CPI)",
-      "note": "Post-hyperinflation recovery. BCV does not publish forecasts. Data reliability uncertain. Actual 2025 inflation was ~475%.",
+      "note": "BCV publishes no standardized inflation forecast, so this row tracks the IMF World Economic Outlook (auto-updated each April & October). Official data reliability remains contested; treat the figure as a coarse estimate.",
       "projections": {
-        "2025": 150,
-        "2026": 80,
-        "2027": 50
+        "2026": 387.4,
+        "2027": 94.4
       },
       "key_quote": "Inflation moderating from hyperinflation peak but remains elevated",
       "policy_rate": {
         "rate": "N/A",
         "last_change": "—"
-      }
+      },
+      "scraper_status": "imf_sourced",
+      "scraper_status_reason": "BCV publishes no standardized forecast; row tracks IMF WEO (auto-updated each April & October)",
+      "source_date": "2026-06-01"
     },
     "BR": {
       "flag": "🇧🇷",
@@ -303,20 +305,26 @@
       "flag": "🇨🇳",
       "source": "IMF",
       "source_full": "IMF World Economic Outlook",
-      "source_url": "https://www.imf.org/en/Publications/WEO",
-      "publication_date": "October 2025",
+      "source_url": "https://www.imf.org/en/publications/weo/issues/2026/04/14/world-economic-outlook-april-2026",
+      "publication_date": "April 2026",
       "forecast_type": "IMF staff projection (CPI)",
-      "note": "PBoC does not publish inflation forecasts. IMF projections used. 1Y LPR held at 3.00% for 10 consecutive months.",
+      "note": "PBoC publishes no standardized inflation forecast, so this row tracks the IMF World Economic Outlook (auto-updated each April & October). 1Y LPR held at 3.00% for 10 consecutive months.",
       "projections": {
-        "2025": 0.5,
         "2026": 1.2,
-        "2027": 1.8
+        "2027": 1.5,
+        "2028": 1.8,
+        "2029": 1.9,
+        "2030": 2,
+        "2031": 2
       },
       "key_quote": "Deflationary pressures amid weak domestic demand",
       "policy_rate": {
         "rate": "3.00%",
         "last_change": "— Mar 2026 (hold)"
-      }
+      },
+      "scraper_status": "imf_sourced",
+      "scraper_status_reason": "PBoC publishes no standardized forecast; row tracks IMF WEO (auto-updated each April & October)",
+      "source_date": "2026-06-01"
     }
   }
 }

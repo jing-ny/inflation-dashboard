@@ -4,6 +4,27 @@ All notable changes to the Inflation Dashboard project are documented here.
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- **Misleading "stale" freshness signal on CN & VE (#43, #44):** the China and Venezuela
+  Outlook rows are IMF-sourced (PBoC/BCV publish no standardized inflation forecast), but
+  their `publication_date` was a frozen manual string that aged red — implying a broken
+  scraper where none exists. These rows now carry `scraper_status: "imf_sourced"` and are
+  auto-synced from `imf_forecasts.json` on every IMF refresh (April/October cadence), with
+  full provenance (`source_url`, `source_date`) on the record. The Outlook table renders a
+  distinct neutral "IMF WEO {edition}" badge instead of a red pill — and still ages to red
+  if the IMF pipeline itself stalls. VE's curated 2026 figure (80%) was corrected to the
+  current WEO value (387.4%) as a side effect of the sync.
+
+### Added
+- **`fetch_imf_forecasts.py` → `sync_imf_sourced_cb_forecasts()`:** keeps any row flagged
+  `scraper_status: "imf_sourced"` in `cb_forecasts.json` in lockstep with the IMF WEO data,
+  so IMF-backed CB rows refresh automatically rather than drifting stale (CLAUDE.md #1/#3/#4).
+- **`imfSourcedPill()` freshness helper** + `.freshness-imf` style for the new badge.
+
+---
+
 ## [1.3.0] - 2026-04-22
 
 ### Changed

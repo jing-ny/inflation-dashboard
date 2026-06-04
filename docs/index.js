@@ -250,6 +250,7 @@ async function loadOutlookTable() {
             // Format source with date abbreviation
             const sourceDate = forecast.publication_date
                 .replace('January', 'Jan').replace('February', 'Feb').replace('March', 'Mar')
+                .replace('April', 'Apr').replace('September', 'Sep')
                 .replace('December', 'Dec').replace('November', 'Nov').replace('October', 'Oct')
                 .replace('2025', "'25").replace('2026', "'26");
 
@@ -273,7 +274,15 @@ async function loadOutlookTable() {
             //      AND append a "pending review" chip if there's a draft
             //      blocked by the 1pp anomaly gate (CLAUDE.md #2, #32).
             let freshnessCell;
-            if (forecast.scraper_status === 'disabled') {
+            if (forecast.scraper_status === 'imf_sourced') {
+                // Row tracks the IMF WEO (no CB scraper by design — #43/#44).
+                // Still tally by freshness tier so the footer totals stay
+                // honest and a stalled IMF pipeline shows up as very-stale.
+                const fr = freshnessFor(forecast.publication_date, 'forecast');
+                if (fr) freshnessCounts[fr.tier]++;
+                else freshnessCounts.unknown++;
+                freshnessCell = imfSourcedPill(forecast.publication_date, imfData.version);
+            } else if (forecast.scraper_status === 'disabled') {
                 freshnessCounts.paused++;
                 freshnessCell = pausedPill(
                     forecast.scraper_status_issue,
@@ -329,7 +338,9 @@ async function loadOutlookTable() {
             footer.innerHTML = `Data freshness as of ${today} — ${parts.join(' · ')} (${total} sources). ` +
                 `Green ≤ 120d · Amber ≤ 180d · Red &gt; 180d since publication. ` +
                 `Paused rows are explicitly disabled scrapers awaiting fix; curated value preserved. ` +
-                `Pending rows have a draft awaiting human review (see cb_forecasts_draft.json).`;
+                `Pending rows have a draft awaiting human review (see cb_forecasts_draft.json). ` +
+                `<span class="freshness freshness-imf">IMF WEO</span> rows (CN, VE) track the IMF World Economic ` +
+                `Outlook — the central bank publishes no standardized forecast, so there is no CB scraper to break.`;
         }
 
     } catch (error) {

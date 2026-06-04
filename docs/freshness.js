@@ -111,6 +111,36 @@ function pausedPill(issue, reason) {
 }
 
 /**
+ * Render an "IMF-sourced" pill — used for rows whose central bank publishes
+ * no standardized inflation forecast (PBoC, BCV), so the Outlook value tracks
+ * the IMF World Economic Outlook instead (#43 / #44).
+ *
+ * Unlike `pausedPill`, this is NOT a broken-scraper signal: there is no CB
+ * scraper to break by design. The pill names the WEO edition so the reader
+ * understands the value refreshes on the IMF's April/October cadence rather
+ * than a frozen manual date. It still ages via the normal forecast thresholds
+ * so that if the IMF pipeline itself stalls, the staleness stays visible
+ * (CLAUDE.md #4) — a red tier flips the badge to the red treatment.
+ *
+ * `version` is the imf_forecasts.json `version` string (e.g. "April 2026").
+ */
+function imfSourcedPill(publicationDate, version) {
+    const fr = freshnessFor(publicationDate, 'forecast');
+    const shortVer = (version || publicationDate || '')
+        .replace('January', 'Jan').replace('February', 'Feb').replace('March', 'Mar')
+        .replace('April', 'Apr').replace('August', 'Aug').replace('September', 'Sep')
+        .replace('October', 'Oct').replace('November', 'Nov').replace('December', 'Dec')
+        .replace(/(\d{2})(\d{2})/, "'$2");
+    const stale = fr && fr.tier === 'red';
+    const cls = stale ? 'freshness-red' : 'freshness-imf';
+    const age = fr ? `${fr.days} days since the ${version || 'WEO'} release` : 'release date unknown';
+    const title = `Tracks the IMF World Economic Outlook (auto-updated each April & October). ` +
+        `The central bank publishes no standardized inflation forecast, so there is no CB scraper for this row. ${age}.`;
+    const label = `IMF WEO${shortVer ? ' ' + shortVer : ''}${stale ? ' · stale' : ''}`;
+    return `<span class="freshness ${cls}" title="${title}">${label}</span>`;
+}
+
+/**
  * Render a "pending review" chip — used when the auto-scraper produced a
  * new value but the change exceeded the 1pp anomaly gate and was routed
  * to cb_forecasts_draft.json for manual review (CLAUDE.md #2: this row's

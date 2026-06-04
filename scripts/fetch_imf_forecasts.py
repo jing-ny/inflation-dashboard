@@ -189,6 +189,83 @@ def fetch_imf_forecasts() -> Dict:
     return result
 
 
+def sync_imf_sourced_cb_forecasts(imf_data: Optional[Dict] = None) -> int:
+    """
+    Keep IMF-sourced rows in cb_forecasts.json in lockstep with the IMF WEO.
+
+    Some central banks (PBoC, BCV) publish no standardized inflation forecast,
+    so their Outlook rows display the IMF projection instead. Rather than a
+    hand-maintained copy that silently ages (the misleading "broken scraper"
+    red pill of #43 / #44), those rows are flagged
+
+        "scraper_status": "imf_sourced"
+
+    and refreshed from imf_forecasts.json every time this script runs — the
+    same April/October cadence as the rest of the IMF pipeline. This satisfies
+    CLAUDE.md #1 (automation-first, no manual entry), #3 (provenance on the
+    record via source_url + source_date) and #4 (freshness tracks the real
+    WEO release date, not a frozen string).
+
+    `imf_data` is the freshly fetched payload; if None we read the on-disk
+    imf_forecasts.json (so the sync can be run standalone).
+
+    Returns the number of rows updated.
+    """
+    if imf_data is None:
+        imf_path = OUTPUT_DIR / "imf_forecasts.json"
+        if not imf_path.exists():
+            print("  sync: imf_forecasts.json not found; skipping CB sync")
+            return 0
+        with open(imf_path, encoding="utf-8") as f:
+            imf_data = json.load(f)
+
+    cb_path = OUTPUT_DIR / "cb_forecasts.json"
+    if not cb_path.exists():
+        print("  sync: cb_forecasts.json not found; skipping CB sync")
+        return 0
+
+    with open(cb_path, encoding="utf-8") as f:
+        cb_data = json.load(f)
+
+    imf_countries = imf_data.get("countries", {})
+    version = imf_data.get("version")
+    retrieved = imf_data.get("retrieved")
+    source_url = imf_data.get("publication_url") or imf_data.get("url")
+
+    updated = 0
+    for code, forecast in cb_data.get("forecasts", {}).items():
+        if forecast.get("scraper_status") != "imf_sourced":
+            continue
+
+        imf_country = imf_countries.get(code)
+        if not imf_country or not imf_country.get("forecasts"):
+            # Don't blank out a curated row if the IMF feed is missing this
+            # country — leave the last-known values and let the freshness pill
+            # age (CLAUDE.md #4: visible staleness beats a silent wipe).
+            print(f"  sync: {code} flagged imf_sourced but absent from IMF feed; left unchanged")
+            continue
+
+        # IMF forecasts are keyed by year-as-string. Carry them over verbatim
+        # so the Outlook "CB" cell and the IMF column agree by construction.
+        forecast["projections"] = dict(imf_country["forecasts"])
+        if version:
+            forecast["publication_date"] = version
+        if source_url:
+            forecast["source_url"] = source_url
+        if retrieved:
+            forecast["source_date"] = retrieved
+        updated += 1
+        print(f"  sync: {code} <- IMF WEO {version} ({forecast['projections']})")
+
+    if updated:
+        with open(cb_path, "w", encoding="utf-8") as f:
+            json.dump(cb_data, f, indent=2, ensure_ascii=False)
+            f.write("\n")
+        print(f"  sync: updated {updated} IMF-sourced row(s) in cb_forecasts.json")
+
+    return updated
+
+
 def save_json(data: Dict, filename: str):
     """Save data to JSON file."""
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -213,7 +290,12 @@ def main():
     if imf_data:
         # Save to JSON
         save_json(imf_data, "imf_forecasts.json")
-        
+
+        # Keep IMF-sourced CB rows (CN, VE) in step with the fresh WEO data.
+        print()
+        print("Syncing IMF-sourced cb_forecasts rows...")
+        sync_imf_sourced_cb_forecasts(imf_data)
+
         # Print summary
         print()
         print(f"Source: {imf_data['source']}")
