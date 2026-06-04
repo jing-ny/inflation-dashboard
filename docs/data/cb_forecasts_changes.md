@@ -1,21 +1,18 @@
 # Central Bank Forecast Changes
 
-**Generated:** 2026-06-01 16:10 UTC
+**Generated:** 2026-06-04 14:29 UTC
 
-**Auto-merged (6):** US, JP, BR, EA, AU, CA
+**Auto-merged (1):** SG
 
-### Banco Central do Brasil (BR)
-- **Source:** [BCB Focus Market Readout (Olinda API)](https://www.bcb.gov.br/en/publications/focusmarketreadout)
-- **Metric:** IPCA — Focus survey median
-- **Publication:** 2026-05-29
+### Monetary Authority of Singapore (SG)
+- **Source:** [MAS Survey of Professional Forecasters](https://www.mas.gov.sg/-/media/mas-media-library/monetary-policy/mas-survey-of-professional-forecasters/2026/survey-writeup-mar-2026-web.pdf)
+- **Metric:** CPI-All Items inflation (SPF median forecast)
+- **Publication:** 2026-03-01
 - **Projections:**
-  - 2026: **5.09%**
-  - 2027: **4.02%**
-  - 2028: **3.66%**
-  - 2029: **3.5%**
-  - 2030: **3.5%**
+  - 2025: **0.9%**
+  - 2026: **1.5%**
+  - 2027: **1.7%**
 
 ## Changes Detected
 
-- **Banco Central do Brasil** 2026: 5.04% → 5.09%
-- **Banco Central do Brasil** 2028: 3.65% → 3.66%
+- **Monetary Authority of Singapore** 2027: 1.8% → 1.7%
