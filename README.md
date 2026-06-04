@@ -72,7 +72,7 @@ Every figure displayed can be traced back to its original source.
 
 Two practical constraints are worth knowing up front (both detailed in [METHODOLOGY.md](METHODOLOGY.md)):
 
-- **Some countries lag.** US, Euro Area, UK and Canada pull from their primary national APIs and stay current; the rest come through **FRED's OECD relay, which re-publishes national CPI 1–3 months (sometimes more) late**. So a row can read amber/red even though the weekly updater ran fine — the data is simply as fresh as that relay allows.
+- **Some countries lag.** US, Euro Area, UK, Canada and Australia pull from their primary national APIs and stay current; the rest come through **FRED's OECD relay, which re-publishes national CPI 1–3 months (sometimes more) late**. So a row can read amber/red even though the weekly updater ran fine — the data is simply as fresh as that relay allows.
 - **Freshness colors are cadence-aware.** Pills age from the data point's *reference period*, with thresholds matched to monthly vs quarterly release schedules, so green ≈ "latest release", amber ≈ "a release behind", red ≈ "genuinely lagging".
 
 For full detail — including why moving a country onto its national source depends on that API being reachable from GitHub's runners — see [METHODOLOGY.md](METHODOLOGY.md).

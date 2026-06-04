@@ -106,21 +106,20 @@ CPI actuals are fetched per country by [`scripts/fetch_historical_cpi.py`](scrip
 
 **Two classes of source:**
 
-- **Direct primary/national API (fresh):** US → BLS, Euro Area → ECB, UK → ONS, Canada → StatCan. These track the national release closely.
-- **FRED's OECD relay (laggy):** everyone else (AU, NZ, ZA, JP, CN, IN, KR, BR, MX; SG via World Bank, VE via World Bank). The OECD aggregates and **re-publishes national CPI with a 1–3 month delay (sometimes 6–12)**, so these rows can sit a release or two behind the national agency *even though the weekly `Update Inflation Data` workflow runs and succeeds.* This — not a broken pipeline — is the usual reason a Current Inflation cell reads amber/red.
+- **Direct primary/national API (fresh):** US → BLS, Euro Area → ECB, UK → ONS, Canada → StatCan, Australia → ABS (monthly CPI indicator, #50). These track the national release closely.
+- **FRED's OECD relay (laggy):** the rest (NZ, ZA, JP, CN, IN, KR, BR, MX; SG via World Bank, VE via World Bank). The OECD aggregates and **re-publishes national CPI with a 1–3 month delay (sometimes 6–12)**, so these rows can sit a release or two behind the national agency *even though the weekly `Update Inflation Data` workflow runs and succeeds.* This — not a broken pipeline — is the usual reason a Current Inflation cell reads amber/red.
 
 | Country | Source path | Typical lag vs national release |
 |---------|-------------|---------------------------------|
-| US, EA, UK, CA | Direct (BLS / ECB / ONS / StatCan) | ~current |
+| US, EA, UK, CA, AU | Direct (BLS / ECB / ONS / StatCan / ABS) | ~current |
 | South Africa | FRED-OECD | 6–12 months |
-| Australia | FRED-OECD (quarterly; ABS itself is now monthly) | 1–3 months |
 | New Zealand | FRED-OECD (quarterly) | quarterly cadence |
 | Japan, Korea | FRED (COICOP index) | 1–3 months; manual supplement sometimes needed |
 | China, India, Brazil, Mexico | FRED-OECD | 1–3 months |
 | Singapore | FRED (World Bank annual — OECD series broken) | coarse |
 | Venezuela | FRED (World Bank) | irregular / contested |
 
-**Runner reachability is the gating constraint.** "Just switch the laggy countries to their national API" is the obvious fix (tracked per country in issues [#50–#60](https://github.com/jing-ny/inflation-dashboard/issues)), **but it only works if that API answers from where our automation actually runs** — GitHub Actions (Azure-hosted runners). Several national statistics APIs do **not** route to those cloud IPs. Observed example: IBGE's SIDRA API (`apisidra.ibge.gov.br`) **connection-times-out from GitHub runners**, so a Brazil-via-SIDRA path falls back to FRED and yields no benefit. The fetchers that work today (BLS/ONS/StatCan/ECB) are all CDN/large-institution endpoints that are reachable from cloud infra. So before adopting a new source, confirm it is reachable from a GitHub runner (the `update-data` workflow accepts a single-country dry-run for exactly this), and always keep the FRED series as a `fred_series` fallback.
+**Runner reachability is the gating constraint.** "Just switch the laggy countries to their national API" is the obvious fix (tracked per country in issues [#50–#60](https://github.com/jing-ny/inflation-dashboard/issues)), **but it only works if that API answers from where our automation actually runs** — GitHub Actions (Azure-hosted runners). Several national statistics APIs do **not** route to those cloud IPs. Two observed outcomes: the ABS Data API (`data.api.abs.gov.au`) **is** reachable from runners and now sources Australia directly (#50), whereas IBGE's SIDRA API (`apisidra.ibge.gov.br`) **connection-times-out from GitHub runners**, so a Brazil-via-SIDRA path falls back to FRED and yields no benefit (#54, deferred). The fetchers that work today (BLS/ONS/StatCan/ECB/ABS) are all CDN/large-institution endpoints reachable from cloud infra. So before adopting a new source, confirm it is reachable from a GitHub runner (the `update-data` workflow accepts a single-country dry-run for exactly this), and always keep the FRED series as a `fred_series` fallback.
 
 > **Note for contributors / forks:** there are *two* network environments to keep distinct. (1) Claude Code's dev sandbox has **allowlisted egress** — most central-bank, IMF and national-stats hosts are unreachable from it, so source-touching code is validated on GitHub's runners, not locally. (2) GitHub's runners have open internet but, as above, some government APIs still refuse their cloud IPs. A source must be reachable from environment (2) to be usable in production, since that is where scheduled updates run.
 
