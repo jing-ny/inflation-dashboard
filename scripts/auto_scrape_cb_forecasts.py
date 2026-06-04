@@ -296,16 +296,16 @@ def scrape_boe():
         print(f"  ⚠️  pdfplumber failed to parse MPR PDF: {type(e).__name__}: {e}")
         return None
 
-    # TEMP diagnostic (#10): surface the forecast-summary region so the parser
-    # can anchor on the right CPI row without a blind round-trip.
-    for ln in text.splitlines():
-        s = ln.strip()
-        low = s.lower()
-        if (low.startswith('cpi inflation')
-                or 'forecast summary' in low
-                or 'modal projection' in low
-                or low.startswith('table 1')):
-            print("      [diag] " + re.sub(r'\s+', ' ', s)[:160])
+    # TEMP diagnostic (#10): print the context above each "CPI inflation (b)"
+    # modal-projection row so we can see the table title + year column header.
+    lines = text.splitlines()
+    for i, ln in enumerate(lines):
+        if re.match(r'\s*CPI inflation \(', ln):
+            print(f"      [diag] --- CPI row at line {i} ---")
+            for j in range(max(0, i - 9), i + 1):
+                t = re.sub(r'\s+', ' ', lines[j]).strip()
+                if t:
+                    print(f"      [diag] {j}: {t[:150]}")
 
     print("  ⏸️  scrape_boe: structured extraction pending diagnostics (#10); "
           "preserving curated UK forecast")
