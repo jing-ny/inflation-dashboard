@@ -187,9 +187,10 @@ COUNTRIES = {
         "target": 4.0,
         "source": "MOSPI",
         "source_url": "https://www.mospi.gov.in/",
-        "fred_series": "INDCPIALLMINMEI",  # OECD index
+        "api": "MoSPI",  # primary national source (CPI press release PDF) (#57)
+        "fred_series": "INDCPIALLMINMEI",  # OECD index — fallback only
         "frequency": "monthly",
-        "data_type": "index",
+        "data_type": "yoy",  # press release states the YoY rate directly
     },
     "KR": {
         "name": "South Korea",
@@ -648,6 +649,71 @@ def fetch_statssa_cpi_series() -> List[Dict]:
     return obs
 
 
+def fetch_mospi_cpi_series() -> List[Dict]:
+    """India headline CPI (YoY %) from the MoSPI CPI press release PDF (#57).
+
+    MoSPI publishes a monthly "CPI Press Release of <Month> <Year>" PDF under
+    /uploads/PressRelease/. We walk back to the latest release and parse the
+    headline All-India CPI (General) year-on-year inflation rate. DIAGNOSTIC
+    PASS: confirms mospi.gov.in is reachable from GitHub runners and dumps the
+    headline text so the parser can anchor precisely. Returns [] (→ FRED).
+    """
+    import io as _io
+    import re as _re
+    from datetime import date
+    try:
+        import pdfplumber
+    except ImportError:
+        print("(pdfplumber not installed)", end=" ")
+        return []
+
+    headers = {"User-Agent": _BROWSER_UA, "Accept": "application/pdf,*/*"}
+    base = "https://www.mospi.gov.in/uploads/PressRelease/"
+    today = date.today()
+    y, m = today.year, today.month
+    pdf_bytes = used_url = None
+    for _ in range(8):
+        for tmpl in (f"CPI Press Release of {_MONTH_NAMES[m]} {y}.pdf",
+                     f"CPI Press Release {_MONTH_NAMES[m]} {y}.pdf"):
+            url = base + tmpl.replace(" ", "%20")
+            try:
+                r = requests.get(url, headers=headers, timeout=30)
+                if r.status_code == 200 and r.content[:4] == b"%PDF":
+                    pdf_bytes, used_url = r.content, url
+                    break
+                print(f"[diag] {tmpl} -> {r.status_code}", end="  ")
+            except Exception as e:
+                print(f"[diag] {tmpl} -> {type(e).__name__}", end="  ")
+        if pdf_bytes:
+            break
+        m -= 1
+        if m == 0:
+            m, y = 12, y - 1
+    if not pdf_bytes:
+        print("[diag] MoSPI: no CPI press release reachable")
+        return []
+
+    print(f"\n    [diag] MoSPI reachable: {used_url} ({len(pdf_bytes)} bytes)")
+    try:
+        with pdfplumber.open(_io.BytesIO(pdf_bytes)) as pdf:
+            text = "\n".join((p.extract_text() or "") for p in pdf.pages[:3])
+    except Exception as e:
+        print(f"    [diag] pdfplumber error: {type(e).__name__}: {e}")
+        return []
+    text = _re.sub(r"[ \t]+", " ", text)
+    shown = 0
+    for ln in text.splitlines():
+        s = ln.strip()
+        low = s.lower()
+        if (("inflation" in low or "year-on-year" in low or "all india" in low)
+                and _re.search(r"\d\.\d", s)):
+            print("      [diag] " + s[:180])
+            shown += 1
+            if shown >= 20:
+                break
+    return []
+
+
 # YoY Calculation
 # -----------------------------------------------------------------------------
 
@@ -735,6 +801,21 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(ONS failed: {e}; falling back to FRED)...", end=" ")
+                    raw_data = fetch_fred_series(config["fred_series"])
+                    yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
+                else:
+                    raise
+        elif config.get("api") == "MoSPI":
+            # Direct MoSPI CPI press release (PDF) — already YoY. #57
+            try:
+                raw_data = fetch_mospi_cpi_series()
+                if not raw_data:
+                    raise ValueError("No data returned from MoSPI press release")
+                yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)}
+                           for obs in raw_data]
+            except Exception as e:
+                if config.get("fred_series"):
+                    print(f"(MoSPI failed: {e}; falling back to FRED)...", end=" ")
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:
