@@ -599,17 +599,31 @@ def fetch_statssa_cpi_series() -> List[Dict]:
         return []
 
     print(f"\n    [diag] StatsSA reachable: {used_url} ({len(pdf_bytes)} bytes)")
+    import re as _re
     try:
         with pdfplumber.open(_io.BytesIO(pdf_bytes)) as pdf:
-            page1 = (pdf.pages[0].extract_text() or "") if pdf.pages else ""
+            pages = pdf.pages
+            texts = []
+            for i, p in enumerate(pages[:6]):
+                t = p.extract_text() or ""
+                texts.append(t)
+                print(f"    [diag] page{i + 1} chars={len(t)}")
+            text = "\n".join(texts)
     except Exception as e:
         print(f"    [diag] pdfplumber error: {type(e).__name__}: {e}")
         return []
-    for ln in page1.splitlines():
+    shown = 0
+    for ln in text.splitlines():
         s = ln.strip()
+        if not s:
+            continue
         low = s.lower()
-        if any(k in low for k in ("annual", "consumer price", "headline", "cpi")) and "%" in s:
+        if (_re.search(r'\d[.,]\d\s*%', s) or 'annual' in low
+                or 'headline' in low or 'consumer price' in low):
             print("      [diag] " + s[:180])
+            shown += 1
+            if shown >= 25:
+                break
     return []
 
 
