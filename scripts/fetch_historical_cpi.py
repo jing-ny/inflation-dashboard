@@ -503,21 +503,31 @@ def fetch_abs_cpi_series() -> List[Dict]:
     fields = reader.fieldnames or []
     print(f"    [diag] ABS reachable, {len(text)} bytes; columns={fields}")
 
-    # Locate the relevant columns defensively (csvfilewithlabels naming varies).
+    # csvfilewithlabels emits BOTH an UPPERCASE code column (e.g. MEASURE = 1..7)
+    # and a Title-case label column (e.g. Measure = "Percentage Change ..."). We
+    # match the YoY measure on the *label* column; periods/values use the code
+    # columns (TIME_PERIOD is ISO "YYYY-MM", OBS_VALUE is numeric).
     def find_col(*needles):
         for f in fields:
-            fl = f.lower()
-            if all(n in fl for n in needles):
+            if all(n in f.lower() for n in needles):
                 return f
         return None
-    measure_col = find_col("measure")
+
+    def find_label_col(*needles):
+        cands = [f for f in fields if all(n in f.lower() for n in needles)]
+        for f in cands:           # prefer a human label (not the all-caps code col)
+            if f != f.upper():
+                return f
+        return cands[0] if cands else None
+
+    measure_col = find_label_col("measure")
     period_col = find_col("time_period") or find_col("time", "period")
     value_col = find_col("obs_value") or find_col("observation", "value")
 
     rows = list(reader)
     measures = sorted({(r.get(measure_col) or "").strip() for r in rows}) if measure_col else []
     print(f"    [diag] measure_col={measure_col!r} period_col={period_col!r} "
-          f"value_col={value_col!r}; measures={measures}")
+          f"value_col={value_col!r}; measure labels={measures}")
 
     obs = []
     if measure_col and period_col and value_col:
