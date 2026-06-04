@@ -50,7 +50,17 @@ function parsePublicationDate(s) {
  * Compute freshness tier + relative-age label for a publication date.
  *
  *   kind = 'forecast'  thresholds 120d / 180d (quarterly CB publications)
- *   kind = 'cpi'       thresholds  45d /  90d (monthly statistical agencies)
+ *   kind = 'cpi'       thresholds depend on the series' publication cadence:
+ *                        monthly   75d / 120d
+ *                        quarterly 135d / 225d (auto-detected from "YYYY-Qn")
+ *
+ * Why the CPI thresholds aren't tighter: official CPI is released a few weeks
+ * after its reference month, and the age here is measured from the *reference
+ * month* (day 1), not the release date. So the freshest-possible monthly print
+ * is already ~45-75 days "old" by this measure, and a quarterly print (e.g. NZ)
+ * stays current for a full quarter. Tighter limits flagged up-to-date data as
+ * stale; these track the real cadence so green ≈ "this is the latest release",
+ * amber ≈ "a release behind", red ≈ "genuinely lagging" (CLAUDE.md #4).
  *
  * Returns { tier, label, days } or null if the input is unparseable.
  */
@@ -59,7 +69,13 @@ function freshnessFor(publicationDate, kind) {
     if (ts == null) return null;
 
     const days = Math.max(0, Math.floor((Date.now() - ts) / 86_400_000));
-    const [t1, t2] = kind === 'forecast' ? [120, 180] : [45, 90];
+    let t1, t2;
+    if (kind === 'forecast') {
+        [t1, t2] = [120, 180];
+    } else {
+        const isQuarterly = /^\s*\d{4}-Q[1-4]\s*$/i.test(publicationDate || '');
+        [t1, t2] = isQuarterly ? [135, 225] : [75, 120];
+    }
     const tier = days <= t1 ? 'green' : days <= t2 ? 'amber' : 'red';
 
     let label;

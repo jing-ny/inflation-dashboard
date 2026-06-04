@@ -99,7 +99,8 @@ async function loadInflationTable() {
                 ? `${target.display} <span class="target-new-badge" title="Target changed Nov 2025">NEW</span>`
                 : target.display;
 
-            // Freshness pill — CPI is monthly cadence (45d/90d thresholds)
+            // Freshness pill — CPI thresholds track each series' cadence
+            // (monthly 75d/120d, quarterly 135d/225d; see freshness.js).
             const fr = freshnessFor(currentDate, 'cpi');
             if (fr) inflationFreshnessCounts[fr.tier]++;
             else inflationFreshnessCounts.unknown++;
@@ -135,7 +136,8 @@ async function loadInflationTable() {
                 parts.push(`<span class="freshness freshness-unknown">${inflationFreshnessCounts.unknown}</span> unknown`);
             }
             inflationFooter.innerHTML = `Data freshness as of ${today} — ${parts.join(' · ')} (${total} countries). ` +
-                `Green ≤ 45d · Amber ≤ 90d · Red &gt; 90d since CPI release.`;
+                `Thresholds track each series' release cadence — monthly: Green ≤ 75d · Amber ≤ 120d · Red &gt; 120d; ` +
+                `quarterly (e.g. NZ): Green ≤ 135d · Amber ≤ 225d — measured from the reference month.`;
         }
 
     } catch (error) {

@@ -6,6 +6,16 @@ All notable changes to the Inflation Dashboard project are documented here.
 
 ## [Unreleased]
 
+### Changed
+- **CPI freshness thresholds now track each series' publication cadence.** The Current
+  Inflation pills are aged from the data point's *reference month*, so the old monthly
+  45d/90d limits flagged even the latest-available release as stale and showed quarterly
+  series (NZ) red while current. Monthly is now 75d/120d and quarterly (auto-detected from
+  `YYYY-Qn`) 135d/225d. Net effect as of 2026-06: current prints (US/EA/UK/CA, and NZ's
+  quarterly Q1) read green, a-release-behind prints (BR/MX/CN/IN/KR) amber, and the
+  genuinely-lagging ones (AU/JP/SG/ZA at Feb, sourced via FRED's slower OECD relay) stay
+  red — preserving CLAUDE.md #4 while removing the false positives.
+
 ### Fixed
 - **Misleading "stale" freshness signal on CN & VE (#43, #44):** the China and Venezuela
   Outlook rows are IMF-sourced (PBoC/BCV publish no standardized inflation forecast), but
