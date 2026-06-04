@@ -900,35 +900,72 @@ def scrape_bcb():
 
 
 def scrape_sarb():
-    """Scrape SARB MPC Statement.
+    """Scrape SARB MPC forecast report (#12).
 
-    Note: extraction is currently disabled. Two compounding issues:
-      1. The previous URL (.../monetary-policy-statements/{YEAR}) 404s — that
-         path scheme was retired. The replacement landing page
-         /en/home/publications/statements/mpc-statements returns HTTP 200 but
-         is JS/AEM-rendered: at time of writing it even shows "We are
-         currently experiencing technical difficulties" on its own listing
-         widget and exposes no individual statement links in static HTML.
-      2. The original prose regex was a generic "decimal-near-year" match,
-         which on a real MPC statement also catches policy-rate references,
-         GDP growth, and core/food/services inflation — silently overwriting
-         curated forecasts.
-
-    We hit the new landing page so the workflow no longer 404s, then return
-    None to preserve the curated ZA entry. Proper extraction (PDF parsing
-    once individual statement links are reachable) tracked in #12.
+    SARB's MPC statement listing is JS-rendered (AEM), but the publications
+    live at predictable /content/dam/sarb/... paths, and each meeting has a
+    dedicated "MPC forecast report" PDF (.../<year>/<month>/forecast.pdf) that
+    carries the QPM headline-CPI projection table. This pass is diagnostic: it
+    probes which URLs the runner can reach and dumps the forecast PDF's CPI
+    rows so the parser can anchor on the headline row (#12 / CLAUDE.md #2).
     """
     print("📊 Scraping SARB...")
 
-    index_url = "https://www.resbank.co.za/en/home/publications/statements/mpc-statements"
-    html = fetch_url(index_url)
-    if not html:
-        return None
+    base = "https://www.resbank.co.za"
+    detail_base = base + "/en/home/publications/publication-detail-pages/statements/monetary-policy-statements"
+    dam_base = base + "/content/dam/sarb/publications/statements/monetary-policy-statements"
 
-    print(f"  ℹ️  SARB MPC statements landing page reachable: {index_url}")
-    print("  ⏸️  scrape_sarb: extractor disabled — listing page is JS-rendered "
-          "and lacks static statement links; preserving curated ZA forecast")
+    # 1) Can we reach the listing / committee pages, and do they expose static
+    #    links to detail pages or dam PDFs?
+    for label, url in [
+        ("mpc-statements landing", base + "/en/home/publications/statements/mpc-statements"),
+        ("committee page", base + "/en/home/what-we-do/monetary-policy/monetary-policy-committee"),
+    ]:
+        html = fetch_url(url, headers=BROWSER_HEADERS)
+        if not html:
+            print(f"  [diag] {label}: NOT reachable")
+            continue
+        dam = sorted(set(re.findall(r'/content/dam/sarb/[^"\']+?\.pdf', html, re.I)))
+        details = sorted(set(re.findall(r'monetary-policy-statements/(20\d{2}/[a-z]+)', html, re.I)))
+        print(f"  [diag] {label}: {len(html)} bytes; {len(dam)} dam-pdf link(s), "
+              f"{len(details)} detail link(s)")
+        for d in dam[:5]:
+            print(f"      [diag] pdf: {d}")
+        for d in details[:8]:
+            print(f"      [diag] detail: {d}")
+
+    # 2) Try the predictable forecast.pdf for recent 2026 meetings and dump the
+    #    CPI rows from the first one that loads.
+    try:
+        import pdfplumber
+    except ImportError:
+        print("  ❌ pdfplumber not installed")
+        return None
+    import io
+    for month in ("may", "march", "january"):
+        for fname in ("forecast.pdf", f"{month}-statement.pdf"):
+            url = f"{dam_base}/2026/{month}/{fname}"
+            pdf_bytes = _fetch_pdf_bytes(url, headers=BROWSER_HEADERS)
+            if pdf_bytes is None:
+                continue
+            print(f"  [diag] fetched {url} ({len(pdf_bytes)} bytes)")
+            try:
+                with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+                    text = "\n".join((p.extract_text() or "") for p in pdf.pages)
+            except Exception as e:
+                print(f"  [diag] pdfplumber error: {type(e).__name__}: {e}")
+                continue
+            for ln in text.splitlines():
+                s = ln.strip()
+                if re.search(r'(headline|cpi|inflation)', s, re.I) and re.search(r'\d', s):
+                    clean = re.sub(r'\s+', ' ', s)[:160]
+                    print("      [diag] " + clean)
+            print("  ⏸️  scrape_sarb: diagnostic only — preserving curated ZA forecast")
+            return None
+
+    print("  ⏸️  scrape_sarb: no forecast PDF reachable this pass; preserving curated ZA forecast")
     return None
+
 
 
 MAS_SPF_INDEX = "https://www.mas.gov.sg/monetary-policy/mas-survey-of-professional-forecasters"
