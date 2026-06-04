@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "last_updated": "2026-06-01",
+    "last_updated": "2026-06-04",
     "source": "Official national statistical agencies"
   },
   "US": {
@@ -3858,12 +3858,12 @@
     "source": "Australian Bureau of Statistics",
     "last_updated": "2026-04-22",
     "latest": {
-      "date": "2026-02",
-      "value": 3.7
+      "date": "2026-04",
+      "value": 4.2
     },
     "previous": {
-      "date": "2026-01",
-      "value": 3.8
+      "date": "2026-03",
+      "value": 4.6
     },
     "history": [
       {
@@ -4159,6 +4159,42 @@
         "value": 2.4
       },
       {
+        "date": "2025-04",
+        "value": 2.4
+      },
+      {
+        "date": "2025-05",
+        "value": 2.1
+      },
+      {
+        "date": "2025-06",
+        "value": 1.9
+      },
+      {
+        "date": "2025-07",
+        "value": 3.0
+      },
+      {
+        "date": "2025-08",
+        "value": 3.2
+      },
+      {
+        "date": "2025-09",
+        "value": 3.6
+      },
+      {
+        "date": "2025-10",
+        "value": 3.8
+      },
+      {
+        "date": "2025-11",
+        "value": 3.4
+      },
+      {
+        "date": "2025-12",
+        "value": 3.8
+      },
+      {
         "date": "2025-Q1",
         "value": 2.4
       },
@@ -4169,6 +4205,14 @@
       {
         "date": "2026-02",
         "value": 3.7
+      },
+      {
+        "date": "2026-03",
+        "value": 4.6
+      },
+      {
+        "date": "2026-04",
+        "value": 4.2
       }
     ],
     "notes": "ABS transitioned to monthly CPI in late 2025. FRED still quarterly."
