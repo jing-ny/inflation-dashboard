@@ -1,26 +1,24 @@
 # Inflation Newsletter — 2026-06-04
 
-Australia jolted global inflation watchers this week, jumping half a point to 4.2% in April — the only material move across major economies. The Reserve Bank's dual rate hikes earlier this year now look prescient, with trimmed mean inflation expected to peak at 3.7% mid-year before retreating.
+The global inflation picture showed unusual stability in April, with only two countries posting material moves: Australia's CPI jumped 0.5 percentage points to 4.2%, while South Africa surged a full point to 4.0%. Elsewhere, major economies held steady—the US at 3.8%, Euro Area at 3.0%, and the UK at 2.8%.
 
-Elsewhere, the picture stayed frozen. The US held at 3.8%, the Euro Area at 3.0%, and the UK at 2.8%. Even emerging markets showed little movement: Mexico steady at 4.6%, Brazil at 4.1%, China at 1.0%.
+**Australia and South Africa break ranks**
 
-## Central bank tensions emerge
+Australia's surprise acceleration pushed inflation well above the RBA's 2-3% target band, validating the central bank's twin rate hikes earlier this year to 4.10%. The RBA's May forecast sees trimmed mean inflation peaking at 3.7% mid-year before retreating to target by early 2027. South Africa's jump prompted the SARB to raise rates 25 basis points to 7.00% in May, with officials projecting headline CPI averaging 4.4% through 2026 before returning to the 3% target in 2028.
 
-The divergence between official forecasts and IMF projections is widening. Brazil's central bank sees inflation hitting 5.1% this year — well above the IMF's 4.0% estimate and the Focus survey's 5.7% consensus. Mexico's Banxico projects 3.8% against the IMF's 3.9%, a closer but still notable gap.
+**Major economies hold pattern**
 
-China presents the starkest disconnect. The IMF's 1.2% forecast sits against actual readings of 1.0%, while the People's Bank maintains its 1-year lending rate at 3.0% for the tenth consecutive month. With growth concerns mounting, Beijing's policy calculus appears anchored on stimulus over inflation control.
+The stability in core developed markets masks underlying tensions. The US sits at 3.8%—well above the Fed's 2% target—while policymakers signal just one cut for 2026. The Euro Area's 3.0% reading stays uncomfortably above the ECB's target, though the central bank has held rates at 2.00% since its March revision. Japan's February print of 1.3% looks increasingly dated, with the BoJ expecting temporary dips below 2% before energy costs push inflation higher.
 
-## Middle East shock reverberates
+**IMF revisions reflect energy shock**
 
-The IMF's April World Economic Outlook captured the full energy price impact from Middle East tensions, pushing global inflation forecasts up 0.4 percentage points to 4.4%. Advanced economies bore the brunt: US projections rose 0.8 points, Euro Area and UK each up 0.7 points, with Australia and New Zealand seeing full percentage-point revisions.
+The Fund's April WEO captured the Middle East oil price disruption, lifting global inflation forecasts to 4.4% for 2026. The most dramatic revisions hit advanced economies: Australia and New Zealand up 1.0 percentage point each, with the US, Euro Area, and UK each revised up 0.7-0.8 points. The Fund warned that severe-scenario alternatives could push global inflation above 6%.
 
-The ECB's March pivot was particularly sharp, revising 2026 inflation from 1.9% to 2.6% and holding rates at 2.0%. The Bank of England abandoned single-point forecasts entirely, offering scenario ranges spanning 3.1-3.6% for 2026 — a rare acknowledgment of forecast uncertainty.
+**Watch for divergence**
 
-## What to watch
+The Australia-South Africa breakout suggests energy pass-through effects may be uneven across economies. Brazil's 4.1% stability looks fragile given the BCB's aggressive tightening to 14.25%, while China's 1.0% March reading remains well below global trends. Key releases ahead include updated UK projections following the BoE's scenario-based April framework.
 
-Brazil's inflation expectations remain the key stress test, with the central bank's 5.1% projection sitting uncomfortably above target. Australia's trimmed mean peak timing will signal whether the RBA's tightening cycle is complete. The October IMF update will show whether energy-driven revisions prove temporary or mark a structural shift higher.
-
-[Full dashboard: https://jing-ny.github.io/inflation-dashboard/]
+Track all updates: https://jing-ny.github.io/inflation-dashboard/
 
 ---
 
