@@ -27,14 +27,21 @@ Every data point displayed on the dashboard is rendered with a colored "freshnes
 
 | Data type | Green | Amber | Red |
 |---|---|---|---|
-| **Monthly CPI** (Current Inflation table, country-page hero) | ≤ 45 days | ≤ 90 days | > 90 days |
+| **Monthly CPI** (Current Inflation table, country-page hero) | ≤ 75 days | ≤ 120 days | > 120 days |
+| **Quarterly CPI** (e.g. NZ — auto-detected from `YYYY-Qn`) | ≤ 135 days | ≤ 225 days | > 225 days |
 | **CB forecasts** (Outlook table) | ≤ 120 days | ≤ 180 days | > 180 days |
 
 Each table also has a **footer summary** counting current / stale / very-stale entries, and the threshold definitions are restated for transparency.
 
-Quarterly sources (NZ CPI, IMF WEO) and irregular sources (VE) use the same thresholds — they will naturally read amber/red for most of the cycle, which is the correct signal: "this number is X months old, judge it accordingly."
+**Why the CPI thresholds are not tighter — and are cadence-aware.** The age is measured from the data point's **reference month/quarter** (day 1), *not* from its release date. But official CPI is released a few weeks *after* its reference period, so the freshest-possible monthly print is already ~45–75 days "old" by this measure, and a quarterly print (e.g. NZ) stays current for a full quarter. Earlier (tighter, monthly-only) thresholds therefore flagged up-to-date data as stale and rendered quarterly series red while current. The current thresholds track each series' real cadence — quarterly is auto-detected from the `YYYY-Qn` date shape — so the colors mean:
 
-**Layer 1** of the staleness work (`publication_date` actually refreshes when the scraper auto-merges new projections, instead of staying at the curated value) landed in PR #17. **Layer 2** (per-row UI) landed in PR #34. **Layer 3** ("source disabled" treatment so UK/NZ/ZA aren't conflated with real-world stale sources) is tracked in [#31](https://github.com/jing-ny/inflation-dashboard/issues/31).
+- **green** ≈ "this is the latest published release",
+- **amber** ≈ "roughly one release behind",
+- **red** ≈ "genuinely lagging" (the underlying source, or our pull from it, has fallen behind — see *Data sourcing and lag* below).
+
+This keeps real staleness visible (CLAUDE.md #4) without false positives on current data.
+
+**Disabled-scraper treatment (CLAUDE.md #4, layer 3).** Forecast rows whose auto-scraper is intentionally off render a distinct "paused" pill (not red) so a *missing scraper* isn't conflated with a *stale source*. IMF-sourced rows (CN, VE — central banks that publish no forecast) render a neutral "IMF WEO" badge instead. As of this writing the BoE (#10), SARB (#12) and MAS-SPF (#42) scrapers have landed; RBNZ (#6) remains paused.
 
 ---
 
@@ -93,19 +100,30 @@ As of February 2026, all CPI values are verified against official government sou
 | 🇦🇺 Australia | 28th of month | Quarterly: late Jan/Apr/Jul/Oct |
 | 🇳🇿 New Zealand | Quarterly | Mid-month of Jan/Apr/Jul/Oct |
 
-### FRED Data Lag Issue
+### Data sourcing, lag, and runner reachability
 
-FRED's OECD series for international countries often lag official releases by 1-12 months:
+CPI actuals are fetched per country by [`scripts/fetch_historical_cpi.py`](scripts/fetch_historical_cpi.py). Each country's config carries an `api` field that selects the fetch path; the script **merges** (never blindly overwrites) and **only advances a value when the source has a genuinely newer reading**, so a laggy source can't roll a country *backwards*.
 
-| Country | Typical Lag | Workaround |
-|---------|-------------|------------|
-| South Africa | 6-12 months | Manual supplement from Stats SA |
-| UK, Canada | 1-2 months | Manual supplement from ONS/StatCan |
-| Australia | 1-2 quarters | ABS now publishes monthly |
-| New Zealand | 1-2 quarters | Quarterly release schedule |
-| Venezuela | 6-12 months | IMF data used |
+**Two classes of source:**
 
-When FRED data is stale, we verify and supplement with official data from the sources listed above.
+- **Direct primary/national API (fresh):** US → BLS, Euro Area → ECB, UK → ONS, Canada → StatCan, Australia → ABS (monthly CPI indicator, #50). These track the national release closely.
+- **FRED's OECD relay (laggy):** the rest (NZ, ZA, JP, CN, IN, KR, BR, MX; SG via World Bank, VE via World Bank). The OECD aggregates and **re-publishes national CPI with a 1–3 month delay (sometimes 6–12)**, so these rows can sit a release or two behind the national agency *even though the weekly `Update Inflation Data` workflow runs and succeeds.* This — not a broken pipeline — is the usual reason a Current Inflation cell reads amber/red.
+
+| Country | Source path | Typical lag vs national release |
+|---------|-------------|---------------------------------|
+| US, EA, UK, CA, AU | Direct (BLS / ECB / ONS / StatCan / ABS) | ~current |
+| South Africa | FRED-OECD | 6–12 months |
+| New Zealand | FRED-OECD (quarterly) | quarterly cadence |
+| Japan, Korea | FRED (COICOP index) | 1–3 months; manual supplement sometimes needed |
+| China, India, Brazil, Mexico | FRED-OECD | 1–3 months |
+| Singapore | FRED (World Bank annual — OECD series broken) | coarse |
+| Venezuela | FRED (World Bank) | irregular / contested |
+
+**Runner reachability is the gating constraint.** "Just switch the laggy countries to their national API" is the obvious fix (tracked per country in issues [#50–#60](https://github.com/jing-ny/inflation-dashboard/issues)), **but it only works if that API answers from where our automation actually runs** — GitHub Actions (Azure-hosted runners). Several national statistics APIs do **not** route to those cloud IPs. Two observed outcomes: the ABS Data API (`data.api.abs.gov.au`) **is** reachable from runners and now sources Australia directly (#50), whereas IBGE's SIDRA API (`apisidra.ibge.gov.br`) **connection-times-out from GitHub runners**, so a Brazil-via-SIDRA path falls back to FRED and yields no benefit (#54, deferred). The fetchers that work today (BLS/ONS/StatCan/ECB/ABS) are all CDN/large-institution endpoints reachable from cloud infra. So before adopting a new source, confirm it is reachable from a GitHub runner (the `update-data` workflow accepts a single-country dry-run for exactly this), and always keep the FRED series as a `fred_series` fallback.
+
+> **Note for contributors / forks:** there are *two* network environments to keep distinct. (1) Claude Code's dev sandbox has **allowlisted egress** — most central-bank, IMF and national-stats hosts are unreachable from it, so source-touching code is validated on GitHub's runners, not locally. (2) GitHub's runners have open internet but, as above, some government APIs still refuse their cloud IPs. A source must be reachable from environment (2) to be usable in production, since that is where scheduled updates run.
+
+When a source is stale or unreachable, the value is verified/supplemented from the official agency (see *Source Links*), and per CLAUDE.md #1 we **fix the source or defer** — we do not adopt hand-entry as a standing fallback.
 
 ---
 
