@@ -1115,7 +1115,19 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
             "frequency": config["frequency"],
             "history": []
         }
-    
+
+    # Config is the single source of truth for descriptive/provenance fields.
+    # Refresh them on every merge so that migrating a country to a national
+    # source (e.g. NBS direct instead of the OECD/FRED relay) updates the
+    # displayed source label AND keeps source_url on the record (CLAUDE.md #3),
+    # rather than leaving the stale value the existing JSON happened to carry.
+    merged["name"] = config["name"]
+    merged["flag"] = config["flag"]
+    merged["target"] = config["target"]
+    merged["source"] = config["source"]
+    merged["source_url"] = config.get("source_url", "")
+    merged["fred_series"] = config.get("fred_series", "")
+
     # Preserve notes if they exist
     if config.get("notes") and "notes" not in merged:
         merged["notes"] = config["notes"]
