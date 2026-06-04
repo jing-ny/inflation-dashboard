@@ -18,6 +18,16 @@ All notable changes to the Inflation Dashboard project are documented here.
   current WEO value (387.4%) as a side effect of the sync.
 
 ### Added
+- **BoE Monetary Policy Report scraper (#10):** new `scrape_boe()` discovers the latest MPR
+  PDF and extracts headline **CPI inflation** from `Table 3.B: Summary of scenarios`. The
+  April 2026 MPR replaced the single modal projection with a scenario framework (A/B/C), so
+  the scraper captures every scenario's CPI path and the dashboard shows the **cross-scenario
+  range** (e.g. 2026: 3.1–3.6%) rather than picking one — anchored on the scenario table, never
+  regex-over-prose (the failure mode that blocked #10). `merge_into_main` persists `scenarios`
+  + `projection_range` and flips the UK row to enabled; the Outlook table and country page
+  render the range, and the country page lists all three scenario paths. Validated against
+  live BoE via the auto-scrape workflow (the large Feb-modal→April-scenario change was
+  correctly flagged by the 1pp anomaly gate and applied under review).
 - **MAS Survey of Professional Forecasters scraper (#42):** new `scrape_mas()` in
   `auto_scrape_cb_forecasts.py` discovers the latest quarterly SPF write-up PDF and
   extracts the headline **CPI-All Items median** from the explicitly-labelled annual

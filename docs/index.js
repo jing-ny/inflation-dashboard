@@ -247,6 +247,18 @@ async function loadOutlookTable() {
             const imfCountry = imfData.countries?.[code];
             const imfCurrentYear = imfCountry?.forecasts?.[currentYearStr];
 
+            // Scenario-based sources (BoE, #10) carry a cross-scenario range
+            // per year instead of a single projection. Render "lo–hi%".
+            const range = forecast.projection_range || null;
+            const fmtCb = (yr) => {
+                if (range && Array.isArray(range[yr])) {
+                    const [lo, hi] = range[yr];
+                    return lo === hi ? `${lo.toFixed(1)}%` : `${lo.toFixed(1)}–${hi.toFixed(1)}%`;
+                }
+                const v = proj ? proj[yr] : undefined;
+                return (v !== null && v !== undefined) ? `${v.toFixed(1)}%` : '—';
+            };
+
             // Format source with date abbreviation
             const sourceDate = forecast.publication_date
                 .replace('January', 'Jan').replace('February', 'Feb').replace('March', 'Mar')
@@ -254,8 +266,9 @@ async function loadOutlookTable() {
                 .replace('December', 'Dec').replace('November', 'Nov').replace('October', 'Oct')
                 .replace('2025', "'25").replace('2026', "'26");
 
-            // Highlight divergence between CB and IMF
-            const cbCurrentYear = proj[currentYearStr];
+            // Highlight divergence between CB and IMF (skipped for ranged
+            // scenario rows — a range vs a point estimate isn't a clean diff).
+            const cbCurrentYear = range ? null : proj[currentYearStr];
             let imfCell = '—';
             if (imfCurrentYear !== undefined && imfCurrentYear !== null) {
                 const diff = cbCurrentYear !== null ? Math.abs(cbCurrentYear - imfCurrentYear) : 0;
@@ -304,9 +317,9 @@ async function loadOutlookTable() {
                 <tr onclick="window.location='${page}'" class="clickable-row">
                     <td class="country-cell">${forecast.flag} ${code}</td>
                     <td class="source-cell">${forecast.source} ${sourceDate}</td>
-                    <td><strong>${cbCurrentYear !== null && cbCurrentYear !== undefined ? cbCurrentYear.toFixed(1) + '%' : '—'}</strong></td>
+                    <td><strong>${fmtCb(currentYearStr)}</strong></td>
                     <td>${imfCell}</td>
-                    <td>${proj[nextYearStr] !== null && proj[nextYearStr] !== undefined ? proj[nextYearStr].toFixed(1) + '%' : '—'}</td>
+                    <td>${fmtCb(nextYearStr)}</td>
                     <td>${freshnessCell}</td>
                     <td class="assessment-cell">"${forecast.key_quote}"</td>
                 </tr>

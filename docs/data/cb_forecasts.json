@@ -67,22 +67,32 @@
       "flag": "🇬🇧",
       "source": "BoE",
       "source_full": "Bank of England - Monetary Policy Report",
-      "source_url": "https://www.bankofengland.co.uk/monetary-policy-report/2026/february-2026",
-      "publication_date": "February 2026",
-      "forecast_type": "MPC projection (CPI)",
-      "note": "BoE expects CPI to fall to 2.1% by Q2 2026, notably lower than Nov forecast. Energy price declines from Budget 2025 driving near-term relief.",
+      "source_url": "https://www.bankofengland.co.uk/-/media/boe/files/monetary-policy-report/2026/april/monetary-policy-report-april-2026.pdf",
+      "publication_date": "April 2026",
+      "forecast_type": "CPI inflation (MPC scenario range)",
+      "note": "The April 2026 MPR presents alternative scenarios (A/B/C) rather than a single central projection, reflecting high uncertainty after the Middle East energy shock. CPI inflation spans 3.1–3.6% in 2026 and 2.9–5.6% in 2027 across scenarios (Q2 of each year). Bank Rate held at 3.75%.",
       "projections": {
-        "2026": 2.3,
-        "2027": 2.0
+        "2026": 3.35,
+        "2027": 4.25,
+        "2028": 2.2,
+        "2029": 2.15
       },
-      "key_quote": "CPI inflation expected to fall to 2.1% in Q2 2026, lower than anticipated in November",
+      "projection_range": {
+        "2026": [3.1, 3.6],
+        "2027": [2.9, 5.6],
+        "2028": [1.5, 2.9],
+        "2029": [1.7, 2.6]
+      },
+      "scenarios": {
+        "A": { "2026": 3.1, "2027": 2.9, "2028": 1.5, "2029": 1.7 },
+        "B": { "2026": 3.1, "2027": 3.2, "2028": 2.0, "2029": 2.0 },
+        "C": { "2026": 3.6, "2027": 5.6, "2028": 2.9, "2029": 2.6 }
+      },
+      "key_quote": "MPC publishes alternative scenarios, not a single projection; CPI spans 3.1–3.6% in 2026 across cases",
       "policy_rate": {
         "rate": "3.75%",
-        "last_change": "— Feb 2026 (hold, 5-4 vote)"
-      },
-      "scraper_status": "disabled",
-      "scraper_status_issue": "#10",
-      "scraper_status_reason": "BoE scraper: structured-table extraction not yet implemented"
+        "last_change": "— Apr 2026 (hold)"
+      }
     },
     "CA": {
       "flag": "🇨🇦",
