@@ -745,6 +745,7 @@ def fetch_mic_cpi_series() -> List[Dict]:
                "Accept-Language": "en-US,en;q=0.9"}
     pages = [
         "https://www.stat.go.jp/english/data/cpi/1581-z.html",  # latest monthly report
+        "https://www.stat.go.jp/english/data/cpi/1581.html",    # monthly results / tables
         "https://www.stat.go.jp/english/data/cpi/",             # CPI index / file list
     ]
     for pg in pages:
@@ -757,22 +758,17 @@ def fetch_mic_cpi_series() -> List[Dict]:
         except Exception as e:
             print(f"    [diag] MIC {pg} -> {type(e).__name__}: {e}")
             continue
-        # Downloadable data files (csv/xls/xlsx/pdf) with their link text.
-        files = _re.findall(
-            r'href="([^"]+\.(?:csv|xlsx?|pdf))"[^>]*>([^<]{0,120})', html, _re.I)
-        print(f"      [diag] {len(files)} data-file link(s)")
-        for h, t in files[:12]:
-            print(f"        [diag] file: {h}  ::  {t.strip()[:80]}")
-        # Any "All items" summary text carrying a number (anchor candidate).
-        text = _re.sub(r"<[^>]+>", " ", html)
-        text = _re.sub(r"\s+", " ", text)
-        shown = 0
-        for sent in _re.split(r"(?<=[.!?]) ", text):
-            if "all items" in sent.lower() and _re.search(r"\d", sent):
-                print("        [diag] text: " + sent.strip()[:200])
-                shown += 1
-                if shown >= 8:
-                    break
+        # All links + any iframe/embed src, so we can find the path to the
+        # actual monthly time-series tables (the landing page is an image).
+        links = _re.findall(r'(?:href|src)="([^"]+)"[^>]*>([^<]{0,90})', html, _re.I)
+        interesting = [(h, t) for h, t in links
+                       if _re.search(r'\.(?:csv|xlsx?|pdf|html)$', h, _re.I)
+                       and not h.startswith(("#", "javascript"))]
+        print(f"      [diag] {len(interesting)} link(s):")
+        for h, t in interesting[:25]:
+            print(f"        [diag] {h}  ::  {t.strip()[:70]}")
+        for ifr in _re.findall(r'<iframe[^>]+src="([^"]+)"', html, _re.I):
+            print(f"        [diag] iframe: {ifr}")
     return []
 
 
