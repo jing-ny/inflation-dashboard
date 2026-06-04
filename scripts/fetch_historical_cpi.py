@@ -598,33 +598,54 @@ def fetch_statssa_cpi_series() -> List[Dict]:
         print("[diag] StatsSA: no P0141 PDF reachable")
         return []
 
-    print(f"\n    [diag] StatsSA reachable: {used_url} ({len(pdf_bytes)} bytes)")
+    print(f"  ℹ️  Stats SA P0141: {used_url} ({len(pdf_bytes)} bytes)")
     import re as _re
     try:
         with pdfplumber.open(_io.BytesIO(pdf_bytes)) as pdf:
-            pages = pdf.pages
-            texts = []
-            for i, p in enumerate(pages[:6]):
-                t = p.extract_text() or ""
-                texts.append(t)
-                print(f"    [diag] page{i + 1} chars={len(t)}")
-            text = "\n".join(texts)
+            text = "\n".join((p.extract_text() or "") for p in pdf.pages[:4])
     except Exception as e:
-        print(f"    [diag] pdfplumber error: {type(e).__name__}: {e}")
+        print(f"  ⚠️  pdfplumber error: {type(e).__name__}: {e}")
         return []
-    shown = 0
-    for ln in text.splitlines():
-        s = ln.strip()
-        if not s:
-            continue
-        low = s.lower()
-        if (_re.search(r'\d[.,]\d\s*%', s) or 'annual' in low
-                or 'headline' in low or 'consumer price' in low):
-            print("      [diag] " + s[:180])
-            shown += 1
-            if shown >= 25:
-                break
-    return []
+    text = _re.sub(r"\s+", " ", text)
+
+    # Anchor on the standard P0141 headline sentence, e.g.:
+    #   "Annual consumer price inflation was 4,0% in April 2026, up from 3,1%
+    #    in March 2026."
+    # which also states the previous month, so we capture both for a little
+    # history. SA uses decimal commas. This is the headline all-items CPI YoY —
+    # we never touch the goods/services/category lines (CLAUDE.md #2).
+    months = {name.lower(): i for i, name in enumerate(_MONTH_NAMES) if name}
+    m = _re.search(
+        r"[Aa]nnual consumer price inflation was (\d+,\d+)% in (\w+) (\d{4})"
+        r"(?:.{0,40}?from (\d+,\d+)% in (\w+) (\d{4}))?",
+        text,
+    )
+    obs = []
+
+    def _add(val, mon, yr):
+        mi = months.get((mon or "").lower())
+        try:
+            v = float(val.replace(",", "."))
+        except (TypeError, ValueError):
+            return
+        if mi and -5.0 <= v <= 30.0:
+            obs.append({"date": f"{int(yr):04d}-{mi:02d}-01", "value": round(v, 2)})
+
+    if m:
+        _add(m.group(1), m.group(2), m.group(3))
+        if m.group(4):
+            _add(m.group(4), m.group(5), m.group(6))
+
+    if not obs:
+        print("  ⏸️  scrape_statssa: headline sentence not found; preserving curated ZA")
+        idx = text.lower().find("annual consumer price")
+        if idx != -1:
+            print("      [diag] near: " + text[idx:idx + 140])
+        return []
+
+    obs.sort(key=lambda x: x["date"])
+    print(f"  ✅ Stats SA headline CPI: {obs}")
+    return obs
 
 
 # YoY Calculation
