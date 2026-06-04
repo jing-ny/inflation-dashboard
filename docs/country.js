@@ -283,8 +283,8 @@ function updateMetrics(countryCode, data) {
     if (currentDateEl && current) {
         const dateText = formatDate(current.date);
         // CLAUDE.md #4: append a freshness pill aged against the CPI cadence
-        // (monthly — 45d green / 90d amber thresholds). freshnessPill is
-        // loaded from freshness.js; defensively check before calling.
+        // (monthly 75d/120d, quarterly 135d/225d — see freshness.js). The pill
+        // is loaded from freshness.js; defensively check before calling.
         const pill = typeof freshnessPill === 'function'
             ? freshnessPill(current.date, 'cpi')
             : '';
