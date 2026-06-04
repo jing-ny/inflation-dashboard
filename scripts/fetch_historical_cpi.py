@@ -693,25 +693,37 @@ def fetch_mospi_cpi_series() -> List[Dict]:
         print("[diag] MoSPI: no CPI press release reachable")
         return []
 
-    print(f"\n    [diag] MoSPI reachable: {used_url} ({len(pdf_bytes)} bytes)")
+    print(f"  ℹ️  MoSPI press release: {used_url} ({len(pdf_bytes)} bytes)")
     try:
         with pdfplumber.open(_io.BytesIO(pdf_bytes)) as pdf:
             text = "\n".join((p.extract_text() or "") for p in pdf.pages[:3])
     except Exception as e:
-        print(f"    [diag] pdfplumber error: {type(e).__name__}: {e}")
+        print(f"  ⚠️  pdfplumber error: {type(e).__name__}: {e}")
         return []
-    text = _re.sub(r"[ \t]+", " ", text)
-    shown = 0
-    for ln in text.splitlines():
-        s = ln.strip()
-        low = s.lower()
-        if (("inflation" in low or "year-on-year" in low or "all india" in low)
-                and _re.search(r"\d\.\d", s)):
-            print("      [diag] " + s[:180])
-            shown += 1
-            if shown >= 20:
-                break
-    return []
+    text = _re.sub(r"\s+", " ", text)
+
+    # Anchor on the headline General-CPI sentence, e.g.:
+    #   "Retail inflation based on Consumer Price Index in April, 2026 is 3.48%"
+    # This phrasing is unique to the All-India headline CPI; the food line uses
+    # "Consumer Food Price Index", so we never confuse headline with food/fuel/
+    # housing sub-indices (CLAUDE.md #2). India uses decimal points.
+    months = {name.lower(): i for i, name in enumerate(_MONTH_NAMES) if name}
+    m = _re.search(
+        r"Retail inflation based on Consumer Price Index in (\w+),?\s*(\d{4}) is (\d+\.\d+)\s*%",
+        text,
+    )
+    obs = []
+    if m:
+        mi = months.get(m.group(1).lower())
+        v = float(m.group(3))
+        if mi and -5.0 <= v <= 30.0:
+            obs.append({"date": f"{int(m.group(2)):04d}-{mi:02d}-01", "value": round(v, 2)})
+
+    if not obs:
+        print("  ⏸️  scrape_mospi: headline 'Retail inflation' sentence not found; preserving curated IN")
+        return []
+    print(f"  ✅ MoSPI headline CPI: {obs}")
+    return obs
 
 
 # YoY Calculation
