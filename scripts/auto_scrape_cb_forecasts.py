@@ -219,6 +219,41 @@ def scrape_ecb():
     return result
 
 
+_MON_FULL = {
+    'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6,
+    'july': 7, 'august': 8, 'september': 9, 'october': 10, 'november': 11,
+    'december': 12,
+}
+
+
+def _discover_boe_mpr_pdf():
+    """Discover the latest BoE Monetary Policy Report PDF URL + publication date.
+
+    The /monetary-policy hub links the latest report at
+    /monetary-policy-report/<year>/<month>-<year>; the report PDF lives at the
+    parallel media path
+    /-/media/boe/files/monetary-policy-report/<year>/<month>/monetary-policy-report-<month>-<year>.pdf
+
+    Returns (pdf_url, 'YYYY-MM-01') or (None, None).
+    """
+    hub = fetch_url("https://www.bankofengland.co.uk/monetary-policy", headers=BROWSER_HEADERS)
+    if not hub:
+        print("  ⚠️  BoE monetary-policy hub not reachable")
+        return None, None
+    m = re.search(r'/monetary-policy-report/(\d{4})/([a-z]+)-\d{4}', hub, re.IGNORECASE)
+    if not m:
+        print("  ⚠️  Could not find an MPR link on the hub page")
+        return None, None
+    year, month = m.group(1), m.group(2).lower()
+    pdf_url = (f"https://www.bankofengland.co.uk/-/media/boe/files/"
+               f"monetary-policy-report/{year}/{month}/"
+               f"monetary-policy-report-{month}-{year}.pdf")
+    mn = _MON_FULL.get(month)
+    pub_date = f"{year}-{mn:02d}-01" if mn else f"{year}-01-01"
+    print(f"  ℹ️  Latest MPR: {month} {year} → {pdf_url}")
+    return pdf_url, pub_date
+
+
 def scrape_boe():
     """Scrape Bank of England Monetary Policy Report.
 
@@ -238,25 +273,41 @@ def scrape_boe():
     """
     print("📊 Scraping BoE...")
 
-    # The dedicated /monetary-policy-report index page was retired sometime
-    # before 2026-04-30 (it now 404s). The /monetary-policy hub page links
-    # to the latest MPR with the same /monetary-policy-report/YYYY/<month>
-    # URL scheme, so we use it as the index instead.
-    url = None
-    index_url = "https://www.bankofengland.co.uk/monetary-policy"
-    index_html = fetch_url(index_url)
-
-    if index_html:
-        links = re.findall(r'href="(/monetary-policy-report/\d{4}/[^"]+)"', index_html)
-        if links:
-            url = "https://www.bankofengland.co.uk" + links[0]
-
-    if not url:
-        print("  ⚠️  Could not find BoE MPR URL from index page")
+    pdf_url, pub_date = _discover_boe_mpr_pdf()
+    if not pdf_url:
         return None
 
-    print(f"  ℹ️  Found latest MPR: {url}")
-    print("  ⏸️  scrape_boe: extractor disabled until structured-table parsing lands; "
+    pdf_bytes = _fetch_pdf_bytes(pdf_url, headers=BROWSER_HEADERS)
+    if pdf_bytes is None:
+        return None
+    print(f"  ℹ️  MPR PDF fetched ({len(pdf_bytes)} bytes)")
+
+    try:
+        import pdfplumber
+    except ImportError:
+        print("  ❌ pdfplumber not installed — add it to workflow requirements")
+        return None
+
+    import io
+    try:
+        with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+            text = "\n".join((page.extract_text() or "") for page in pdf.pages)
+    except Exception as e:
+        print(f"  ⚠️  pdfplumber failed to parse MPR PDF: {type(e).__name__}: {e}")
+        return None
+
+    # TEMP diagnostic (#10): surface the forecast-summary region so the parser
+    # can anchor on the right CPI row without a blind round-trip.
+    for ln in text.splitlines():
+        s = ln.strip()
+        low = s.lower()
+        if (low.startswith('cpi inflation')
+                or 'forecast summary' in low
+                or 'modal projection' in low
+                or low.startswith('table 1')):
+            print("      [diag] " + re.sub(r'\s+', ' ', s)[:160])
+
+    print("  ⏸️  scrape_boe: structured extraction pending diagnostics (#10); "
           "preserving curated UK forecast")
     return None
 
