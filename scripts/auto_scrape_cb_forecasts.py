@@ -955,11 +955,17 @@ def scrape_sarb():
             except Exception as e:
                 print(f"  [diag] pdfplumber error: {type(e).__name__}: {e}")
                 continue
-            for ln in text.splitlines():
-                s = ln.strip()
-                if re.search(r'(headline|cpi|inflation)', s, re.I) and re.search(r'\d', s):
-                    clean = re.sub(r'\s+', ' ', s)[:160]
-                    print("      [diag] " + clean)
+            slines = text.splitlines()
+            for i, l in enumerate(slines):
+                if len(re.findall(r'20\d{2}', l)) >= 3:
+                    print(f"      [diag] yearhdr {i}: " + re.sub(r'\s+', ' ', l).strip()[:180])
+            for i, l in enumerate(slines):
+                if re.search(r'Headline CPI', l, re.I):
+                    for j in range(max(0, i - 6), i + 2):
+                        t = re.sub(r'\s+', ' ', slines[j]).strip()
+                        if t:
+                            print(f"      [diag] {j}: " + t[:180])
+                    print("      [diag] ---")
             print("  ⏸️  scrape_sarb: diagnostic only — preserving curated ZA forecast")
             return None
 
