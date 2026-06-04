@@ -165,11 +165,12 @@ COUNTRIES = {
         "target": 2.0,
         "source": "MIC",
         "source_url": "https://www.stat.go.jp/english/data/cpi/",
-        "fred_series": "JPNCPALTT01IXNBM",  # COICOP 2018 index, monthly
+        "api": "MIC",  # primary national source (Statistics Bureau release) (#51)
+        "fred_series": "JPNCPALTT01IXNBM",  # COICOP 2018 index, monthly — fallback only
         "fred_series_alt": "JPNCPIALLMINMEI",  # COICOP 1999 fallback (discontinued Jun 2021 but may still serve data)
         "frequency": "monthly",
         "data_type": "index",
-        "notes": "Primary: COICOP 2018 index. Fallback: COICOP 1999 (discontinued Jun 2021). Manual supplement recommended for latest data.",
+        "notes": "Primary: Statistics Bureau headline all-items CPI (YoY). Fallback: FRED COICOP 2018/1999 index.",
     },
     "CN": {
         "name": "China",
@@ -726,6 +727,55 @@ def fetch_mospi_cpi_series() -> List[Dict]:
     return obs
 
 
+def fetch_mic_cpi_series() -> List[Dict]:
+    """Japan headline all-items CPI (YoY %) from the Statistics Bureau (#51).
+
+    Japan headlines are frequently quoted as *core* (all items less fresh
+    food); this fetcher pins the **all-items** national index and never mixes
+    measures (CLAUDE.md #2).
+
+    DIAGNOSTIC PASS: confirms stat.go.jp is reachable from GitHub runners and
+    dumps the CPI page's downloadable-file links + any "All items" summary text
+    so the parser can anchor on the exact all-items YoY column. Returns []
+    (→ FRED) until the real parser is wired.
+    """
+    import re as _re
+    headers = {"User-Agent": _BROWSER_UA,
+               "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
+               "Accept-Language": "en-US,en;q=0.9"}
+    pages = [
+        "https://www.stat.go.jp/english/data/cpi/1581-z.html",  # latest monthly report
+        "https://www.stat.go.jp/english/data/cpi/",             # CPI index / file list
+    ]
+    for pg in pages:
+        try:
+            r = requests.get(pg, headers=headers, timeout=30)
+            print(f"    [diag] MIC {pg} -> {r.status_code}, {len(r.content)} bytes")
+            if r.status_code != 200:
+                continue
+            html = r.text
+        except Exception as e:
+            print(f"    [diag] MIC {pg} -> {type(e).__name__}: {e}")
+            continue
+        # Downloadable data files (csv/xls/xlsx/pdf) with their link text.
+        files = _re.findall(
+            r'href="([^"]+\.(?:csv|xlsx?|pdf))"[^>]*>([^<]{0,120})', html, _re.I)
+        print(f"      [diag] {len(files)} data-file link(s)")
+        for h, t in files[:12]:
+            print(f"        [diag] file: {h}  ::  {t.strip()[:80]}")
+        # Any "All items" summary text carrying a number (anchor candidate).
+        text = _re.sub(r"<[^>]+>", " ", html)
+        text = _re.sub(r"\s+", " ", text)
+        shown = 0
+        for sent in _re.split(r"(?<=[.!?]) ", text):
+            if "all items" in sent.lower() and _re.search(r"\d", sent):
+                print("        [diag] text: " + sent.strip()[:200])
+                shown += 1
+                if shown >= 8:
+                    break
+    return []
+
+
 # YoY Calculation
 # -----------------------------------------------------------------------------
 
@@ -828,6 +878,21 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(MoSPI failed: {e}; falling back to FRED)...", end=" ")
+                    raw_data = fetch_fred_series(config["fred_series"])
+                    yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
+                else:
+                    raise
+        elif config.get("api") == "MIC":
+            # Direct Statistics Bureau (MIC) all-items CPI — already YoY. #51
+            try:
+                raw_data = fetch_mic_cpi_series()
+                if not raw_data:
+                    raise ValueError("No data returned from Statistics Bureau")
+                yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)}
+                           for obs in raw_data]
+            except Exception as e:
+                if config.get("fred_series"):
+                    print(f"(MIC failed: {e}; falling back to FRED)...", end=" ")
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:
