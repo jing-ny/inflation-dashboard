@@ -6,6 +6,17 @@ All notable changes to the Inflation Dashboard project are documented here.
 
 ## [Unreleased]
 
+### Added
+- **Australia CPI now pulled from the ABS Data API (#50).** New `fetch_abs_cpi_series()`
+  reads the monthly CPI indicator (All groups, Australia, "Percentage change from previous
+  year") from the keyless ABS SDMX Data API (`data.api.abs.gov.au`, dataflow `ABS,CPI,2.0.0`),
+  routed via `api: "ABS"` with the OECD quarterly FRED series kept as fallback. This takes AU
+  off FRED's lagging quarterly relay (and off a standing manual supplement, per CLAUDE.md #1):
+  validated live on a GitHub runner, advancing AU from a Feb supplement to **2026-04 = 4.2%**.
+  Also adds `country`/`dry_run` `workflow_dispatch` inputs to `update-data.yml` so a single
+  country can be validated without committing.
+
+
 ### Changed
 - **CPI freshness thresholds now track each series' publication cadence.** The Current
   Inflation pills are aged from the data point's *reference month*, so the old monthly
