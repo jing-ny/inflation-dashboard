@@ -786,7 +786,7 @@ def fetch_nbs_cpi_series() -> List[Dict]:
     row_re = _re.compile(
         r"Consumer Price Index\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)")
     obs = []
-    for href, (yr, mi) in cpi_links[:4]:
+    for href, (yr, mi) in cpi_links[:3]:
         if href.startswith("http"):
             detail = href
         elif href.startswith("/"):
