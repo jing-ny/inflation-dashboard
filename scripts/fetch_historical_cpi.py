@@ -177,9 +177,10 @@ COUNTRIES = {
         "target": 3.0,
         "source": "NBS",
         "source_url": "https://www.stats.gov.cn/english/",
-        "fred_series": "CHNCPIALLMINMEI",  # OECD index
+        "api": "NBS",  # primary national source (English CPI press release) (#56)
+        "fred_series": "CHNCPIALLMINMEI",  # OECD index — fallback only
         "frequency": "monthly",
-        "data_type": "index",
+        "data_type": "yoy",  # press release states the YoY rate directly
     },
     "IN": {
         "name": "India",
@@ -726,6 +727,72 @@ def fetch_mospi_cpi_series() -> List[Dict]:
     return obs
 
 
+def fetch_nbs_cpi_series() -> List[Dict]:
+    """China headline CPI (YoY %) from the NBS English press release (#56).
+
+    NBS publishes monthly CPI press releases as HTML under
+    /english/PressRelease/ with unpredictable numeric IDs, so we discover the
+    latest CPI release from the listing page rather than guessing a URL.
+    DIAGNOSTIC PASS: confirms stats.gov.cn is reachable from GitHub runners
+    (the IBGE lesson — China-hosted gov site is the biggest unknown yet) and
+    dumps the listing links + the release text so the parser can anchor.
+    Returns [] (→ FRED).
+    """
+    import re as _re
+    headers = {"User-Agent": _BROWSER_UA,
+               "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
+               "Accept-Language": "en-US,en;q=0.9"}
+    listing = "https://www.stats.gov.cn/english/PressRelease/"
+    try:
+        r = requests.get(listing, headers=headers, timeout=30)
+        print(f"    [diag] NBS listing {listing} -> {r.status_code}, {len(r.content)} bytes")
+        html = r.text if r.status_code == 200 else ""
+    except Exception as e:
+        print(f"    [diag] NBS listing unreachable: {type(e).__name__}: {e}")
+        return []
+
+    # Candidate detail links (href + nearby text); flag the CPI/price ones.
+    links = _re.findall(r'href="([^"]+\.html)"[^>]*>([^<]{0,120})', html)
+    cpi_links = [(h, t.strip()) for h, t in links
+                 if _re.search(r'consumer price|\bCPI\b|prices', t, _re.I)]
+    print(f"    [diag] {len(links)} html link(s), {len(cpi_links)} price/CPI-ish")
+    for h, t in cpi_links[:6]:
+        print(f"      [diag] link: {h}  ::  {t[:80]}")
+
+    # Try the first CPI detail page (resolve relative URLs against the host).
+    detail = None
+    if cpi_links:
+        href = cpi_links[0][0]
+        if href.startswith("http"):
+            detail = href
+        elif href.startswith("/"):
+            detail = "https://www.stats.gov.cn" + href
+        else:
+            detail = listing + href.lstrip("./")
+    if not detail:
+        print("    [diag] no CPI detail link found on listing")
+        return []
+    try:
+        d = requests.get(detail, headers=headers, timeout=30)
+        print(f"    [diag] NBS detail {detail} -> {d.status_code}, {len(d.content)} bytes")
+        dtext = d.text if d.status_code == 200 else ""
+    except Exception as e:
+        print(f"    [diag] NBS detail unreachable: {type(e).__name__}: {e}")
+        return []
+    dtext = _re.sub(r"<[^>]+>", " ", dtext)
+    dtext = _re.sub(r"\s+", " ", dtext)
+    shown = 0
+    for sent in _re.split(r"(?<=[.!?]) ", dtext):
+        low = sent.lower()
+        if (("year on year" in low or "year-on-year" in low or "consumer price" in low)
+                and _re.search(r"\d", sent)):
+            print("      [diag] " + sent.strip()[:200])
+            shown += 1
+            if shown >= 12:
+                break
+    return []
+
+
 # YoY Calculation
 # -----------------------------------------------------------------------------
 
@@ -813,6 +880,21 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(ONS failed: {e}; falling back to FRED)...", end=" ")
+                    raw_data = fetch_fred_series(config["fred_series"])
+                    yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
+                else:
+                    raise
+        elif config.get("api") == "NBS":
+            # Direct NBS English CPI press release (HTML) — already YoY. #56
+            try:
+                raw_data = fetch_nbs_cpi_series()
+                if not raw_data:
+                    raise ValueError("No data returned from NBS press release")
+                yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)}
+                           for obs in raw_data]
+            except Exception as e:
+                if config.get("fred_series"):
+                    print(f"(NBS failed: {e}; falling back to FRED)...", end=" ")
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:
