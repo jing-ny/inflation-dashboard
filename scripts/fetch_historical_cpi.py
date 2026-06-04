@@ -744,10 +744,10 @@ def fetch_mic_cpi_series() -> List[Dict]:
                "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
                "Accept-Language": "en-US,en;q=0.9"}
     # The English pages only expose an image summary + item lists; the machine-
-    # readable monthly time series lives on the Japanese site (zuhyou Excel).
+    # readable national monthly time series lives on the Japanese release page
+    # (sokuhou/tsuki/index-z.html = 全国 / National) as zuhyou Excel tables.
     pages = [
-        "https://www.stat.go.jp/data/cpi/sokuhou/tsuki/index.html",  # monthly release
-        "https://www.stat.go.jp/data/cpi/",                          # CPI index
+        "https://www.stat.go.jp/data/cpi/sokuhou/tsuki/index-z.html",  # national
     ]
     for pg in pages:
         try:
@@ -760,16 +760,13 @@ def fetch_mic_cpi_series() -> List[Dict]:
         except Exception as e:
             print(f"    [diag] MIC {pg} -> {type(e).__name__}: {e}")
             continue
-        # Excel/CSV data files (the headline national time-series tables).
+        # Excel/CSV data files with their (Japanese) anchor text so we can pick
+        # the all-items (総合) year-on-year (前年同月比) national table.
         files = _re.findall(
-            r'href="([^"]+\.(?:csv|xlsx?))"[^>]*>([^<]{0,80})', html, _re.I)
+            r'href="([^"]+\.(?:csv|xlsx?))"[^>]*>([^<]{0,90})', html, _re.I)
         print(f"      [diag] {len(files)} data-file link(s):")
         for h, t in files[:30]:
-            print(f"        [diag] {h}  ::  {t.strip()[:50]}")
-        # Links pointing at time-series / historical pages (anchor text in JP).
-        for h, t in _re.findall(r'href="([^"]+\.html)"[^>]*>([^<]{0,40})', html):
-            if _re.search(r'(?:jikei|historic|長期|時系列|sokuhou)', h + t, _re.I):
-                print(f"        [diag] ts-page: {h}  ::  {t.strip()[:40]}")
+            print(f"        [diag] {h}  ::  {t.strip()[:70]}")
     return []
 
 
