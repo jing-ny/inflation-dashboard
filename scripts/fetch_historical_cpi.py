@@ -129,11 +129,12 @@ COUNTRIES = {
         "target": 2.5,
         "source": "ABS",
         "source_url": "https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/",
-        "fred_series": "AUSCPIALLQINMEI",  # OECD quarterly index
-        "frequency": "quarterly",  # Note: ABS now publishes monthly, but FRED is quarterly
-        "data_type": "index",
+        "api": "ABS",  # primary national source (monthly CPI indicator); fresher than FRED's quarterly OECD relay (#50)
+        "fred_series": "AUSCPIALLQINMEI",  # OECD quarterly index — fallback only
+        "frequency": "monthly",
+        "data_type": "yoy",  # ABS Data API returns the YoY rate directly
         "lag_months": 3,
-        "notes": "ABS transitioned to monthly CPI in late 2025. FRED still quarterly.",
+        "notes": "ABS publishes a monthly CPI indicator (since late 2025); FRED's OECD series is still quarterly and lags.",
     },
     "NZ": {
         "name": "New Zealand",
@@ -476,6 +477,72 @@ def fetch_ecb_series(series_id: str, start_date: str = "2015-01-01") -> List[Dic
 # YoY Calculation
 # -----------------------------------------------------------------------------
 
+def fetch_abs_cpi_series() -> List[Dict]:
+    """Fetch Australia headline CPI (monthly indicator, YoY %) from the ABS Data API (#50).
+
+    Public SDMX REST endpoint — the *Data* API (data.api.abs.gov.au/rest/data)
+    is keyless; only the separate *Indicator* API needs a key. Dataflow
+    ABS,CPI,2.0.0. Datakey positions are MEASURE.INDEX.TSEST.REGION.FREQ; we
+    pin INDEX=10001 (All groups CPI), TSEST=10 (Original), REGION=50 (Australia),
+    FREQ=M (monthly) and wildcard MEASURE, then pick the YoY "percentage change
+    ... previous year" measure by its label from the CSV-with-labels output.
+
+    Values are already YoY (no index calc). Returns ascending
+    [{"date": "YYYY-MM-01", "value": float}]. Heavily logged because the ABS
+    response shape is only observable from a network that can reach it (#50),
+    and we must confirm ABS is reachable from GitHub runners at all.
+    """
+    import csv as _csv
+    import io as _io
+    url = ("https://data.api.abs.gov.au/rest/data/ABS,CPI,2.0.0/"
+           ".10001.10.50.M?startPeriod=2024&format=csvfilewithlabels")
+    resp = requests.get(url, timeout=45, headers={"Accept": "text/csv"})
+    resp.raise_for_status()
+    text = resp.text
+    reader = _csv.DictReader(_io.StringIO(text))
+    fields = reader.fieldnames or []
+    print(f"    [diag] ABS reachable, {len(text)} bytes; columns={fields}")
+
+    # Locate the relevant columns defensively (csvfilewithlabels naming varies).
+    def find_col(*needles):
+        for f in fields:
+            fl = f.lower()
+            if all(n in fl for n in needles):
+                return f
+        return None
+    measure_col = find_col("measure")
+    period_col = find_col("time_period") or find_col("time", "period")
+    value_col = find_col("obs_value") or find_col("observation", "value")
+
+    rows = list(reader)
+    measures = sorted({(r.get(measure_col) or "").strip() for r in rows}) if measure_col else []
+    print(f"    [diag] measure_col={measure_col!r} period_col={period_col!r} "
+          f"value_col={value_col!r}; measures={measures}")
+
+    obs = []
+    if measure_col and period_col and value_col:
+        for r in rows:
+            label = (r.get(measure_col) or "").lower()
+            if "percentage change" in label and "previous year" in label:
+                period = (r.get(period_col) or "").strip()
+                if len(period) != 7 or period[4] != "-":  # expect YYYY-MM
+                    continue
+                try:
+                    value = float(r.get(value_col))
+                except (TypeError, ValueError):
+                    continue
+                obs.append({"date": f"{period}-01", "value": round(value, 2)})
+    obs.sort(key=lambda x: x["date"])
+    if obs:
+        print(f"    [diag] ABS YoY parsed: latest {obs[-1]}")
+    else:
+        print("    [diag] ABS: no YoY rows parsed (see measures above)")
+    return obs
+
+
+# YoY Calculation
+# -----------------------------------------------------------------------------
+
 def calculate_yoy_from_index(observations: List[Dict], frequency: str = "monthly") -> List[Dict]:
     """
     Calculate Year-over-Year inflation rate from CPI index values.
@@ -560,6 +627,21 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(ONS failed: {e}; falling back to FRED)...", end=" ")
+                    raw_data = fetch_fred_series(config["fred_series"])
+                    yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
+                else:
+                    raise
+        elif config.get("api") == "ABS":
+            # Direct ABS Data API — monthly CPI indicator, already YoY. #50
+            try:
+                raw_data = fetch_abs_cpi_series()
+                if not raw_data:
+                    raise ValueError("No YoY rows returned from ABS Data API")
+                yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)}
+                           for obs in raw_data]
+            except Exception as e:
+                if config.get("fred_series"):
+                    print(f"(ABS failed: {e}; falling back to FRED)...", end=" ")
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:

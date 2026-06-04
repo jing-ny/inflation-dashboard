@@ -5,6 +5,15 @@ on:
     # Run every Monday at 7:00 AM EST (12:00 UTC)
     - cron: '0 12 * * 1'
   workflow_dispatch:  # Allow manual trigger
+    inputs:
+      country:
+        description: 'Single country code to fetch (e.g. AU); blank = all'
+        required: false
+        type: string
+      dry_run:
+        description: 'Dry run — fetch only, no file writes / commit'
+        type: boolean
+        default: false
 
 # Grant write permission to push commits
 permissions:
@@ -33,8 +42,16 @@ jobs:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           BLS_API_KEY: ${{ secrets.BLS_API_KEY }}  # optional; unkeyed BLS API works for ~10y window
         run: |
-          python scripts/fetch_historical_cpi.py
-          python scripts/fetch_imf_forecasts.py
+          CMD="python scripts/fetch_historical_cpi.py"
+          if [ -n "${{ inputs.country }}" ]; then CMD="$CMD --country ${{ inputs.country }}"; fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then CMD="$CMD --dry-run"; fi
+          echo "Running: $CMD"
+          $CMD
+          # Only run the (full) IMF refresh on the normal all-country live run,
+          # not on a targeted/dry-run dispatch.
+          if [ -z "${{ inputs.country }}" ] && [ "${{ inputs.dry_run }}" != "true" ]; then
+            python scripts/fetch_imf_forecasts.py
+          fi
 
       - name: Check for changes
         id: changes
