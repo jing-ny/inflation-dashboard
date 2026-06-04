@@ -18,6 +18,18 @@ All notable changes to the Inflation Dashboard project are documented here.
   current WEO value (387.4%) as a side effect of the sync.
 
 ### Added
+- **MAS Survey of Professional Forecasters scraper (#42):** new `scrape_mas()` in
+  `auto_scrape_cb_forecasts.py` discovers the latest quarterly SPF write-up PDF and
+  extracts the headline **CPI-All Items median** from the explicitly-labelled annual
+  "Median Mean Min Max" table (via `pdfplumber`), anchoring on that table rather than
+  regex-grepping prose. SG is now in `COUNTRY_SCRAPERS`; `pdfplumber` added to the
+  workflow deps. MAS's WAF rejects the default UA, so a browser `BROWSER_HEADERS` is
+  threaded through the fetch helpers (the other scrapers keep the honest UA). The
+  current calendar year — which the write-up only presents in distribution/quarterly
+  tables — is preserved by overlaying scraped year(s) onto the existing SG projections,
+  so the year-ahead median auto-refreshes each quarter and the row's `publication_date`
+  stops drifting amber/red between releases. Validated end-to-end against live MAS via
+  the auto-scrape workflow.
 - **`fetch_imf_forecasts.py` → `sync_imf_sourced_cb_forecasts()`:** keeps any row flagged
   `scraper_status: "imf_sourced"` in `cb_forecasts.json` in lockstep with the IMF WEO data,
   so IMF-backed CB rows refresh automatically rather than drifting stale (CLAUDE.md #1/#3/#4).

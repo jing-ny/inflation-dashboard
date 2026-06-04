@@ -916,10 +916,10 @@ def scrape_mas():
         print(f"  ⚠️  pdfplumber failed to parse SPF PDF: {type(e).__name__}: {e}")
         return None
 
-    for ln in text.splitlines():  # TEMP diagnostic — re-gate behind MAS_DEBUG
-        if 'Forecasts of GDP Growth' in ln or ln.strip().startswith('CPI-All Items'):
-            clean = re.sub(r'\s+', ' ', ln).strip()
-            print("      [diag] " + clean)
+    if os.environ.get("MAS_DEBUG"):  # dump every CPI line + annual-table title
+        for ln in text.splitlines():
+            if 'Forecasts of GDP Growth' in ln or ln.strip().startswith('CPI-All Items'):
+                print("      [diag] " + re.sub(r'\s+', ' ', ln).strip())
 
     projections = []
     seen = set()
@@ -954,8 +954,29 @@ def scrape_mas():
                   + re.sub(r'\s+', ' ', text[idx:idx + 120]))
         return None
 
-    projections.sort(key=lambda p: p["year"])
-    print(f"  ✅ MAS SPF CPI-All Items median: {projections}")
+    # The write-up gives the clean "Median Mean Min Max" annual table only for
+    # the year(s) ahead — the current calendar year appears solely in
+    # distribution/quarterly tables whose column order we won't guess at
+    # (CLAUDE.md #2). merge_into_main *replaces* the projections dict, so to
+    # avoid blanking the current-year cell we overlay the freshly-scraped
+    # year(s) onto the existing curated SG projections (themselves SPF figures).
+    # Net effect: the year-ahead median auto-refreshes every quarter and the
+    # row's publication_date tracks the latest survey (the #42 freshness goal),
+    # while years not in the clean table are left untouched rather than lost.
+    scraped = {p["year"]: p["value"] for p in projections}
+    existing = {}
+    try:
+        with open("docs/data/cb_forecasts.json", encoding="utf-8") as f:
+            existing = ((json.load(f).get("forecasts", {}).get("SG", {}) or {})
+                        .get("projections", {}) or {})
+    except (OSError, json.JSONDecodeError):
+        pass
+    combined = {str(y): v for y, v in existing.items()}
+    combined.update(scraped)
+    projections = [{"year": y, "value": v} for y, v in sorted(combined.items())]
+
+    print(f"  ✅ MAS SPF CPI-All Items median (scraped {sorted(scraped)}; "
+          f"row now {projections})")
     return {
         "bank": "Monetary Authority of Singapore",
         "country": "SG",
