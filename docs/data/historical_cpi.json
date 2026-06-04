@@ -4549,12 +4549,12 @@
     "source": "Stats SA via OECD/FRED",
     "last_updated": "2026-02-03",
     "latest": {
-      "date": "2026-02",
-      "value": 3.0
+      "date": "2026-04",
+      "value": 4.0
     },
     "previous": {
-      "date": "2026-01",
-      "value": 3.5
+      "date": "2026-03",
+      "value": 3.1
     },
     "history": [
       {
@@ -5000,6 +5000,14 @@
       {
         "date": "2026-02",
         "value": 3.0
+      },
+      {
+        "date": "2026-03",
+        "value": 3.1
+      },
+      {
+        "date": "2026-04",
+        "value": 4.0
       }
     ],
     "notes": "SARB target changed to 3% in 2025"
