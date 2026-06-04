@@ -760,13 +760,14 @@ def fetch_mic_cpi_series() -> List[Dict]:
         except Exception as e:
             print(f"    [diag] MIC {pg} -> {type(e).__name__}: {e}")
             continue
-        # Excel/CSV data files with their (Japanese) anchor text so we can pick
-        # the all-items (総合) year-on-year (前年同月比) national table.
-        files = _re.findall(
-            r'href="([^"]+\.(?:csv|xlsx?))"[^>]*>([^<]{0,90})', html, _re.I)
-        print(f"      [diag] {len(files)} data-file link(s):")
-        for h, t in files[:30]:
-            print(f"        [diag] {h}  ::  {t.strip()[:70]}")
+        # Dump every href so we can see how the data links are structured.
+        hrefs = _re.findall(r'href="([^"]+)"', html)
+        print(f"      [diag] {len(hrefs)} href(s) total")
+        for h in hrefs[:40]:
+            print(f"        [diag] href: {h[:100]}")
+        # Any context around xls/csv/e-stat mentions in the raw markup.
+        for m in _re.finditer(r'.{0,40}(?:xls|\.csv|e-?stat|統計表|時系列).{0,40}', html, _re.I):
+            print(f"        [diag] ctx: {m.group(0).strip()[:90]}")
     return []
 
 
