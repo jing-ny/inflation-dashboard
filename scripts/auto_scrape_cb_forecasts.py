@@ -28,11 +28,23 @@ ssl_context = ssl.create_default_context()
 CURRENT_YEAR = datetime.now().year
 HEADERS = {'User-Agent': 'Mozilla/5.0 (compatible; InflationDashboard/1.0)'}
 
+# Browser-like headers for sources whose WAF rejects the honest
+# InflationDashboard UA (MAS sits behind such a WAF — #42). Kept separate so
+# the well-behaved scrapers (BoJ/Fed/ECB/…) keep advertising the honest UA and
+# we don't change their request fingerprint (the #6 done-when constraint).
+BROWSER_HEADERS = {
+    'User-Agent': ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+                   'AppleWebKit/537.36 (KHTML, like Gecko) '
+                   'Chrome/126.0.0.0 Safari/537.36'),
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9',
+}
 
-def fetch_url(url):
+
+def fetch_url(url, headers=None):
     """Fetch URL content with error handling."""
     try:
-        req = Request(url, headers=HEADERS)
+        req = Request(url, headers=headers or HEADERS)
         with urlopen(req, timeout=30, context=ssl_context) as response:
             return response.read().decode('utf-8', errors='ignore')
     except URLError as e:
@@ -603,14 +615,21 @@ def _discover_boj_outlook_pdf():
     return url, pub_date
 
 
-def _fetch_pdf_text(url):
-    """Download a PDF and return concatenated text of all pages."""
+def _fetch_pdf_bytes(url, headers=None):
+    """Download a PDF and return its raw bytes (or None on failure)."""
     try:
-        req = Request(url, headers=HEADERS)
+        req = Request(url, headers=headers or HEADERS)
         with urlopen(req, timeout=60, context=ssl_context) as response:
-            pdf_bytes = response.read()
+            return response.read()
     except URLError as e:
         print(f"  ❌ Failed to fetch PDF {url}: {e}")
+        return None
+
+
+def _fetch_pdf_text(url, headers=None):
+    """Download a PDF and return concatenated text of all pages."""
+    pdf_bytes = _fetch_pdf_bytes(url, headers=headers)
+    if pdf_bytes is None:
         return None
 
     try:
@@ -800,6 +819,176 @@ def scrape_sarb():
     return None
 
 
+MAS_SPF_INDEX = "https://www.mas.gov.sg/publications/survey-of-professional-forecasters"
+
+_MONTHS = {
+    'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6,
+    'july': 7, 'august': 8, 'september': 9, 'october': 10, 'november': 11,
+    'december': 12,
+}
+
+
+def _discover_mas_spf_pdf():
+    """Find the latest MAS Survey of Professional Forecasters results PDF.
+
+    The SPF is published quarterly (Mar/Jun/Sep/Dec). The listing page links
+    out to per-release detail pages of the form
+
+        /publications/survey-of-professional-forecasters/<year>/<...-month-year>
+
+    each of which embeds the results PDF (hosted under the mas-media-library).
+    We pick the newest detail page by (year, month) parsed from its slug, then
+    pull the first .pdf link off that page.
+
+    Returns (pdf_url, 'YYYY-MM-01') or (None, None). Heavily logged because
+    the MAS markup is only observable from a network that can reach it (#42).
+    """
+    html = fetch_url(MAS_SPF_INDEX, headers=BROWSER_HEADERS)
+    if not html:
+        print("  ⚠️  MAS SPF listing page not reachable")
+        return None, None
+    print(f"  ℹ️  MAS SPF listing fetched ({len(html)} bytes)")
+
+    # Detail-page links carry the year as a path segment and a "<month>-<year>"
+    # slug we can date off. Accept absolute or root-relative hrefs.
+    candidates = []
+    for href in re.findall(r'href="([^"]*survey-of-professional-forecasters[^"]*)"', html, re.I):
+        m = re.search(r'/(\d{4})/', href)
+        slug = href.lower()
+        month = next((n for name, n in _MONTHS.items() if name in slug), None)
+        if m and month:
+            candidates.append((int(m.group(1)), month, href))
+    # De-dup and rank newest first.
+    candidates = sorted(set(candidates), key=lambda c: (c[0], c[1]), reverse=True)
+    print(f"  ℹ️  {len(candidates)} dated SPF detail link(s) found"
+          + (f"; latest → {candidates[0][2]}" if candidates else ""))
+    if not candidates:
+        return None, None
+
+    year, month, href = candidates[0]
+    detail_url = href if href.startswith("http") else "https://www.mas.gov.sg" + href
+    pub_date = f"{year:04d}-{month:02d}-01"
+
+    detail_html = fetch_url(detail_url, headers=BROWSER_HEADERS)
+    if not detail_html:
+        print(f"  ⚠️  SPF detail page not reachable: {detail_url}")
+        return None, None
+
+    pdf_links = re.findall(r'href="([^"]+\.pdf[^"]*)"', detail_html, re.I)
+    print(f"  ℹ️  {len(pdf_links)} PDF link(s) on detail page"
+          + (f"; first → {pdf_links[0]}" if pdf_links else ""))
+    if not pdf_links:
+        return None, None
+
+    pdf = pdf_links[0]
+    pdf_url = pdf if pdf.startswith("http") else "https://www.mas.gov.sg" + pdf
+    return pdf_url, pub_date
+
+
+def _mas_cell_norm(s):
+    """Normalise a label cell for matching: lowercase, collapse spaces/hyphens."""
+    return re.sub(r'[\s\-]+', '', (s or '').lower())
+
+
+def scrape_mas():
+    """Scrape the MAS Survey of Professional Forecasters — headline
+    'CPI-All Items Inflation' median.
+
+    Per CLAUDE.md #1 this is the "fix it properly" route for #42 (MAS publishes
+    no machine-readable feed; the SPF is a quarterly PDF). Extraction anchors on
+    the exact 'CPI-All Items' results row and refuses to emit anything if that
+    row isn't found, rather than regex-grepping prose (the #10/#12 failure mode).
+
+    The SPF asks forecasters for the *current calendar year* CPI-All Items
+    inflation (and, in the Q4/Q1 rounds, the year ahead). We map the year
+    columns from the table header so a value is only emitted against a year we
+    can positively identify.
+    """
+    print("📊 Scraping MAS SPF...")
+
+    pdf_url, pub_date = _discover_mas_spf_pdf()
+    if not pdf_url:
+        print("  ⏸️  scrape_mas: could not locate SPF results PDF; preserving curated SG forecast")
+        return None
+
+    pdf_bytes = _fetch_pdf_bytes(pdf_url, headers=BROWSER_HEADERS)
+    if pdf_bytes is None:
+        return None
+    print(f"  ℹ️  SPF PDF fetched ({len(pdf_bytes)} bytes) from {pdf_url}")
+
+    try:
+        import pdfplumber  # structured table extraction (CLAUDE.md #1 new dep)
+    except ImportError:
+        print("  ❌ pdfplumber not installed — add it to workflow requirements")
+        return None
+
+    import io
+    projections = []
+    try:
+        with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+            for pno, page in enumerate(pdf.pages):
+                for table in (page.extract_tables() or []):
+                    # Locate the CPI-All Items row within this table.
+                    cpi_row = next(
+                        (r for r in table
+                         if r and r[0] and 'cpiallitems' in _mas_cell_norm(r[0])),
+                        None,
+                    )
+                    if not cpi_row:
+                        continue
+
+                    # Header row carries the forecast years (e.g. "2026").
+                    header = next(
+                        (r for r in table
+                         if r and any(c and re.search(r'20\d{2}', c) for c in r)),
+                        None,
+                    )
+                    print(f"  🔎 page {pno + 1}: CPI-All Items row = {cpi_row}")
+                    print(f"      header row = {header}")
+
+                    if header:
+                        for col, hcell in enumerate(header):
+                            ym = hcell and re.search(r'(20\d{2})', hcell)
+                            if not ym or col >= len(cpi_row):
+                                continue
+                            vm = re.search(r'-?\d+\.\d+', cpi_row[col] or '')
+                            if vm:
+                                val = float(vm.group())
+                                if -5.0 <= val <= 15.0:  # SG CPI sanity band
+                                    projections.append({"year": ym.group(1),
+                                                        "value": round(val, 2)})
+                    if projections:
+                        break
+                if projections:
+                    break
+    except Exception as e:  # pdfplumber can raise on malformed/scanned PDFs
+        print(f"  ⚠️  pdfplumber failed to parse SPF PDF: {type(e).__name__}: {e}")
+        return None
+
+    # De-dup years, keep first occurrence.
+    seen, deduped = set(), []
+    for p in projections:
+        if p["year"] not in seen:
+            seen.add(p["year"])
+            deduped.append(p)
+
+    if not deduped:
+        print("  ⏸️  scrape_mas: CPI-All Items row not located in SPF tables; "
+              "preserving curated SG forecast (see diagnostics above)")
+        return None
+
+    print(f"  ✅ MAS SPF CPI-All Items median: {deduped}")
+    return {
+        "bank": "Monetary Authority of Singapore",
+        "country": "SG",
+        "metric": "CPI-All Items inflation (SPF median forecast)",
+        "source": "MAS Survey of Professional Forecasters",
+        "source_url": pdf_url,
+        "source_date": pub_date,
+        "projections": deduped,
+    }
+
+
 def load_current_forecasts():
     """Load current cb_forecasts.json for comparison."""
     path = "docs/data/cb_forecasts.json"
@@ -855,6 +1044,7 @@ COUNTRY_SCRAPERS = {
     "CA": scrape_boc,
     "NZ": scrape_rbnz,
     "ZA": scrape_sarb,
+    "SG": scrape_mas,
 }
 
 MERGE_THRESHOLD_PP = 1.0  # any year-over-year change larger than this blocks auto-merge

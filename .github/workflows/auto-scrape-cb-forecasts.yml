@@ -11,7 +11,7 @@ on:
         type: boolean
         default: false
       country:
-        description: 'Specific country to check (US, JP, BR, AU, EA, UK, CA, NZ, ZA, or leave blank for all)'
+        description: 'Specific country to check (US, JP, BR, AU, EA, UK, CA, NZ, ZA, SG, or leave blank for all)'
         type: string
         required: false
       dry_run:
@@ -38,7 +38,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests beautifulsoup4 pypdf
+          pip install requests beautifulsoup4 pypdf pdfplumber
 
       - name: Run auto-scraper
         id: scrape
