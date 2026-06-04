@@ -909,6 +909,7 @@ def scrape_mas():
     table_count = 0
     cpi_like_rows = []  # diagnostics: any row mentioning CPI, in case the
                         # exact-label anchor misses (helps tighten the parser)
+    cpi_pages = {}      # diagnostics: extracted text of pages carrying CPI
     try:
         with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
             for pno, page in enumerate(pdf.pages):
@@ -917,6 +918,7 @@ def scrape_mas():
                     for r in table:
                         if r and any(c and 'cpi' in (c or '').lower() for c in r):
                             cpi_like_rows.append((pno + 1, r))
+                            cpi_pages.setdefault(pno + 1, page.extract_text() or "")
                     # Locate the CPI-All Items row within this table.
                     cpi_row = next(
                         (r for r in table
@@ -968,6 +970,9 @@ def scrape_mas():
         # another blind round-trip.
         for pno, r in cpi_like_rows[:6]:
             print(f"      [diag] page {pno} CPI-ish row: {r}")
+        for pno, txt in list(cpi_pages.items())[-2:]:
+            snippet = re.sub(r'[ \t]+', ' ', txt)[:1800]
+            print(f"      [diag] page {pno} TEXT >>>\n{snippet}\n<<< end page {pno}")
         if not cpi_like_rows:
             text = ""
             try:
