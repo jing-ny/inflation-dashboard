@@ -6828,8 +6828,8 @@
     "source": "Ministry of Statistics and Programme Implementation",
     "last_updated": "2026-04-22",
     "latest": {
-      "date": "2026-03",
-      "value": 3.4
+      "date": "2026-04",
+      "value": 3.48
     },
     "previous": {
       "date": "2026-02",
@@ -7287,6 +7287,10 @@
       {
         "date": "2026-03",
         "value": 3.4
+      },
+      {
+        "date": "2026-04",
+        "value": 3.48
       }
     ]
   },
