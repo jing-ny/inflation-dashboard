@@ -152,9 +152,10 @@ COUNTRIES = {
         "target": 3.0,  # Changed from 4.5% (3-6% range) to 3% in Nov 2025
         "source": "Stats SA",
         "source_url": "https://www.statssa.gov.za/",
-        "fred_series": "ZAFCPIALLMINMEI",  # OECD index
+        "api": "StatsSA",  # primary national source (P0141 PDF); FRED-OECD lags 6-12mo (#53)
+        "fred_series": "ZAFCPIALLMINMEI",  # OECD index — fallback only
         "frequency": "monthly",
-        "data_type": "index",
+        "data_type": "yoy",  # P0141 publishes the annual rate directly
         "lag_months": 6,  # FRED significantly lags Stats SA
         "notes": "SARB target changed to 3% in 2025",
     },
@@ -550,6 +551,68 @@ def fetch_abs_cpi_series() -> List[Dict]:
     return obs
 
 
+_BROWSER_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+               "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
+_MONTH_NAMES = [None, "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"]
+
+
+def fetch_statssa_cpi_series() -> List[Dict]:
+    """Fetch South Africa headline CPI (YoY %) from the Stats SA P0141 release (#53).
+
+    Stats SA has no clean public API; the monthly CPI statistical release (P0141)
+    is a PDF at a predictable path:
+        https://www.statssa.gov.za/publications/P0141/P0141<MonthName><Year>.pdf
+    We walk back from the current month to the latest published release and parse
+    the headline annual rate. DIAGNOSTIC PASS: this both confirms whether
+    statssa.gov.za is reachable from GitHub runners (the IBGE lesson) and dumps
+    the headline text so the parser can anchor precisely. Returns [] for now so
+    the caller falls back to FRED.
+    """
+    import io as _io
+    from datetime import date
+    try:
+        import pdfplumber
+    except ImportError:
+        print("(pdfplumber not installed)", end=" ")
+        return []
+
+    headers = {"User-Agent": _BROWSER_UA, "Accept": "application/pdf,*/*"}
+    today = date.today()
+    y, m = today.year, today.month
+    pdf_bytes = used_url = None
+    for _ in range(8):
+        url = f"https://www.statssa.gov.za/publications/P0141/P0141{_MONTH_NAMES[m]}{y}.pdf"
+        try:
+            r = requests.get(url, headers=headers, timeout=30)
+            if r.status_code == 200 and r.content[:4] == b"%PDF":
+                pdf_bytes, used_url = r.content, url
+                break
+            print(f"[diag] {url} -> {r.status_code}", end="  ")
+        except Exception as e:
+            print(f"[diag] {url} -> {type(e).__name__}", end="  ")
+        m -= 1
+        if m == 0:
+            m, y = 12, y - 1
+    if not pdf_bytes:
+        print("[diag] StatsSA: no P0141 PDF reachable")
+        return []
+
+    print(f"\n    [diag] StatsSA reachable: {used_url} ({len(pdf_bytes)} bytes)")
+    try:
+        with pdfplumber.open(_io.BytesIO(pdf_bytes)) as pdf:
+            page1 = (pdf.pages[0].extract_text() or "") if pdf.pages else ""
+    except Exception as e:
+        print(f"    [diag] pdfplumber error: {type(e).__name__}: {e}")
+        return []
+    for ln in page1.splitlines():
+        s = ln.strip()
+        low = s.lower()
+        if any(k in low for k in ("annual", "consumer price", "headline", "cpi")) and "%" in s:
+            print("      [diag] " + s[:180])
+    return []
+
+
 # YoY Calculation
 # -----------------------------------------------------------------------------
 
@@ -637,6 +700,21 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(ONS failed: {e}; falling back to FRED)...", end=" ")
+                    raw_data = fetch_fred_series(config["fred_series"])
+                    yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
+                else:
+                    raise
+        elif config.get("api") == "StatsSA":
+            # Direct Stats SA P0141 release (PDF) — already YoY. #53
+            try:
+                raw_data = fetch_statssa_cpi_series()
+                if not raw_data:
+                    raise ValueError("No data returned from Stats SA P0141")
+                yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)}
+                           for obs in raw_data]
+            except Exception as e:
+                if config.get("fred_series"):
+                    print(f"(StatsSA failed: {e}; falling back to FRED)...", end=" ")
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:
