@@ -296,20 +296,81 @@ def scrape_boe():
         print(f"  ⚠️  pdfplumber failed to parse MPR PDF: {type(e).__name__}: {e}")
         return None
 
-    # TEMP diagnostic (#10): print the context above each "CPI inflation (b)"
-    # modal-projection row so we can see the table title + year column header.
+    # The April 2026 MPR no longer publishes a single modal/central projection;
+    # it presents alternative scenarios in "Table 3.B: Summary of scenarios"
+    # (#10). Each scenario block has a "CPI inflation (x)" row with one value
+    # per year-column ("2026 Q2 2027 Q2 2028 Q2 2029 Q2"). We capture every
+    # scenario's CPI path and expose the cross-scenario range — picking any one
+    # scenario as "the" forecast would be editorialising (CLAUDE.md #2; "just
+    # the data"). Anchored on the scenario table so we never pick up the
+    # services/food/energy-contribution rows that share the prose.
     lines = text.splitlines()
-    for i, ln in enumerate(lines):
-        if re.match(r'\s*CPI inflation \(', ln):
-            print(f"      [diag] --- CPI row at line {i} ---")
-            for j in range(max(0, i - 9), i + 1):
-                t = re.sub(r'\s+', ' ', lines[j]).strip()
-                if t:
-                    print(f"      [diag] {j}: {t[:150]}")
 
-    print("  ⏸️  scrape_boe: structured extraction pending diagnostics (#10); "
-          "preserving curated UK forecast")
-    return None
+    def _parse_scenarios(region):
+        years = []
+        for l in region:
+            if re.search(r'20\d{2}\s*Q[1-4]', l):
+                ys = re.findall(r'(20\d{2})\s*Q[1-4]', l)
+                if len(ys) >= 2:
+                    years = ys
+                    break
+        if not years:
+            return None, {}
+        scen, current = {}, None
+        for l in region:
+            sm = re.match(r'\s*Scenario\s+([A-Z])\b', l)
+            if sm:
+                current = sm.group(1)
+                continue
+            cm = re.match(r'\s*CPI inflation \([a-z]\)\s+(.+)', l)
+            if cm and current:
+                nums = re.findall(r'-?\d+\.\d+', cm.group(1))
+                if len(nums) >= len(years):
+                    vals = {years[k]: round(float(nums[k]), 2) for k in range(len(years))
+                            if -5.0 <= float(nums[k]) <= 20.0}
+                    if vals:
+                        scen[current] = vals
+                current = None
+        return years, scen
+
+    # There can be several "Summary of scenarios" mentions (chart caption,
+    # contents, the table itself). Use the first region that yields ≥2 scenarios.
+    years, scenarios = [], {}
+    for i, l in enumerate(lines):
+        if 'Summary of scenarios' in l:
+            y, s = _parse_scenarios(lines[i:i + 80])
+            if len(s) >= 2:
+                years, scenarios = y, s
+                break
+
+    if len(scenarios) < 2:
+        print(f"  ⏸️  scrape_boe: parsed {len(scenarios)} scenario(s); expected ≥2 "
+              "— preserving curated UK forecast")
+        return None
+
+    # Cross-scenario range + midpoint per year (midpoint feeds the generic
+    # anomaly gate / single-value consumers; the range is what we display).
+    projection_range, midpoints = {}, []
+    for y in years:
+        vals = [s[y] for s in scenarios.values() if y in s]
+        if vals:
+            lo, hi = min(vals), max(vals)
+            projection_range[y] = [lo, hi]
+            midpoints.append({"year": y, "value": round((lo + hi) / 2, 2)})
+
+    print(f"  ✅ BoE scenarios { {k: scenarios[k] for k in sorted(scenarios)} }")
+    print(f"  ✅ CPI range by year: {projection_range}")
+    return {
+        "bank": "Bank of England",
+        "country": "UK",
+        "metric": "CPI inflation (MPC scenario range)",
+        "source": "BoE Monetary Policy Report — Summary of scenarios (Table 3.B)",
+        "source_url": pdf_url,
+        "source_date": pub_date,
+        "scenarios": {k: scenarios[k] for k in sorted(scenarios)},
+        "projection_range": projection_range,
+        "projections": midpoints,
+    }
 
 
 def scrape_rba():
@@ -1176,6 +1237,15 @@ def merge_into_main(new_forecasts, dry_run=False):
             entry["source_url"] = fc["source_url"]
         if fc.get("source_date"):
             entry["publication_date"] = _normalise_publication_date(fc["source_date"])
+        # Scenario-based sources (BoE, #10) carry a cross-scenario range and the
+        # full per-scenario paths. Persist them and flip the row to "enabled"
+        # (clear the disabled scraper_status), since the scraper now produces it.
+        if fc.get("scenarios"):
+            entry["scenarios"] = fc["scenarios"]
+            entry["projection_range"] = fc.get("projection_range", {})
+            entry["forecast_type"] = fc.get("metric", entry.get("forecast_type"))
+            for k in ("scraper_status", "scraper_status_issue", "scraper_status_reason"):
+                entry.pop(k, None)
         merged.append({
             "country": country,
             "bank": fc.get("bank"),
