@@ -221,6 +221,10 @@ a.freshness-paused:hover {
     color: #b45309;
     border: 1px solid #fcd34d;
 }
+.freshness-imf {
+    background: #dbeafe;
+    color: #1e40af;
+}
 .freshness-footer {
     margin-top: 0.5rem;
     font-size: 0.75rem;

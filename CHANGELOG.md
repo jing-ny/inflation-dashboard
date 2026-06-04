@@ -4,6 +4,49 @@ All notable changes to the Inflation Dashboard project are documented here.
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- **Misleading "stale" freshness signal on CN & VE (#43, #44):** the China and Venezuela
+  Outlook rows are IMF-sourced (PBoC/BCV publish no standardized inflation forecast), but
+  their `publication_date` was a frozen manual string that aged red — implying a broken
+  scraper where none exists. These rows now carry `scraper_status: "imf_sourced"` and are
+  auto-synced from `imf_forecasts.json` on every IMF refresh (April/October cadence), with
+  full provenance (`source_url`, `source_date`) on the record. The Outlook table renders a
+  distinct neutral "IMF WEO {edition}" badge instead of a red pill — and still ages to red
+  if the IMF pipeline itself stalls. VE's curated 2026 figure (80%) was corrected to the
+  current WEO value (387.4%) as a side effect of the sync.
+
+### Added
+- **BoE Monetary Policy Report scraper (#10):** new `scrape_boe()` discovers the latest MPR
+  PDF and extracts headline **CPI inflation** from `Table 3.B: Summary of scenarios`. The
+  April 2026 MPR replaced the single modal projection with a scenario framework (A/B/C), so
+  the scraper captures every scenario's CPI path and the dashboard shows the **cross-scenario
+  range** (e.g. 2026: 3.1–3.6%) rather than picking one — anchored on the scenario table, never
+  regex-over-prose (the failure mode that blocked #10). `merge_into_main` persists `scenarios`
+  + `projection_range` and flips the UK row to enabled; the Outlook table and country page
+  render the range, and the country page lists all three scenario paths. Validated against
+  live BoE via the auto-scrape workflow (the large Feb-modal→April-scenario change was
+  correctly flagged by the 1pp anomaly gate and applied under review).
+- **MAS Survey of Professional Forecasters scraper (#42):** new `scrape_mas()` in
+  `auto_scrape_cb_forecasts.py` discovers the latest quarterly SPF write-up PDF and
+  extracts the headline **CPI-All Items median** from the explicitly-labelled annual
+  "Median Mean Min Max" table (via `pdfplumber`), anchoring on that table rather than
+  regex-grepping prose. SG is now in `COUNTRY_SCRAPERS`; `pdfplumber` added to the
+  workflow deps. MAS's WAF rejects the default UA, so a browser `BROWSER_HEADERS` is
+  threaded through the fetch helpers (the other scrapers keep the honest UA). The
+  current calendar year — which the write-up only presents in distribution/quarterly
+  tables — is preserved by overlaying scraped year(s) onto the existing SG projections,
+  so the year-ahead median auto-refreshes each quarter and the row's `publication_date`
+  stops drifting amber/red between releases. Validated end-to-end against live MAS via
+  the auto-scrape workflow.
+- **`fetch_imf_forecasts.py` → `sync_imf_sourced_cb_forecasts()`:** keeps any row flagged
+  `scraper_status: "imf_sourced"` in `cb_forecasts.json` in lockstep with the IMF WEO data,
+  so IMF-backed CB rows refresh automatically rather than drifting stale (CLAUDE.md #1/#3/#4).
+- **`imfSourcedPill()` freshness helper** + `.freshness-imf` style for the new badge.
+
+---
+
 ## [1.3.0] - 2026-04-22
 
 ### Changed

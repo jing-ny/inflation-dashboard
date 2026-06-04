@@ -514,10 +514,19 @@ async function renderForecastTable(countryCode) {
                         <td>${cbForecast.forecast_type}</td>
         `;
         
-        // Add CB forecast values aligned to IMF years
+        // Add CB forecast values aligned to IMF years. Scenario-based sources
+        // (BoE, #10) carry a per-year cross-scenario range instead of a point.
+        const cbRange = cbForecast.projection_range || null;
         for (const year of imfYears) {
-            const value = cbForecast.projections?.[year];
-            html += `<td>${value !== null && value !== undefined ? value.toFixed(1) + '%' : '—'}</td>`;
+            let cell = '—';
+            if (cbRange && Array.isArray(cbRange[year])) {
+                const [lo, hi] = cbRange[year];
+                cell = lo === hi ? `${lo.toFixed(1)}%` : `${lo.toFixed(1)}–${hi.toFixed(1)}%`;
+            } else {
+                const value = cbForecast.projections?.[year];
+                if (value !== null && value !== undefined) cell = `${value.toFixed(1)}%`;
+            }
+            html += `<td>${cell}</td>`;
         }
         
         html += `
@@ -541,6 +550,34 @@ async function renderForecastTable(countryCode) {
                 <strong>IMF:</strong> World Economic Outlook${imfData.version ? ' (' + imfData.version + ')' : ''}${imfData.retrieved ? ', retrieved ' + imfData.retrieved : ''}
             </p>
         `;
+
+        // Scenario-based sources (BoE, #10): show each scenario's CPI path so
+        // the displayed range is auditable rather than a bare band.
+        if (cbForecast.scenarios && typeof cbForecast.scenarios === 'object') {
+            const scen = cbForecast.scenarios;
+            const scenYears = Array.from(new Set(
+                Object.values(scen).flatMap(p => Object.keys(p || {})))).sort();
+            html += `
+                <p style="margin-top: 1rem; margin-bottom: 0.5rem; font-weight: 600;">Scenario projections (CPI inflation, %)</p>
+                <table class="forecast-table">
+                    <thead><tr><th>Scenario</th>${scenYears.map(y => `<th>${y}</th>`).join('')}</tr></thead>
+                    <tbody>
+                        ${Object.keys(scen).sort().map(name => `
+                            <tr>
+                                <td>${name}</td>
+                                ${scenYears.map(y => {
+                                    const v = scen[name]?.[y];
+                                    return `<td>${v !== undefined && v !== null ? v.toFixed(1) + '%' : '—'}</td>`;
+                                }).join('')}
+                            </tr>`).join('')}
+                    </tbody>
+                </table>
+                <p style="margin-top: 0.5rem; font-size: 0.8125rem; color: #6b7280;">
+                    The Bank of England publishes alternative scenarios rather than a single central projection;
+                    the comparison table above shows the cross-scenario range.
+                </p>
+            `;
+        }
     } else if (cbForecast) {
         // Only central bank forecast available
         const years = Object.keys(cbForecast.projections).filter(y => y !== 'longer_run').sort();

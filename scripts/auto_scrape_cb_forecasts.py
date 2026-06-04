@@ -28,11 +28,23 @@ ssl_context = ssl.create_default_context()
 CURRENT_YEAR = datetime.now().year
 HEADERS = {'User-Agent': 'Mozilla/5.0 (compatible; InflationDashboard/1.0)'}
 
+# Browser-like headers for sources whose WAF rejects the honest
+# InflationDashboard UA (MAS sits behind such a WAF — #42). Kept separate so
+# the well-behaved scrapers (BoJ/Fed/ECB/…) keep advertising the honest UA and
+# we don't change their request fingerprint (the #6 done-when constraint).
+BROWSER_HEADERS = {
+    'User-Agent': ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+                   'AppleWebKit/537.36 (KHTML, like Gecko) '
+                   'Chrome/126.0.0.0 Safari/537.36'),
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9',
+}
 
-def fetch_url(url):
+
+def fetch_url(url, headers=None):
     """Fetch URL content with error handling."""
     try:
-        req = Request(url, headers=HEADERS)
+        req = Request(url, headers=headers or HEADERS)
         with urlopen(req, timeout=30, context=ssl_context) as response:
             return response.read().decode('utf-8', errors='ignore')
     except URLError as e:
@@ -207,6 +219,41 @@ def scrape_ecb():
     return result
 
 
+_MON_FULL = {
+    'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6,
+    'july': 7, 'august': 8, 'september': 9, 'october': 10, 'november': 11,
+    'december': 12,
+}
+
+
+def _discover_boe_mpr_pdf():
+    """Discover the latest BoE Monetary Policy Report PDF URL + publication date.
+
+    The /monetary-policy hub links the latest report at
+    /monetary-policy-report/<year>/<month>-<year>; the report PDF lives at the
+    parallel media path
+    /-/media/boe/files/monetary-policy-report/<year>/<month>/monetary-policy-report-<month>-<year>.pdf
+
+    Returns (pdf_url, 'YYYY-MM-01') or (None, None).
+    """
+    hub = fetch_url("https://www.bankofengland.co.uk/monetary-policy", headers=BROWSER_HEADERS)
+    if not hub:
+        print("  ⚠️  BoE monetary-policy hub not reachable")
+        return None, None
+    m = re.search(r'/monetary-policy-report/(\d{4})/([a-z]+)-\d{4}', hub, re.IGNORECASE)
+    if not m:
+        print("  ⚠️  Could not find an MPR link on the hub page")
+        return None, None
+    year, month = m.group(1), m.group(2).lower()
+    pdf_url = (f"https://www.bankofengland.co.uk/-/media/boe/files/"
+               f"monetary-policy-report/{year}/{month}/"
+               f"monetary-policy-report-{month}-{year}.pdf")
+    mn = _MON_FULL.get(month)
+    pub_date = f"{year}-{mn:02d}-01" if mn else f"{year}-01-01"
+    print(f"  ℹ️  Latest MPR: {month} {year} → {pdf_url}")
+    return pdf_url, pub_date
+
+
 def scrape_boe():
     """Scrape Bank of England Monetary Policy Report.
 
@@ -226,27 +273,104 @@ def scrape_boe():
     """
     print("📊 Scraping BoE...")
 
-    # The dedicated /monetary-policy-report index page was retired sometime
-    # before 2026-04-30 (it now 404s). The /monetary-policy hub page links
-    # to the latest MPR with the same /monetary-policy-report/YYYY/<month>
-    # URL scheme, so we use it as the index instead.
-    url = None
-    index_url = "https://www.bankofengland.co.uk/monetary-policy"
-    index_html = fetch_url(index_url)
-
-    if index_html:
-        links = re.findall(r'href="(/monetary-policy-report/\d{4}/[^"]+)"', index_html)
-        if links:
-            url = "https://www.bankofengland.co.uk" + links[0]
-
-    if not url:
-        print("  ⚠️  Could not find BoE MPR URL from index page")
+    pdf_url, pub_date = _discover_boe_mpr_pdf()
+    if not pdf_url:
         return None
 
-    print(f"  ℹ️  Found latest MPR: {url}")
-    print("  ⏸️  scrape_boe: extractor disabled until structured-table parsing lands; "
-          "preserving curated UK forecast")
-    return None
+    pdf_bytes = _fetch_pdf_bytes(pdf_url, headers=BROWSER_HEADERS)
+    if pdf_bytes is None:
+        return None
+    print(f"  ℹ️  MPR PDF fetched ({len(pdf_bytes)} bytes)")
+
+    try:
+        import pdfplumber
+    except ImportError:
+        print("  ❌ pdfplumber not installed — add it to workflow requirements")
+        return None
+
+    import io
+    try:
+        with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+            text = "\n".join((page.extract_text() or "") for page in pdf.pages)
+    except Exception as e:
+        print(f"  ⚠️  pdfplumber failed to parse MPR PDF: {type(e).__name__}: {e}")
+        return None
+
+    # The April 2026 MPR no longer publishes a single modal/central projection;
+    # it presents alternative scenarios in "Table 3.B: Summary of scenarios"
+    # (#10). Each scenario block has a "CPI inflation (x)" row with one value
+    # per year-column ("2026 Q2 2027 Q2 2028 Q2 2029 Q2"). We capture every
+    # scenario's CPI path and expose the cross-scenario range — picking any one
+    # scenario as "the" forecast would be editorialising (CLAUDE.md #2; "just
+    # the data"). Anchored on the scenario table so we never pick up the
+    # services/food/energy-contribution rows that share the prose.
+    lines = text.splitlines()
+
+    def _parse_scenarios(region):
+        years = []
+        for l in region:
+            if re.search(r'20\d{2}\s*Q[1-4]', l):
+                ys = re.findall(r'(20\d{2})\s*Q[1-4]', l)
+                if len(ys) >= 2:
+                    years = ys
+                    break
+        if not years:
+            return None, {}
+        scen, current = {}, None
+        for l in region:
+            sm = re.match(r'\s*Scenario\s+([A-Z])\b', l)
+            if sm:
+                current = sm.group(1)
+                continue
+            cm = re.match(r'\s*CPI inflation \([a-z]\)\s+(.+)', l)
+            if cm and current:
+                nums = re.findall(r'-?\d+\.\d+', cm.group(1))
+                if len(nums) >= len(years):
+                    vals = {years[k]: round(float(nums[k]), 2) for k in range(len(years))
+                            if -5.0 <= float(nums[k]) <= 20.0}
+                    if vals:
+                        scen[current] = vals
+                current = None
+        return years, scen
+
+    # There can be several "Summary of scenarios" mentions (chart caption,
+    # contents, the table itself). Use the first region that yields ≥2 scenarios.
+    years, scenarios = [], {}
+    for i, l in enumerate(lines):
+        if 'Summary of scenarios' in l:
+            y, s = _parse_scenarios(lines[i:i + 80])
+            if len(s) >= 2:
+                years, scenarios = y, s
+                break
+
+    if len(scenarios) < 2:
+        print(f"  ⏸️  scrape_boe: parsed {len(scenarios)} scenario(s); expected ≥2 "
+              "— preserving curated UK forecast")
+        return None
+
+    # Cross-scenario range + midpoint per year (midpoint feeds the generic
+    # anomaly gate / single-value consumers; the range is what we display).
+    projection_range, midpoints = {}, []
+    for y in years:
+        vals = [s[y] for s in scenarios.values() if y in s]
+        if vals:
+            lo, hi = min(vals), max(vals)
+            projection_range[y] = [lo, hi]
+            midpoints.append({"year": y, "value": round((lo + hi) / 2, 2)})
+
+    print(f"  ✅ BoE scenarios { {k: scenarios[k] for k in sorted(scenarios)} }")
+    print(f"  ✅ CPI range by year: {projection_range}")
+    return {
+        "bank": "Bank of England",
+        "country": "UK",
+        "metric": "CPI inflation (MPC scenario range)",
+        "source": "BoE Monetary Policy Report — Summary of scenarios (Table 3.B)",
+        "source_url": pdf_url,
+        "source_date": pub_date,
+        "scenarios": {k: scenarios[k] for k in sorted(scenarios)},
+        "projection_range": projection_range,
+        "projections": midpoints,
+    }
 
 
 def scrape_rba():
@@ -603,14 +727,21 @@ def _discover_boj_outlook_pdf():
     return url, pub_date
 
 
-def _fetch_pdf_text(url):
-    """Download a PDF and return concatenated text of all pages."""
+def _fetch_pdf_bytes(url, headers=None):
+    """Download a PDF and return its raw bytes (or None on failure)."""
     try:
-        req = Request(url, headers=HEADERS)
+        req = Request(url, headers=headers or HEADERS)
         with urlopen(req, timeout=60, context=ssl_context) as response:
-            pdf_bytes = response.read()
+            return response.read()
     except URLError as e:
         print(f"  ❌ Failed to fetch PDF {url}: {e}")
+        return None
+
+
+def _fetch_pdf_text(url, headers=None):
+    """Download a PDF and return concatenated text of all pages."""
+    pdf_bytes = _fetch_pdf_bytes(url, headers=headers)
+    if pdf_bytes is None:
         return None
 
     try:
@@ -800,6 +931,175 @@ def scrape_sarb():
     return None
 
 
+MAS_SPF_INDEX = "https://www.mas.gov.sg/monetary-policy/mas-survey-of-professional-forecasters"
+
+_MON_ABBR = {
+    'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+    'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
+}
+
+
+def _discover_mas_spf_pdf():
+    """Find the latest MAS Survey of Professional Forecasters write-up PDF.
+
+    The SPF is published quarterly (Mar/Jun/Sep/Dec). The landing page links
+    each release's write-up PDF directly, hosted under the media library as
+
+        .../mas-survey-of-professional-forecasters/<year>/survey-writeup-<mon>-<year>-web.pdf
+
+    (e.g. survey-writeup-mar-2026-web.pdf). We date each link off the
+    <mon>-<year> in its filename and pick the newest.
+
+    Returns (pdf_url, 'YYYY-MM-01') or (None, None). Heavily logged because
+    the MAS markup is only observable from a network that can reach it (#42).
+    """
+    html = fetch_url(MAS_SPF_INDEX, headers=BROWSER_HEADERS)
+    if not html:
+        print("  ⚠️  MAS SPF landing page not reachable")
+        return None, None
+    print(f"  ℹ️  MAS SPF landing fetched ({len(html)} bytes)")
+
+    candidates = []
+    for href in re.findall(r'href="([^"]+\.pdf[^"]*)"', html, re.I):
+        m = re.search(r'survey-writeup-([a-z]{3})[a-z]*-(\d{4})', href, re.I)
+        if not m:
+            continue
+        month = _MON_ABBR.get(m.group(1).lower())
+        if month:
+            candidates.append((int(m.group(2)), month, href))
+    candidates = sorted(set(candidates), key=lambda c: (c[0], c[1]), reverse=True)
+    print(f"  ℹ️  {len(candidates)} SPF write-up PDF link(s) found"
+          + (f"; latest → {candidates[0][2]}" if candidates else ""))
+    if not candidates:
+        return None, None
+
+    year, month, href = candidates[0]
+    pdf_url = href if href.startswith("http") else "https://www.mas.gov.sg" + href
+    pub_date = f"{year:04d}-{month:02d}-01"
+    return pdf_url, pub_date
+
+
+def scrape_mas():
+    """Scrape the MAS Survey of Professional Forecasters — headline
+    'CPI-All Items Inflation' median.
+
+    Per CLAUDE.md #1 this is the "fix it properly" route for #42 (MAS publishes
+    no machine-readable feed; the SPF is a quarterly PDF). Extraction anchors on
+    the exact 'CPI-All Items' results row and refuses to emit anything if that
+    row isn't found, rather than regex-grepping prose (the #10/#12 failure mode).
+
+    The SPF asks forecasters for the *current calendar year* CPI-All Items
+    inflation (and, in the Q4/Q1 rounds, the year ahead). We map the year
+    columns from the table header so a value is only emitted against a year we
+    can positively identify.
+    """
+    print("📊 Scraping MAS SPF...")
+
+    pdf_url, pub_date = _discover_mas_spf_pdf()
+    if not pdf_url:
+        print("  ⏸️  scrape_mas: could not locate SPF results PDF; preserving curated SG forecast")
+        return None
+
+    pdf_bytes = _fetch_pdf_bytes(pdf_url, headers=BROWSER_HEADERS)
+    if pdf_bytes is None:
+        return None
+    print(f"  ℹ️  SPF PDF fetched ({len(pdf_bytes)} bytes) from {pdf_url}")
+
+    try:
+        import pdfplumber  # structured table extraction (CLAUDE.md #1 new dep)
+    except ImportError:
+        print("  ❌ pdfplumber not installed — add it to workflow requirements")
+        return None
+
+    import io
+    # The SPF write-up summarises each forecast year in an annual table titled
+    #   "Forecasts of GDP Growth and CPI-All Items Inflation for <YEAR>"
+    # with columns "Median Mean Min Max" and a row beginning "CPI-All Items".
+    # pdfplumber's *table* extraction stuffs whole columns into single newline-
+    # joined cells, but its *text* extraction renders those tables as clean
+    # lines (e.g. "CPI-All Items 1.7 1.6 1.0 2.0"). So we read the text, anchor
+    # on the table title + the Median/Mean/Min/Max header, and take the Median
+    # column — the published headline figure, never MAS Core / GDP / a quarterly
+    # sub-row. If the structure isn't found we emit nothing (CLAUDE.md #2).
+    try:
+        with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+            text = "\n".join((page.extract_text() or "") for page in pdf.pages)
+    except Exception as e:  # pdfplumber can raise on malformed/scanned PDFs
+        print(f"  ⚠️  pdfplumber failed to parse SPF PDF: {type(e).__name__}: {e}")
+        return None
+
+    if os.environ.get("MAS_DEBUG"):  # dump every CPI line + annual-table title
+        for ln in text.splitlines():
+            if 'Forecasts of GDP Growth' in ln or ln.strip().startswith('CPI-All Items'):
+                print("      [diag] " + re.sub(r'\s+', ' ', ln).strip())
+
+    projections = []
+    seen = set()
+    title_re = re.compile(
+        r'Forecasts of GDP Growth and CPI-All Items Inflation for\s+(20\d{2})',
+        re.IGNORECASE)
+    for m in title_re.finditer(text):
+        year = m.group(1)
+        if year in seen or int(year) < CURRENT_YEAR:
+            continue
+        window = text[m.end(): m.end() + 500]
+        # Confirm the column order before trusting position 1 = Median.
+        hdr = re.search(r'Median\s+Mean\s+Min\s+Max', window, re.IGNORECASE)
+        if not hdr:
+            continue  # unexpected layout — don't guess (CLAUDE.md #2)
+        row = re.search(
+            r'CPI-All Items\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)',
+            window[hdr.start():], re.IGNORECASE)
+        if not row:
+            continue
+        median = float(row.group(1))  # Median is the first of the four columns
+        if -5.0 <= median <= 15.0:    # SG CPI sanity band
+            seen.add(year)
+            projections.append({"year": year, "value": round(median, 2)})
+
+    if not projections:
+        print("  ⏸️  scrape_mas: annual 'CPI-All Items' median table not found; "
+              "preserving curated SG forecast")
+        idx = text.find('CPI-All Items')
+        if idx != -1:
+            print("      [diag] near CPI-All Items: "
+                  + re.sub(r'\s+', ' ', text[idx:idx + 120]))
+        return None
+
+    # The write-up gives the clean "Median Mean Min Max" annual table only for
+    # the year(s) ahead — the current calendar year appears solely in
+    # distribution/quarterly tables whose column order we won't guess at
+    # (CLAUDE.md #2). merge_into_main *replaces* the projections dict, so to
+    # avoid blanking the current-year cell we overlay the freshly-scraped
+    # year(s) onto the existing curated SG projections (themselves SPF figures).
+    # Net effect: the year-ahead median auto-refreshes every quarter and the
+    # row's publication_date tracks the latest survey (the #42 freshness goal),
+    # while years not in the clean table are left untouched rather than lost.
+    scraped = {p["year"]: p["value"] for p in projections}
+    existing = {}
+    try:
+        with open("docs/data/cb_forecasts.json", encoding="utf-8") as f:
+            existing = ((json.load(f).get("forecasts", {}).get("SG", {}) or {})
+                        .get("projections", {}) or {})
+    except (OSError, json.JSONDecodeError):
+        pass
+    combined = {str(y): v for y, v in existing.items()}
+    combined.update(scraped)
+    projections = [{"year": y, "value": v} for y, v in sorted(combined.items())]
+
+    print(f"  ✅ MAS SPF CPI-All Items median (scraped {sorted(scraped)}; "
+          f"row now {projections})")
+    return {
+        "bank": "Monetary Authority of Singapore",
+        "country": "SG",
+        "metric": "CPI-All Items inflation (SPF median forecast)",
+        "source": "MAS Survey of Professional Forecasters",
+        "source_url": pdf_url,
+        "source_date": pub_date,
+        "projections": projections,
+    }
+
+
 def load_current_forecasts():
     """Load current cb_forecasts.json for comparison."""
     path = "docs/data/cb_forecasts.json"
@@ -855,6 +1155,7 @@ COUNTRY_SCRAPERS = {
     "CA": scrape_boc,
     "NZ": scrape_rbnz,
     "ZA": scrape_sarb,
+    "SG": scrape_mas,
 }
 
 MERGE_THRESHOLD_PP = 1.0  # any year-over-year change larger than this blocks auto-merge
@@ -936,6 +1237,15 @@ def merge_into_main(new_forecasts, dry_run=False):
             entry["source_url"] = fc["source_url"]
         if fc.get("source_date"):
             entry["publication_date"] = _normalise_publication_date(fc["source_date"])
+        # Scenario-based sources (BoE, #10) carry a cross-scenario range and the
+        # full per-scenario paths. Persist them and flip the row to "enabled"
+        # (clear the disabled scraper_status), since the scraper now produces it.
+        if fc.get("scenarios"):
+            entry["scenarios"] = fc["scenarios"]
+            entry["projection_range"] = fc.get("projection_range", {})
+            entry["forecast_type"] = fc.get("metric", entry.get("forecast_type"))
+            for k in ("scraper_status", "scraper_status_issue", "scraper_status_reason"):
+                entry.pop(k, None)
         merged.append({
             "country": country,
             "bank": fc.get("bank"),

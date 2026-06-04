@@ -247,14 +247,28 @@ async function loadOutlookTable() {
             const imfCountry = imfData.countries?.[code];
             const imfCurrentYear = imfCountry?.forecasts?.[currentYearStr];
 
+            // Scenario-based sources (BoE, #10) carry a cross-scenario range
+            // per year instead of a single projection. Render "lo–hi%".
+            const range = forecast.projection_range || null;
+            const fmtCb = (yr) => {
+                if (range && Array.isArray(range[yr])) {
+                    const [lo, hi] = range[yr];
+                    return lo === hi ? `${lo.toFixed(1)}%` : `${lo.toFixed(1)}–${hi.toFixed(1)}%`;
+                }
+                const v = proj ? proj[yr] : undefined;
+                return (v !== null && v !== undefined) ? `${v.toFixed(1)}%` : '—';
+            };
+
             // Format source with date abbreviation
             const sourceDate = forecast.publication_date
                 .replace('January', 'Jan').replace('February', 'Feb').replace('March', 'Mar')
+                .replace('April', 'Apr').replace('September', 'Sep')
                 .replace('December', 'Dec').replace('November', 'Nov').replace('October', 'Oct')
                 .replace('2025', "'25").replace('2026', "'26");
 
-            // Highlight divergence between CB and IMF
-            const cbCurrentYear = proj[currentYearStr];
+            // Highlight divergence between CB and IMF (skipped for ranged
+            // scenario rows — a range vs a point estimate isn't a clean diff).
+            const cbCurrentYear = range ? null : proj[currentYearStr];
             let imfCell = '—';
             if (imfCurrentYear !== undefined && imfCurrentYear !== null) {
                 const diff = cbCurrentYear !== null ? Math.abs(cbCurrentYear - imfCurrentYear) : 0;
@@ -273,7 +287,15 @@ async function loadOutlookTable() {
             //      AND append a "pending review" chip if there's a draft
             //      blocked by the 1pp anomaly gate (CLAUDE.md #2, #32).
             let freshnessCell;
-            if (forecast.scraper_status === 'disabled') {
+            if (forecast.scraper_status === 'imf_sourced') {
+                // Row tracks the IMF WEO (no CB scraper by design — #43/#44).
+                // Still tally by freshness tier so the footer totals stay
+                // honest and a stalled IMF pipeline shows up as very-stale.
+                const fr = freshnessFor(forecast.publication_date, 'forecast');
+                if (fr) freshnessCounts[fr.tier]++;
+                else freshnessCounts.unknown++;
+                freshnessCell = imfSourcedPill(forecast.publication_date, imfData.version);
+            } else if (forecast.scraper_status === 'disabled') {
                 freshnessCounts.paused++;
                 freshnessCell = pausedPill(
                     forecast.scraper_status_issue,
@@ -295,9 +317,9 @@ async function loadOutlookTable() {
                 <tr onclick="window.location='${page}'" class="clickable-row">
                     <td class="country-cell">${forecast.flag} ${code}</td>
                     <td class="source-cell">${forecast.source} ${sourceDate}</td>
-                    <td><strong>${cbCurrentYear !== null && cbCurrentYear !== undefined ? cbCurrentYear.toFixed(1) + '%' : '—'}</strong></td>
+                    <td><strong>${fmtCb(currentYearStr)}</strong></td>
                     <td>${imfCell}</td>
-                    <td>${proj[nextYearStr] !== null && proj[nextYearStr] !== undefined ? proj[nextYearStr].toFixed(1) + '%' : '—'}</td>
+                    <td>${fmtCb(nextYearStr)}</td>
                     <td>${freshnessCell}</td>
                     <td class="assessment-cell">"${forecast.key_quote}"</td>
                 </tr>
@@ -329,7 +351,9 @@ async function loadOutlookTable() {
             footer.innerHTML = `Data freshness as of ${today} — ${parts.join(' · ')} (${total} sources). ` +
                 `Green ≤ 120d · Amber ≤ 180d · Red &gt; 180d since publication. ` +
                 `Paused rows are explicitly disabled scrapers awaiting fix; curated value preserved. ` +
-                `Pending rows have a draft awaiting human review (see cb_forecasts_draft.json).`;
+                `Pending rows have a draft awaiting human review (see cb_forecasts_draft.json). ` +
+                `<span class="freshness freshness-imf">IMF WEO</span> rows (CN, VE) track the IMF World Economic ` +
+                `Outlook — the central bank publishes no standardized forecast, so there is no CB scraper to break.`;
         }
 
     } catch (error) {
