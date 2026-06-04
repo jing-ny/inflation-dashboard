@@ -232,9 +232,10 @@ COUNTRIES = {
         "target": 3.0,
         "source": "INEGI",
         "source_url": "https://www.inegi.org.mx/temas/inpc/",
-        "fred_series": "MEXCPIALLMINMEI",
+        "api": "INEGI",  # primary national source (INPC press release) (#55)
+        "fred_series": "MEXCPIALLMINMEI",  # OECD index — fallback only
         "frequency": "monthly",
-        "data_type": "index",
+        "data_type": "yoy",  # INPC release states the annual rate directly
         "notes": "Banxico target 3% with ±1pp tolerance band (2-4%)",
     },
     "VE": {
@@ -726,6 +727,61 @@ def fetch_mospi_cpi_series() -> List[Dict]:
     return obs
 
 
+def fetch_inegi_cpi_series() -> List[Dict]:
+    """Mexico headline INPC (YoY %) from the INEGI press release (#55).
+
+    DIAGNOSTIC PASS: confirms inegi.org.mx is reachable from GitHub runners
+    (the IBGE lesson — Latin-American gov hosts are an unknown) and dumps the
+    INPC release text / candidate boletin PDF paths so the parser can anchor on
+    the headline annual (anual) all-items rate. Returns [] (→ FRED).
+    """
+    import io as _io
+    import re as _re
+    from datetime import date
+    headers = {"User-Agent": _BROWSER_UA,
+               "Accept": "text/html,application/pdf,*/*;q=0.8",
+               "Accept-Language": "es-MX,es;q=0.9,en;q=0.8"}
+
+    # 1) The known April-2026 INPC press notice (from the issue) — confirm
+    #    reachability and capture the headline sentence format.
+    notice = "https://www.inegi.org.mx/app/saladeprensa/noticia/10828"
+    try:
+        r = requests.get(notice, headers=headers, timeout=30)
+        print(f"    [diag] INEGI notice {notice} -> {r.status_code}, {len(r.content)} bytes")
+        if r.status_code == 200:
+            text = _re.sub(r"<[^>]+>", " ", r.text)
+            text = _re.sub(r"\s+", " ", text)
+            shown = 0
+            for sent in _re.split(r"(?<=[.!?]) ", text):
+                low = sent.lower()
+                if ("anual" in low or "inpc" in low) and _re.search(r"\d", sent):
+                    print("      [diag] " + sent.strip()[:200])
+                    shown += 1
+                    if shown >= 8:
+                        break
+    except Exception as e:
+        print(f"    [diag] INEGI notice -> {type(e).__name__}: {e}")
+
+    # 2) Probe templated monthly boletin PDF paths for recent months.
+    today = date.today()
+    y, m = today.year, today.month
+    for _ in range(4):
+        for tmpl in (
+            f"https://www.inegi.org.mx/contenidos/saladeprensa/boletines/{y}/inpc/inpc{y}_{m:02d}.pdf",
+            f"https://www.inegi.org.mx/contenidos/saladeprensa/boletines/{y}/inpc_2q/inpc_2q{y}_{m:02d}.pdf",
+        ):
+            try:
+                hr = requests.get(tmpl, headers=headers, timeout=30)
+                print(f"    [diag] INEGI pdf {tmpl} -> {hr.status_code}, {len(hr.content)} bytes"
+                      f"{' (PDF)' if hr.content[:4] == b'%PDF' else ''}")
+            except Exception as e:
+                print(f"    [diag] INEGI pdf {tmpl} -> {type(e).__name__}")
+        m -= 1
+        if m == 0:
+            m, y = 12, y - 1
+    return []
+
+
 # YoY Calculation
 # -----------------------------------------------------------------------------
 
@@ -843,6 +899,21 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(StatsSA failed: {e}; falling back to FRED)...", end=" ")
+                    raw_data = fetch_fred_series(config["fred_series"])
+                    yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
+                else:
+                    raise
+        elif config.get("api") == "INEGI":
+            # Direct INEGI INPC press release — already YoY (anual). #55
+            try:
+                raw_data = fetch_inegi_cpi_series()
+                if not raw_data:
+                    raise ValueError("No data returned from INEGI INPC release")
+                yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)}
+                           for obs in raw_data]
+            except Exception as e:
+                if config.get("fred_series"):
+                    print(f"(INEGI failed: {e}; falling back to FRED)...", end=" ")
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:
