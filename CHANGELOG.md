@@ -18,6 +18,15 @@ All notable changes to the Inflation Dashboard project are documented here.
   current WEO value (387.4%) as a side effect of the sync.
 
 ### Added
+- **SARB MPC forecast-report scraper (#12):** new `scrape_sarb()` discovers the latest
+  meeting's `forecast.pdf` (predictable `/content/dam/sarb/.../<year>/<month>/forecast.pdf` —
+  the AEM listing exposes no static links) by walking back over SARB's bi-monthly meeting
+  calendar, then reads the "Summary of selected QPM forecast results" table: it aligns the
+  `1. Headline CPI` row to the period header and takes the bare-year (annual) columns,
+  handling SA decimal commas. Anchored on the headline row + year columns — never prose,
+  the food/fuel/core rows, or the parenthesised previous-forecast row (CLAUDE.md #2).
+  Validated against live SARB (May 2026 QPM: 2026 4.4%, 2027 3.7%, 2028 3.0%); the large
+  Jan→May revision was correctly flagged by the 1pp anomaly gate and applied under review.
 - **BoE Monetary Policy Report scraper (#10):** new `scrape_boe()` discovers the latest MPR
   PDF and extracts headline **CPI inflation** from `Table 3.B: Summary of scenarios`. The
   April 2026 MPR replaced the single modal projection with a scenario framework (A/B/C), so
