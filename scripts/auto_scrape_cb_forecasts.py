@@ -918,7 +918,8 @@ def scrape_mas():
 
     for ln in text.splitlines():  # TEMP diagnostic — re-gate behind MAS_DEBUG
         if 'Forecasts of GDP Growth' in ln or ln.strip().startswith('CPI-All Items'):
-            print(f"      [diag] {re.sub(r'\\s+', ' ', ln).strip()}")
+            clean = re.sub(r'\s+', ' ', ln).strip()
+            print("      [diag] " + clean)
 
     projections = []
     seen = set()
