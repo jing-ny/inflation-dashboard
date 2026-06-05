@@ -1,18 +1,16 @@
 # Inflation Newsletter — 2026-06-05
 
-Global inflation readings showed selective pressure in April, with Australia and South Africa posting material increases while major economies held steady. The divergence highlights how geopolitical energy shocks are hitting commodity-exposed economies hardest.
+The inflation landscape shows a tale of two hemispheres: while major developed economies hold steady near multi-year norms, three Southern Hemisphere economies are heating up fast.
 
-Australia's CPI jumped to 4.2% from 3.7% in February, prompting the RBA to hike twice this year to 4.10%. The central bank now expects trimmed mean inflation to peak at 3.7% mid-year, keeping rates above the 2-3% target band until early 2027. South Africa saw an even sharper move, with inflation rising a full percentage point to 4.0%, leading to a 25bp hike to 7% in May as the Middle East oil shock lifted the SARB's 2026 projection to 4.4%.
+Australia leads the breakouts, jumping to 4.2% in April from 3.7% in February—a half-point surge that prompted the RBA to hike twice this year to 4.10%. The central bank now expects trimmed mean inflation to peak at 3.7% by mid-2026, keeping Australia above its 2-3% target band until early 2027. South Africa delivered an even sharper shock, rocketing from 3.0% to 4.0% and pushing the SARB to raise rates 25bp to 7.00% in May. Singapore rounds out the movers with a 0.6pp jump to 1.8%, though this keeps the city-state comfortably within tolerance.
 
-The major economies showed more resilience. Euro Area inflation held at 3.0%, matching the ECB's revised 2026 forecast after their sharp upward revision from 1.9% to 2.6% in March. The UK stayed at 2.8%, though the Bank of England has abandoned single-point forecasts entirely, instead presenting scenario ranges of 3.1-3.6% for 2026 given Middle East uncertainty. US inflation remained at 3.8%, with the Fed expecting just one cut this year as their 2026 PCE projection moved up to 2.7%.
+The majors, by contrast, are locked in stasis. US inflation holds at 3.8%, the Euro Area at 3.0%, and the UK at 2.8%—all unchanged from prior readings. Even China's modest uptick to 1.2% from 1.0% barely registers against this backdrop of stability.
 
-China provided the period's most constructive signal, with CPI edging up to 1.2% from 1.0% in March—still subdued but showing modest momentum. Brazil and Mexico held steady at 4.1% and 4.6% respectively, though both face challenging outlooks with policy rates at 14.25% and 9.50%.
+Central bank forecasts reveal the widest divergences in years. Australia's RBA projects 3.5% inflation for 2026, a full 150bp above the IMF's 4.0% estimate for the same economy. The SARB's 4.4% forecast significantly overshoots the IMF's 3.9% call for South Africa. Meanwhile, the Fed's 2.7% projection runs 50bp below the IMF's 3.2% US forecast—a meaningful gap reflecting different views on energy pass-through from Middle East disruptions.
 
-## Energy shock reshapes forecasts
+The April IMF revision cycle painted broad upside risks globally, with headline inflation bumped to 4.4% for 2026. Advanced economies bore the brunt: US and Euro Area forecasts each rose roughly 75bp, while Australia and New Zealand saw full percentage-point upward revisions.
 
-The IMF's April WEO captured the energy price disruption across advanced economies, with broad upward revisions of 0.7-1.0 percentage points. The Fund now sees global inflation at 4.4% for 2026, with a severe-scenario alternative exceeding 6% if energy pressures intensify.
-
-**Watch for** Brazil's May CPI release, given the 5.7% market consensus sits well above the central bank's 5.1% projection. Australia's next RBA meeting will test whether the April inflation surprise forces additional tightening beyond current expectations.
+**Watch:** Australia's next RBA meeting in June for signals on further tightening, and whether the US-IMF forecast gap narrows when the Fed updates projections this month.
 
 Track live updates: https://jing-ny.github.io/inflation-dashboard/
 
