@@ -947,8 +947,15 @@ def fetch_singstat_cpi_series(config: Dict) -> List[Dict]:
         _discover()
         return []
 
-    data = j.get("Data", {}) or {}
-    rows = data.get("row", []) or []
+    data = j.get("Data")
+    if not isinstance(data, dict):
+        print(f"    [diag] SingStat {rid}: unexpected payload (Data is "
+              f"{type(data).__name__}); top keys={list(j.keys())[:8]}")
+        _discover()
+        return []
+    rows = data.get("row") or []
+    if not isinstance(rows, list):
+        rows = []
     print(f"    [diag] SingStat {rid} -> {r.status_code}, '{str(data.get('title'))[:70]}', {len(rows)} rows")
     if not rows:
         _discover()
