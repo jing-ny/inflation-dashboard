@@ -241,9 +241,16 @@ COUNTRIES = {
         "target": 3.0,
         "source": "INEGI",
         "source_url": "https://www.inegi.org.mx/temas/inpc/",
-        "fred_series": "MEXCPIALLMINMEI",
+        "api": "INEGI",  # primary national source: INEGI BIE indicators API (#55)
+        # INPC general index (base 2nd fortnight of July 2018 = 100), monthly,
+        # national. We fetch the index and compute YoY ourselves. The exact BIE
+        # indicator id is confirmed/locked from the first keyed dry-run.
+        "inegi_indicator": "910417",
+        "inegi_geo": "0700",  # national (Estados Unidos Mexicanos)
+        "inegi_source": "BIE",
+        "fred_series": "MEXCPIALLMINMEI",  # OECD index — fallback only
         "frequency": "monthly",
-        "data_type": "index",
+        "data_type": "index",  # INPC index → YoY computed downstream
         "notes": "Banxico target 3% with ±1pp tolerance band (2-4%)",
     },
     "VE": {
@@ -889,6 +896,60 @@ def fetch_estat_cpi_series(config: Dict) -> List[Dict]:
     return obs
 
 
+def fetch_inegi_cpi_series(config: Dict) -> List[Dict]:
+    """Mexico headline INPC (index) from the INEGI BIE indicators API (#55).
+
+    Mexico's INPC isn't published in any keyless machine-readable form (the
+    press release is a JS SPA; boletin PDFs are no longer at predictable URLs),
+    so we use the official INEGI indicators API, which needs a free token via
+    the ``INEGI_TOKEN`` secret. We pull the national INPC general index and
+    compute YoY downstream (data_type "index"). Returns [] (→ FRED) when the
+    token is absent or on any structure change.
+    """
+    import re as _re
+    token = os.environ.get("INEGI_TOKEN")
+    if not token:
+        print("(INEGI_TOKEN not set)", end=" ")
+        return []
+    indicator = config["inegi_indicator"]
+    geo = config.get("inegi_geo", "0700")
+    src = config.get("inegi_source", "BIE")
+    # NB: the token goes in the path; never log the full URL (GitHub masks the
+    # secret, but we keep it out of diagnostics entirely to be safe).
+    url = (f"https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/"
+           f"INDICATOR/{indicator}/en/{geo}/false/{src}/2.0/{token}?type=json")
+    headers = {"User-Agent": _BROWSER_UA, "Accept": "application/json"}
+    try:
+        r = requests.get(url, headers=headers, timeout=40)
+        j = r.json()
+    except Exception as e:
+        print(f"[diag] INEGI API error: {type(e).__name__}: {e}")
+        return []
+
+    series = j.get("Series") or []
+    print(f"    [diag] INEGI indicator={indicator} geo={geo} src={src} -> "
+          f"{r.status_code}, {len(series)} series")
+    obs = []
+    for s in series:
+        for o in s.get("OBSERVATIONS", []) or []:
+            tp = o.get("TIME_PERIOD", "")
+            m = _re.match(r"(\d{4})/(\d{1,2})$", tp.strip())
+            if not m:
+                continue
+            try:
+                val = float(o.get("OBS_VALUE"))
+            except (TypeError, ValueError):
+                continue
+            obs.append({"date": f"{int(m.group(1)):04d}-{int(m.group(2)):02d}-01",
+                        "value": val})
+    if not obs:
+        print("    [diag] INEGI: no monthly INPC observations parsed; preserving curated MX")
+        return []
+    obs.sort(key=lambda o: o["date"])
+    print(f"  ✅ INEGI INPC index: {len(obs)} pts, latest {obs[-1]}")
+    return obs
+
+
 def fetch_nbs_cpi_series() -> List[Dict]:
     """China headline CPI (YoY %) from the NBS English press release (#56).
 
@@ -1143,6 +1204,20 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(ABS failed: {e}; falling back to FRED)...", end=" ")
+                    raw_data = fetch_fred_series(config["fred_series"])
+                    yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
+                else:
+                    raise
+        elif config.get("api") == "INEGI":
+            # Direct INEGI BIE indicators API — INPC index, compute YoY. #55
+            try:
+                raw_data = fetch_inegi_cpi_series(config)
+                if not raw_data:
+                    raise ValueError("No data returned from INEGI indicators API")
+                yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
+            except Exception as e:
+                if config.get("fred_series"):
+                    print(f"(INEGI failed: {e}; falling back to FRED)...", end=" ")
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:
