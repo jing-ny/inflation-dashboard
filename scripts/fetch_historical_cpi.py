@@ -26,8 +26,6 @@ Countries covered:
 - 🇮🇳 India (FRED - OECD)
 - 🇰🇷 South Korea (FRED - OECD)
 - 🇸🇬 Singapore (FRED - OECD)
-- 🇧🇷 Brazil (FRED - OECD)
-- 🇲🇽 Mexico (FRED - OECD)
 
 Usage:
     python fetch_historical_cpi.py              # Merge mode (default)
@@ -230,32 +228,10 @@ COUNTRIES = {
         "data_type": "yoy",  # SingStat "Percent Change ... Previous Year" is already YoY
         "notes": "Primary: SingStat TableBuilder CPI All-Items YoY (monthly). Fallback: FRED World Bank annual.",
     },
-    "BR": {
-        "name": "Brazil",
-        "flag": "🇧🇷",
-        "target": 3.0,
-        "source": "IBGE",
-        "source_url": "https://www.ibge.gov.br/en/statistics/economic/prices-and-costs.html",
-        "fred_series": "BRACPIALLMINMEI",
-        "frequency": "monthly",
-        "data_type": "index",
-        "notes": "BCB target 3% with 1.5pp tolerance band (1.5-4.5%)",
-    },
-    "MX": {
-        "name": "Mexico",
-        "flag": "🇲🇽",
-        "target": 3.0,
-        "source": "INEGI",
-        "source_url": "https://www.inegi.org.mx/temas/inpc/",
-        "fred_series": "MEXCPIALLMINMEI",
-        "frequency": "monthly",
-        "data_type": "index",
-        "notes": "Banxico target 3% with ±1pp tolerance band (2-4%)",
-    },
 }
 
 # Display order for output
-DISPLAY_ORDER = ['US', 'EA', 'UK', 'CA', 'AU', 'NZ', 'ZA', 'BR', 'MX', 'JP', 'CN', 'IN', 'KR', 'SG']
+DISPLAY_ORDER = ['US', 'EA', 'UK', 'CA', 'AU', 'NZ', 'ZA', 'JP', 'CN', 'IN', 'KR', 'SG']
 
 
 # -----------------------------------------------------------------------------

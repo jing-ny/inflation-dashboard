@@ -63,8 +63,6 @@ This keeps real staleness visible (CLAUDE.md #4) without false positives on curr
 | 🇮🇳 India | FRED (INDCPIALLMINMEI) | [MOSPI](https://www.mospi.gov.in/) | Monthly |
 | 🇰🇷 South Korea | FRED (KORCPALTT01IXNBM) | [KOSTAT](https://kostat.go.kr/) | Monthly |
 | 🇸🇬 Singapore | FRED (FPCPITOTLZGSGP) | [SingStat](https://www.singstat.gov.sg/) | Monthly |
-| 🇧🇷 Brazil | FRED (BRACPIALLMINMEI) | [IBGE](https://www.ibge.gov.br/) | Monthly |
-| 🇲🇽 Mexico | FRED (MEXCPIALLMINMEI) | [INEGI](https://www.inegi.org.mx/) | Monthly |
 
 *Australia transitioned to monthly CPI in late 2025. Historical data is quarterly.
 
@@ -113,7 +111,7 @@ CPI actuals are fetched per country by [`scripts/fetch_historical_cpi.py`](scrip
 | South Africa | FRED-OECD | 6–12 months |
 | New Zealand | FRED-OECD (quarterly) | quarterly cadence |
 | Japan, Korea | FRED (COICOP index) | 1–3 months; manual supplement sometimes needed |
-| China, India, Brazil, Mexico | FRED-OECD | 1–3 months |
+| China, India | FRED-OECD | 1–3 months |
 | Singapore | FRED (World Bank annual — OECD series broken) | coarse |
 
 **Runner reachability is the gating constraint.** "Just switch the laggy countries to their national API" is the obvious fix (tracked per country in issues [#50–#60](https://github.com/jing-ny/inflation-dashboard/issues)), **but it only works if that API answers from where our automation actually runs** — GitHub Actions (Azure-hosted runners). Several national statistics APIs do **not** route to those cloud IPs. Two observed outcomes: the ABS Data API (`data.api.abs.gov.au`) **is** reachable from runners and now sources Australia directly (#50), whereas IBGE's SIDRA API (`apisidra.ibge.gov.br`) **connection-times-out from GitHub runners**, so a Brazil-via-SIDRA path falls back to FRED and yields no benefit (#54, deferred). The fetchers that work today (BLS/ONS/StatCan/ECB/ABS) are all CDN/large-institution endpoints reachable from cloud infra. So before adopting a new source, confirm it is reachable from a GitHub runner (the `update-data` workflow accepts a single-country dry-run for exactly this), and always keep the FRED series as a `fred_series` fallback.
@@ -139,8 +137,6 @@ When a source is stale or unreachable, the value is verified/supplemented from t
 | Bank of Korea | BOK Website | CPI Inflation | 4x/year |
 | Monetary Authority of Singapore | MAS Website | CPI Inflation | 4x/year |
 | Reserve Bank of India | RBI Website | CPI Inflation | 6x/year |
-| Banco Central do Brasil | BCB Website | IPCA Inflation | 8x/year |
-| Banco de México | Banxico Website | CPI Inflation | 8x/year |
 | China (PBOC) | IMF WEO | CPI Inflation | 2x/year |
 
 **Notes:** 
@@ -206,7 +202,7 @@ Failure-path emails (`if: failure()`) are tracked in [#28](https://github.com/ji
 
 ### Manual Updates Required
 
-- **Central bank forecasts:** Mostly automated (9/14) — see PROJECT_PLAN.md "Scraper status". The remaining banks (CN, IN, KR, SG, MX) are updated manually after MPC meetings (see CPI_UPDATE_GUIDE.md), with PBoC an explicit non-goal.
+- **Central bank forecasts:** Mostly automated (9/12) — see PROJECT_PLAN.md "Scraper status". The remaining banks (CN, IN, KR) are updated manually after MPC meetings (see CPI_UPDATE_GUIDE.md), with PBoC an explicit non-goal.
 - **IMF forecasts:** April and October — `fetch_imf_forecasts.py` pulls the latest WEO.
 - **CPI verification:** Monthly via `update_cpi.py` if FRED hasn't caught up. Direct-source paths (BLS for US, ONS for UK, StatCan for CA, ECB for EA) usually beat FRED to the release.
 
@@ -246,7 +242,7 @@ Failure-path emails (`if: failure()`) are tracked in [#28](https://github.com/ji
 
 ```
 docs/data/                        # Single source of truth
-├── historical_cpi.json           # CPI history for all 14 countries
+├── historical_cpi.json           # CPI history for all 12 countries
 ├── cb_forecasts.json             # Central bank forecasts
 ├── imf_forecasts.json            # IMF WEO projections
 ├── cpi_supplements.json          # Manual supplements for FRED lag
@@ -256,7 +252,7 @@ docs/data/                        # Single source of truth
     └── imf_forecast_history.json # IMF forecast revision history
 
 scripts/                          # Data collection scripts
-├── fetch_historical_cpi.py       # FRED API fetcher (all 14 countries)
+├── fetch_historical_cpi.py       # FRED API fetcher (all 12 countries)
 ├── fetch_imf_forecasts.py        # IMF API fetcher
 ├── auto_scrape_cb_forecasts.py   # CB publication scraper (6 banks)
 ├── monitor_updates.py            # Automated checker
@@ -297,8 +293,6 @@ scripts/                          # Data collection scripts
 - **India MOSPI:** https://www.mospi.gov.in/
 - **KOSTAT:** https://kostat.go.kr/
 - **SingStat:** https://www.singstat.gov.sg/
-- **Brazil IBGE:** https://www.ibge.gov.br/
-- **Mexico INEGI:** https://www.inegi.org.mx/
 
 ### Data APIs
 - **FRED:** https://fred.stlouisfed.org/
