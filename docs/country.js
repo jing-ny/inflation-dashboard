@@ -492,10 +492,19 @@ async function renderForecastTable(countryCode) {
         return;
     }
 
+    // Some countries (e.g. CN, VE) have no standardized central-bank forecast,
+    // so their cb_forecasts.json row is a placeholder that just mirrors the IMF
+    // WEO (scraper_status: "imf_sourced"). Such a row is NOT a genuine central
+    // bank source — rendering it alongside the IMF row would show "IMF vs IMF"
+    // (#67). Treat it as absent for branching so we fall through to the
+    // IMF-only view, while still surfacing its note for context.
+    const cbIsImfPlaceholder = !!cbForecast && cbForecast.scraper_status === 'imf_sourced';
+    const cbIsReal = !!cbForecast && !cbIsImfPlaceholder;
+
     let html = '';
 
-    // If we have both CB and IMF, show comparison table
-    if (cbForecast && imfForecast && imfForecast.forecasts) {
+    // If we have both a genuine CB forecast and IMF, show comparison table
+    if (cbIsReal && imfForecast && imfForecast.forecasts) {
         const imfYears = Object.keys(imfForecast.forecasts).sort();
         
         html = `
@@ -578,7 +587,7 @@ async function renderForecastTable(countryCode) {
                 </p>
             `;
         }
-    } else if (cbForecast) {
+    } else if (cbIsReal) {
         // Only central bank forecast available
         const years = Object.keys(cbForecast.projections).filter(y => y !== 'longer_run').sort();
         
@@ -646,11 +655,15 @@ async function renderForecastTable(countryCode) {
             `;
         }
 
+        // When the central bank publishes no forecast, explain why only the IMF
+        // projection is shown (the placeholder row's note), rather than silently
+        // dropping the context (#67).
+        const placeholderNote = cbIsImfPlaceholder && cbForecast.note ? cbForecast.note + ' ' : '';
         html += `
                 </tbody>
             </table>
             <p style="margin-top: 0.75rem; font-size: 0.8125rem; color: #6b7280;">
-                ${imfData.indicator_label || 'Inflation rate, average consumer prices'}. Retrieved ${imfData.retrieved || 'recently'}.
+                ${placeholderNote}${imfData.indicator_label || 'Inflation rate, average consumer prices'}. Retrieved ${imfData.retrieved || 'recently'}.
             </p>
         `;
     }
