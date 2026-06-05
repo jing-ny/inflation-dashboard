@@ -1,20 +1,24 @@
 # Inflation Newsletter — 2026-06-05
 
-The Middle East energy shock continues reshaping inflation trajectories, with emerging markets absorbing the heaviest hits. Australia and South Africa posted the sharpest acceleration this period—Australia's CPI jumped to 4.2% from 3.7% in February, while South Africa spiked a full percentage point to 4.0%. Both moves forced central bank responses: the RBA hiked twice this year to 4.10%, and SARB lifted rates 25bp to 7.00% in May as its latest forecast sees inflation averaging 4.4% through 2026.
+Global inflation readings show a tale of two hemispheres, with the Southern Hemisphere bearing the brunt of price pressures while major Northern economies hold steady.
 
-The Euro Area's modest tick up to 3.2% masks deeper underlying pressures. The ECB's March revision dramatically lifted its 2026 inflation outlook from 1.9% to 2.6%—a 0.7 percentage point jump that ranks among the largest energy-driven forecast revisions in recent years. Rates remain anchored at 2.00% as policymakers assess whether the energy pass-through will prove persistent or transitory.
+Australia delivered the starkest surprise, with CPI jumping to 4.2% in April from 3.7% in February—well above the RBA's 2-3% target band. The central bank has already responded with two rate hikes this year, lifting the cash rate to 4.10%, and projects trimmed mean inflation won't return to target until early 2027.
 
-Singapore's inflation doubled from 1.2% to 1.8%, though it remains well within MAS comfort zones. The city-state's core inflation forecast of 0.5-1.5% for 2026 suggests authorities see current pressures as manageable. China's gradual rise to 1.2% reflects its relative insulation from global energy markets, though even Beijing faces modest upward pressure.
+South Africa saw an even sharper acceleration, with inflation surging a full percentage point to 4.0% over the same February-to-April window. The SARB hiked rates 25 basis points to 7.00% in May, citing Middle East oil and food shocks that have lifted their 2026 inflation outlook to 4.4%.
 
-**IMF revisions tell the story**
+Singapore bucked its typically subdued inflation pattern, rising to 1.8% from 1.2% since February—a material 0.6 percentage point jump for the city-state, though still well within MAS comfort zones.
 
-April's World Economic Outlook captured the energy shock's full impact, with headline global inflation revised up to 4.4% for 2026. The most severe upward revisions hit energy-sensitive economies: Australia and New Zealand each saw 1.0 percentage point increases, while the US, Euro Area, and UK absorbed 0.7-0.8 point hikes. The Fund's severe-scenario alternative warns inflation could breach 6% globally if energy disruptions persist.
+## Northern stability masks forecast divergence
 
-**Divergence watch**
+The major Northern economies showed minimal movement: US inflation held at 3.8%, the UK at 2.8%, and Canada at 2.8%. Japan's modest tick up to 1.4% from 1.3% reflects the BoJ's ongoing normalization path, with rates now at 0.75%.
 
-The forecast gaps are widening dangerously. Australia's current 4.2% reading already exceeds the RBA's 3.5% year-end target, while the IMF's 4.0% projection looks increasingly conservative. South Africa faces similar pressure, with actual inflation at 4.0% against SARB's 4.4% forecast—leaving little margin for further energy shocks. Japan's trajectory remains the wild card: April's 1.4% sits well below both the BoJ's 2.8% and IMF's 2.2% projections.
+But beneath this surface calm lies significant forecast uncertainty. The IMF's April 2026 World Economic Outlook, incorporating Middle East energy shocks, revised global inflation sharply higher. Australia and New Zealand saw the largest upward revisions at 1.0 percentage point each, while the US, Euro Area, and UK each gained 0.7-0.8 points. The Fund now sees headline global inflation at 4.4% for 2026, with severe-scenario alternatives exceeding 6%.
 
-Track live updates: https://jing-ny.github.io/inflation-dashboard/
+Central bank projections increasingly diverge from these IMF numbers. The RBA's 3.5% forecast sits below the IMF's 4.0% for Australia, while the BoE's scenario-based approach spans 3.1-3.6%—reflecting post-shock uncertainty.
+
+**What to watch:** Euro Area inflation's uptick to 3.2% in May bears monitoring given energy passthrough lags. Japan's April BoJ meeting (8-1 vote to hold) signals potential policy acceleration if energy costs bite deeper than their 2.8% projection suggests.
+
+[Full dashboard: https://jing-ny.github.io/inflation-dashboard/]
 
 ---
 
