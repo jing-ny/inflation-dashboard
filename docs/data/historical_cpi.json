@@ -13187,37 +13187,5 @@
     "notes": "FRED OECD series SGPCPIALLMINMEI returns 400 error. Using World Bank annual data. Manual supplement recommended.",
     "source_url": "https://www.singstat.gov.sg/find-data/explore-data-themes/economy-prices/consumer-price-index/latest-news-data",
     "fred_series": "FPCPITOTLZGSGP"
-  },
-  "VE": {
-    "code": "VE",
-    "name": "Venezuela",
-    "flag": "🇻🇪",
-    "target": null,
-    "frequency": "monthly",
-    "source": "Banco Central de Venezuela",
-    "last_updated": "2026-03-24",
-    "latest": {
-      "date": "2026-02",
-      "value": 617.9
-    },
-    "previous": {
-      "date": "2026-01",
-      "value": 594.8
-    },
-    "history": [
-      {
-        "date": "2015-01",
-        "value": 121.74
-      },
-      {
-        "date": "2016-01",
-        "value": 254.95
-      },
-      {
-        "date": "2026-02",
-        "value": 617.9
-      }
-    ],
-    "notes": "Post-hyperinflation period only. Data updates irregularly."
   }
 }

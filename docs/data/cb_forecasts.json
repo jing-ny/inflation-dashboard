@@ -19,8 +19,7 @@
     "KR",
     "SG",
     "IN",
-    "CN",
-    "VE"
+    "CN"
   ],
   "forecasts": {
     "US": {
@@ -247,27 +246,6 @@
         "rate": "S$NEER band",
         "last_change": "— Oct 2025 (hold)"
       }
-    },
-    "VE": {
-      "flag": "🇻🇪",
-      "source": "IMF",
-      "source_full": "IMF World Economic Outlook",
-      "source_url": "https://www.imf.org/en/publications/weo/issues/2026/04/14/world-economic-outlook-april-2026",
-      "publication_date": "April 2026",
-      "forecast_type": "IMF staff projection (CPI)",
-      "note": "BCV publishes no standardized inflation forecast, so this row tracks the IMF World Economic Outlook (auto-updated each April & October). Official data reliability remains contested; treat the figure as a coarse estimate.",
-      "projections": {
-        "2026": 387.4,
-        "2027": 94.4
-      },
-      "key_quote": "Inflation moderating from hyperinflation peak but remains elevated",
-      "policy_rate": {
-        "rate": "N/A",
-        "last_change": "—"
-      },
-      "scraper_status": "imf_sourced",
-      "scraper_status_reason": "BCV publishes no standardized forecast; row tracks IMF WEO (auto-updated each April & October)",
-      "source_date": "2026-06-01"
     },
     "BR": {
       "flag": "🇧🇷",

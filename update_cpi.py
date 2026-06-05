@@ -37,7 +37,7 @@ from pathlib import Path
 # Path to the data file
 DATA_FILE = Path(__file__).parent / "docs" / "data" / "historical_cpi.json"
 
-COUNTRY_CODES = ["US", "EA", "UK", "CA", "AU", "NZ", "ZA", "JP", "CN", "IN", "KR", "SG", "VE"]
+COUNTRY_CODES = ["US", "EA", "UK", "CA", "AU", "NZ", "ZA", "JP", "CN", "IN", "KR", "SG"]
 
 
 def load_data():

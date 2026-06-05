@@ -38,7 +38,7 @@ It aggregates official inflation statistics and central bank projections in one 
 
 ## Coverage
 
-This dashboard tracks headline consumer price inflation (year-over-year) across 15 economies:
+This dashboard tracks headline consumer price inflation (year-over-year) across 14 economies:
 
 | Economy | Inflation Measure | Source | Central Bank |
 |---------|-------------------|--------|--------------|
@@ -56,7 +56,6 @@ This dashboard tracks headline consumer price inflation (year-over-year) across 
 | 🇸🇬 Singapore | CPI (YoY) | DOS | MAS |
 | 🇮🇳 India | CPI (YoY) | MOSPI | RBI |
 | 🇨🇳 China | CPI (YoY) | NBS | PBOC |
-| 🇻🇪 Venezuela | CPI (YoY) | BCV | BCV |
 
 ---
 
@@ -95,7 +94,7 @@ All data is stored in `docs/data/` as the single source of truth:
 
 ```
 docs/data/
-├── historical_cpi.json       # CPI history for all 15 countries
+├── historical_cpi.json       # CPI history for all 14 countries
 ├── cb_forecasts.json         # Central bank inflation forecasts
 ├── imf_forecasts.json        # IMF WEO projections
 ├── cpi_supplements.json      # Manual supplements for lagging FRED data

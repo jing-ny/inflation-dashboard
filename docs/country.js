@@ -93,12 +93,6 @@ const TARGET_INFO = {
         quote: 'MAS conducts monetary policy by managing the trade-weighted exchange rate of the Singapore dollar within an undisclosed policy band.',
         quoteSource: 'MAS Monetary Policy Framework'
     },
-    VE: {
-        target: null,
-        description: 'Venezuela does not have a formal inflation targeting framework. The country experienced hyperinflation from 2016-2021, with rates exceeding 1,000,000% in 2018. Since 2022, inflation has moderated significantly but remains elevated compared to most economies.',
-        quote: 'Venezuela emerged from hyperinflation in early 2022 after more than four years, but inflation remains high by international standards.',
-        quoteSource: 'Central Bank of Venezuela / IMF'
-    },
     CN: {
         target: 3.0,
         description: 'China sets an annual CPI target, typically around 3%, as part of its government work report. The target is more of a ceiling than a strict objective.',
@@ -191,12 +185,6 @@ const DATA_SOURCES = {
         { label: 'FRED Series', value: 'SGPCPIALLMINMEI', url: 'https://fred.stlouisfed.org/series/SGPCPIALLMINMEI' },
         { label: 'Forecasts', value: 'MAS Survey of Professional Forecasters', url: 'https://www.mas.gov.sg/monetary-policy' },
         { label: 'Policy', value: 'MAS Monetary Policy', url: 'https://www.mas.gov.sg/monetary-policy' }
-    ],
-    VE: [
-        { label: 'CPI Data', value: 'Central Bank of Venezuela (BCV)', url: 'https://www.bcv.org.ve/' },
-        { label: 'IMF Data', value: 'IMF World Economic Outlook', url: 'https://www.imf.org/en/Publications/WEO' },
-        { label: 'Forecasts', value: 'IMF Article IV Consultations', url: 'https://www.imf.org/en/Countries/VEN' },
-        { label: 'Context', value: 'Hyperinflation ended 2022', url: 'https://en.wikipedia.org/wiki/Hyperinflation_in_Venezuela' }
     ],
     CN: [
         { label: 'CPI Data', value: 'NBS China via FRED', url: 'https://fred.stlouisfed.org/series/CHNCPIALLMINMEI' },
