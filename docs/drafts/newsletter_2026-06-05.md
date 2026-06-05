@@ -1,16 +1,18 @@
 # Inflation Newsletter — 2026-06-05
 
-The inflation landscape shows a tale of two hemispheres: while major developed economies hold steady near multi-year norms, three Southern Hemisphere economies are heating up fast.
+The Middle East energy shock continues reshaping inflation trajectories, with emerging markets absorbing the heaviest hits. Australia and South Africa posted the sharpest acceleration this period—Australia's CPI jumped to 4.2% from 3.7% in February, while South Africa spiked a full percentage point to 4.0%. Both moves forced central bank responses: the RBA hiked twice this year to 4.10%, and SARB lifted rates 25bp to 7.00% in May as its latest forecast sees inflation averaging 4.4% through 2026.
 
-Australia leads the breakouts, jumping to 4.2% in April from 3.7% in February—a half-point surge that prompted the RBA to hike twice this year to 4.10%. The central bank now expects trimmed mean inflation to peak at 3.7% by mid-2026, keeping Australia above its 2-3% target band until early 2027. South Africa delivered an even sharper shock, rocketing from 3.0% to 4.0% and pushing the SARB to raise rates 25bp to 7.00% in May. Singapore rounds out the movers with a 0.6pp jump to 1.8%, though this keeps the city-state comfortably within tolerance.
+The Euro Area's modest tick up to 3.2% masks deeper underlying pressures. The ECB's March revision dramatically lifted its 2026 inflation outlook from 1.9% to 2.6%—a 0.7 percentage point jump that ranks among the largest energy-driven forecast revisions in recent years. Rates remain anchored at 2.00% as policymakers assess whether the energy pass-through will prove persistent or transitory.
 
-The majors, by contrast, are locked in stasis. US inflation holds at 3.8%, the Euro Area at 3.0%, and the UK at 2.8%—all unchanged from prior readings. Even China's modest uptick to 1.2% from 1.0% barely registers against this backdrop of stability.
+Singapore's inflation doubled from 1.2% to 1.8%, though it remains well within MAS comfort zones. The city-state's core inflation forecast of 0.5-1.5% for 2026 suggests authorities see current pressures as manageable. China's gradual rise to 1.2% reflects its relative insulation from global energy markets, though even Beijing faces modest upward pressure.
 
-Central bank forecasts reveal the widest divergences in years. Australia's RBA projects 3.5% inflation for 2026, a full 150bp above the IMF's 4.0% estimate for the same economy. The SARB's 4.4% forecast significantly overshoots the IMF's 3.9% call for South Africa. Meanwhile, the Fed's 2.7% projection runs 50bp below the IMF's 3.2% US forecast—a meaningful gap reflecting different views on energy pass-through from Middle East disruptions.
+**IMF revisions tell the story**
 
-The April IMF revision cycle painted broad upside risks globally, with headline inflation bumped to 4.4% for 2026. Advanced economies bore the brunt: US and Euro Area forecasts each rose roughly 75bp, while Australia and New Zealand saw full percentage-point upward revisions.
+April's World Economic Outlook captured the energy shock's full impact, with headline global inflation revised up to 4.4% for 2026. The most severe upward revisions hit energy-sensitive economies: Australia and New Zealand each saw 1.0 percentage point increases, while the US, Euro Area, and UK absorbed 0.7-0.8 point hikes. The Fund's severe-scenario alternative warns inflation could breach 6% globally if energy disruptions persist.
 
-**Watch:** Australia's next RBA meeting in June for signals on further tightening, and whether the US-IMF forecast gap narrows when the Fed updates projections this month.
+**Divergence watch**
+
+The forecast gaps are widening dangerously. Australia's current 4.2% reading already exceeds the RBA's 3.5% year-end target, while the IMF's 4.0% projection looks increasingly conservative. South Africa faces similar pressure, with actual inflation at 4.0% against SARB's 4.4% forecast—leaving little margin for further energy shocks. Japan's trajectory remains the wild card: April's 1.4% sits well below both the BoJ's 2.8% and IMF's 2.2% projections.
 
 Track live updates: https://jing-ny.github.io/inflation-dashboard/
 
