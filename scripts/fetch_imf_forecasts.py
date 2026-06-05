@@ -48,8 +48,6 @@ COUNTRY_MAPPING = {
     "IN": "IND",
     "KR": "KOR",
     "SG": "SGP",
-    "BR": "BRA",
-    "MX": "MEX",
 }
 
 # Country names for output
@@ -66,8 +64,6 @@ COUNTRY_NAMES = {
     "IN": "India",
     "KR": "South Korea",
     "SG": "Singapore",
-    "BR": "Brazil",
-    "MX": "Mexico",
 }
 
 

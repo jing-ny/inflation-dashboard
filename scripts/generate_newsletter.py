@@ -101,7 +101,7 @@ def build_prompt(changes: list, cb_forecasts: dict, imf_forecasts: dict) -> str:
 
 ## Editorial voice
 - Open with a punchy, high-signal lead — a little narrative tension, professional and source-first, no hype.
-- Anchor the piece around the 3–4 moves that matter most this period. Default anchors are **Euro Area, Mexico, Brazil, and China** unless the data clearly demands different ones. Do NOT try to cover every country in equal detail.
+- Anchor the piece around the 3–4 moves that matter most this period. Default anchors are **Euro Area, Japan, India, and China** unless the data clearly demands different ones. Do NOT try to cover every country in equal detail.
 - Treat the IMF WEO revisions as ONE clean paragraph, not a data dump.
 - Close with a tight "what to watch" — only the 1–3 most decision-relevant divergences or upcoming releases.
 - Keep section headings light. Use a heading only if it materially helps scan-ability; otherwise flow prose. Do not use rigid "Key Changes / Trend Summary / What to Watch" labels.

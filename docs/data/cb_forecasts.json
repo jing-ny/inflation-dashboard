@@ -13,8 +13,6 @@
     "AU",
     "NZ",
     "ZA",
-    "BR",
-    "MX",
     "JP",
     "KR",
     "SG",
@@ -245,45 +243,6 @@
       "policy_rate": {
         "rate": "S$NEER band",
         "last_change": "— Oct 2025 (hold)"
-      }
-    },
-    "BR": {
-      "flag": "🇧🇷",
-      "source": "BCB",
-      "source_full": "Banco Central do Brasil - Focus Survey",
-      "source_url": "https://www.bcb.gov.br/en/publications/focusmarketreadout",
-      "publication_date": "May 2026",
-      "forecast_type": "Focus Survey median (IPCA)",
-      "note": "BCB raised Selic to 14.25% in Mar 2026 amid persistent inflation. Focus survey median sees IPCA at 5.7% for 2026, well above the 3% target midpoint.",
-      "projections": {
-        "2026": 5.09,
-        "2027": 4.02,
-        "2028": 3.66,
-        "2029": 3.5,
-        "2030": 3.5
-      },
-      "key_quote": "Inflation expectations remain above target; tightening cycle continues",
-      "policy_rate": {
-        "rate": "14.25%",
-        "last_change": "↑ Mar 2026"
-      }
-    },
-    "MX": {
-      "flag": "🇲🇽",
-      "source": "Banxico",
-      "source_full": "Banco de México - Quarterly Inflation Report",
-      "source_url": "https://www.banxico.org.mx/publicaciones-y-prensa/informes-trimestrales/",
-      "publication_date": "March 2026",
-      "forecast_type": "Staff projection (CPI)",
-      "note": "Banxico cut rate to 9.50% in Mar 2026 as inflation converges toward target. Staff projects CPI at 3.8% for 2026, within the 2-4% tolerance band.",
-      "projections": {
-        "2026": 3.8,
-        "2027": 3.2
-      },
-      "key_quote": "Inflation converging toward target; gradual easing appropriate",
-      "policy_rate": {
-        "rate": "9.50%",
-        "last_change": "↓ Mar 2026"
       }
     },
     "CN": {
