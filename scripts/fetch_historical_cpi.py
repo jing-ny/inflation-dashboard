@@ -220,15 +220,16 @@ COUNTRIES = {
         "source": "SingStat",
         "source_url": "https://www.singstat.gov.sg/find-data/explore-data-themes/economy-prices/consumer-price-index/latest-news-data",
         "api": "SingStat",  # primary national source: TableBuilder API (#52)
-        # CPI (2019 = 100), monthly. We pull the headline "All Items" row index
-        # and compute YoY downstream (distinct from MAS core). The resourceId is
-        # confirmed/locked from the first dry-run (TableBuilder is keyless).
-        "singstat_resource_id": "M212881",
+        # Auto-selects the monthly "Percent Change ... Over Corresponding Period
+        # Of Previous Year" (YoY) table and reads its headline "All Items" row
+        # (distinct from MAS core). resourceId left null → resolved by title at
+        # runtime so base-year revisions don't break it (TableBuilder is keyless).
+        "singstat_resource_id": None,
         "singstat_row": "All Items",
         "fred_series": "FPCPITOTLZGSGP",  # World Bank annual YoY — fallback only
         "frequency": "monthly",
-        "data_type": "index",  # CPI index → YoY computed downstream
-        "notes": "Primary: SingStat TableBuilder CPI All-Items (monthly index → YoY). Fallback: FRED World Bank annual.",
+        "data_type": "yoy",  # SingStat "Percent Change ... Previous Year" is already YoY
+        "notes": "Primary: SingStat TableBuilder CPI All-Items YoY (monthly). Fallback: FRED World Bank annual.",
     },
     "BR": {
         "name": "Brazil",
@@ -896,42 +897,27 @@ def fetch_estat_cpi_series(config: Dict) -> List[Dict]:
 
 
 def fetch_singstat_cpi_series(config: Dict) -> List[Dict]:
-    """Singapore headline CPI All-Items (index) from the SingStat TableBuilder
-    API (#52). Keyless JSON; we pull the monthly "All Items" index and compute
-    YoY downstream (data_type "index"). Anchors on the all-items row only — the
-    headline is distinct from MAS core (CLAUDE.md #2). Returns [] (→ FRED) on
-    any structure change; on a miss it logs the table's row labels / candidate
-    resourceIds so the anchor can be re-pinned.
+    """Singapore headline CPI All-Items (YoY %) from the SingStat TableBuilder
+    API (#52). Keyless JSON. SingStat publishes a ready-made monthly table
+    "Percent Change In Consumer Price Index (CPI) Over Corresponding Period Of
+    Previous Year" (i.e. YoY); we auto-select it by title (robust to base-year
+    revisions) and read its "All Items" row — the headline, distinct from MAS
+    core (CLAUDE.md #2). Returns [] (→ FRED) on any structure change.
     """
     import re as _re
     base = "https://tablebuilder.singstat.gov.sg/api/table"
     headers = {"User-Agent": _BROWSER_UA, "Accept": "application/json"}
-    rid = config.get("singstat_resource_id")
     anchor = (config.get("singstat_row") or "all items").strip().lower()
     mon3 = {name[:3].lower(): i for i, name in enumerate(_MONTH_NAMES) if name}
 
-    def _discover():
-        # Log candidate CPI tables so the resourceId can be (re-)pinned.
-        try:
-            s = requests.get(f"{base}/resourceid",
-                             params={"keyword": "consumer price index", "searchOption": "all"},
-                             headers=headers, timeout=40)
-            sj = s.json()
-            print(f"    [diag] SingStat search -> {s.status_code}, keys={list(sj.keys())[:6]}, "
-                  f"StatusCode={sj.get('StatusCode')}, Msg={str(sj.get('Message'))[:60]}")
-            dnode = sj.get("Data")
-            recs = []
-            if isinstance(dnode, dict):
-                recs = dnode.get("records") or dnode.get("Records") or []
-            elif isinstance(dnode, list):
-                recs = dnode
-            print(f"    [diag] SingStat search: {len(recs)} table(s)")
-            for r_ in recs[:20]:
-                if isinstance(r_, dict):
-                    print(f"      [diag] id={r_.get('id') or r_.get('ID')} :: "
-                          f"{str(r_.get('title') or r_.get('Title'))[:90]}")
-        except Exception as e:
-            print(f"    [diag] SingStat search error: {type(e).__name__}: {e}")
+    def _search_records():
+        s = requests.get(f"{base}/resourceid",
+                         params={"keyword": "consumer price index", "searchOption": "all"},
+                         headers=headers, timeout=40)
+        dnode = s.json().get("Data")
+        if isinstance(dnode, dict):
+            return dnode.get("records") or dnode.get("Records") or []
+        return dnode if isinstance(dnode, list) else []
 
     def _ym(key: str):
         s = (key or "").strip()
@@ -947,35 +933,54 @@ def fetch_singstat_cpi_series(config: Dict) -> List[Dict]:
             mth = int(nm.group(1)) if nm else None
         return (year, mth) if (mth and 1 <= mth <= 12) else (None, None)
 
+    # Resolve the resourceId: an explicit config override, else auto-select the
+    # monthly YoY ("Over Corresponding Period Of Previous Year") CPI table,
+    # preferring the most recent base year.
+    rid = config.get("singstat_resource_id")
     if not rid:
-        _discover()
-        return []
+        try:
+            recs = _search_records()
+        except Exception as e:
+            print(f"  ⚠️  SingStat search error: {type(e).__name__}: {e}")
+            return []
+        cands = []
+        for r_ in recs:
+            if not isinstance(r_, dict):
+                continue
+            title = str(r_.get("title") or r_.get("Title") or "")
+            t = title.lower()
+            if ("over corresponding period of previous year" in t and "monthly" in t
+                    and "household income" not in t):
+                by = _re.search(r"(\d{4})\s+as base year", t)
+                cands.append((int(by.group(1)) if by else 0, r_.get("id") or r_.get("ID"), title))
+        if not cands:
+            print(f"    [diag] SingStat: no monthly YoY CPI table among {len(recs)} results; "
+                  f"sample={[str(x.get('title'))[:60] for x in recs[:6] if isinstance(x, dict)]}")
+            return []
+        cands.sort(reverse=True)  # highest base year first
+        _, rid, title = cands[0]
+        print(f"  ℹ️  SingStat auto-selected {rid} :: {title[:80]}")
+
     try:
         r = requests.get(f"{base}/tabledata/{rid}", headers=headers, timeout=60)
         j = r.json()
     except Exception as e:
         print(f"  ⚠️  SingStat tabledata error: {type(e).__name__}: {e}")
-        _discover()
         return []
 
     data = j.get("Data")
     if not isinstance(data, dict):
         print(f"    [diag] SingStat {rid}: Data is {type(data).__name__} "
-              f"(StatusCode={j.get('StatusCode')}, Msg={str(j.get('Message'))[:80]}, "
-              f"Data={str(data)[:60]})")
-        _discover()
+              f"(StatusCode={j.get('StatusCode')}, Msg={str(j.get('Message'))[:80]})")
         return []
-    rows = data.get("row") or []
-    if not isinstance(rows, list):
-        rows = []
-    print(f"    [diag] SingStat {rid} -> {r.status_code}, '{str(data.get('title'))[:70]}', {len(rows)} rows")
-    if not rows:
-        _discover()
+    rows = data.get("row")
+    if not isinstance(rows, list) or not rows:
+        print(f"    [diag] SingStat {rid}: no rows ('{str(data.get('title'))[:60]}')")
         return []
 
     target = next((row for row in rows
                    if (row.get("rowText") or "").strip().lower() == anchor), None)
-    if target is None:  # fall back to a contains-match, else dump labels
+    if target is None:
         target = next((row for row in rows
                        if anchor in (row.get("rowText") or "").strip().lower()), None)
     if target is None:
@@ -983,9 +988,8 @@ def fetch_singstat_cpi_series(config: Dict) -> List[Dict]:
               f"{[ (row.get('rowText') or '')[:24] for row in rows[:12] ]}")
         return []
 
-    cols = target.get("columns", []) or []
     obs = []
-    for c in cols:
+    for c in target.get("columns", []) or []:
         y, mth = _ym(c.get("key", ""))
         if not y:
             continue
@@ -996,12 +1000,13 @@ def fetch_singstat_cpi_series(config: Dict) -> List[Dict]:
             val = float(raw)
         except (TypeError, ValueError):
             continue
-        obs.append({"date": f"{y:04d}-{mth:02d}-01", "value": val})
+        if -10.0 <= val <= 30.0:
+            obs.append({"date": f"{y:04d}-{mth:02d}-01", "value": round(val, 2)})
     if not obs:
-        print("    [diag] SingStat: no monthly index values parsed from All Items row")
+        print("    [diag] SingStat: no YoY values parsed from All Items row")
         return []
     obs.sort(key=lambda o: o["date"])
-    print(f"  ✅ SingStat CPI All-Items index: {len(obs)} pts, latest {obs[-1]}")
+    print(f"  ✅ SingStat CPI All-Items YoY: {len(obs)} pts, latest {obs[-1]}")
     return obs
 
 
@@ -1264,12 +1269,13 @@ def fetch_country_data(code: str) -> Optional[Dict]:
                 else:
                     raise
         elif config.get("api") == "SingStat":
-            # Direct SingStat TableBuilder — monthly CPI All-Items index, YoY. #52
+            # Direct SingStat TableBuilder — monthly CPI All-Items, already YoY. #52
             try:
                 raw_data = fetch_singstat_cpi_series(config)
                 if not raw_data:
                     raise ValueError("No data returned from SingStat TableBuilder")
-                yoy_data = calculate_yoy_from_index(raw_data, "monthly")
+                yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)}
+                           for obs in raw_data]
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(SingStat failed: {e}; falling back to FRED)...", end=" ")
