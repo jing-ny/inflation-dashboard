@@ -913,12 +913,23 @@ def fetch_singstat_cpi_series(config: Dict) -> List[Dict]:
     def _discover():
         # Log candidate CPI tables so the resourceId can be (re-)pinned.
         try:
-            s = requests.get(f"{base}/resourceid", params={"keyword": "consumer price index"},
+            s = requests.get(f"{base}/resourceid",
+                             params={"keyword": "consumer price index", "searchOption": "all"},
                              headers=headers, timeout=40)
-            recs = (s.json().get("Data", {}) or {}).get("records", []) or []
-            print(f"    [diag] SingStat resourceId search: {len(recs)} table(s)")
-            for r_ in recs[:15]:
-                print(f"      [diag] id={r_.get('id')} :: {str(r_.get('title'))[:90]}")
+            sj = s.json()
+            print(f"    [diag] SingStat search -> {s.status_code}, keys={list(sj.keys())[:6]}, "
+                  f"StatusCode={sj.get('StatusCode')}, Msg={str(sj.get('Message'))[:60]}")
+            dnode = sj.get("Data")
+            recs = []
+            if isinstance(dnode, dict):
+                recs = dnode.get("records") or dnode.get("Records") or []
+            elif isinstance(dnode, list):
+                recs = dnode
+            print(f"    [diag] SingStat search: {len(recs)} table(s)")
+            for r_ in recs[:20]:
+                if isinstance(r_, dict):
+                    print(f"      [diag] id={r_.get('id') or r_.get('ID')} :: "
+                          f"{str(r_.get('title') or r_.get('Title'))[:90]}")
         except Exception as e:
             print(f"    [diag] SingStat search error: {type(e).__name__}: {e}")
 
@@ -949,8 +960,9 @@ def fetch_singstat_cpi_series(config: Dict) -> List[Dict]:
 
     data = j.get("Data")
     if not isinstance(data, dict):
-        print(f"    [diag] SingStat {rid}: unexpected payload (Data is "
-              f"{type(data).__name__}); top keys={list(j.keys())[:8]}")
+        print(f"    [diag] SingStat {rid}: Data is {type(data).__name__} "
+              f"(StatusCode={j.get('StatusCode')}, Msg={str(j.get('Message'))[:80]}, "
+              f"Data={str(data)[:60]})")
         _discover()
         return []
     rows = data.get("row") or []
