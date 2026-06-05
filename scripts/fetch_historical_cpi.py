@@ -168,11 +168,11 @@ COUNTRIES = {
         "api": "eStat",  # primary national source: e-Stat getStatsData (#51)
         "estat_stats_code": "00200573",  # Consumer Price Index (Statistics Bureau)
         "estat_stats_data_id": "0003427113",  # 2020-Base Consumer Price Index (main table)
-        # Dimension codes (cdArea = All Japan, cdTab = year-on-year, cdCat = all
-        # items) resolved from getMetaInfo on the first keyed run, then pinned:
-        "estat_cdTab": None,
-        "estat_cdArea": None,
-        "estat_cdCat01": None,
+        # Dimensions resolved from getMetaInfo: area 00000 = All Japan, cat01
+        # 0001 = All items (NOT 0161 "less fresh food" = core). The year-on-year
+        # tab code is picked from the response metadata by name at runtime.
+        "estat_cdArea": "00000",
+        "estat_cdCat01": "0001",
         "fred_series": "JPNCPALTT01IXNBM",  # COICOP 2018 index, monthly — fallback only
         "fred_series_alt": "JPNCPIALLMINMEI",  # COICOP 1999 fallback (discontinued Jun 2021 but may still serve data)
         "frequency": "monthly",
@@ -766,7 +766,7 @@ def fetch_estat_cpi_series(config: Dict) -> List[Dict]:
     # which tab = year-on-year, which item = all-items) are pinned in config,
     # list the CPI tables and dump the pinned table's getMetaInfo so the codes
     # can be read off and locked in. ---
-    if not config.get("estat_cdTab"):
+    if not config.get("estat_cdCat01"):
         if not stats_data_id:
             params = {"appId": app_id, "statsCode": config.get("estat_stats_code", "00200573"),
                       "searchKind": "1", "lang": "E", "limit": "100"}
@@ -810,12 +810,10 @@ def fetch_estat_cpi_series(config: Dict) -> List[Dict]:
                     print(f"        [diag] code={c.get('@code')} :: {nm[:60]}")
         return []
 
-    # --- DATA phase: fetch the pinned table and parse all-items YoY. ---
+    # --- DATA phase: fetch all-items / All-Japan and parse the YoY series. ---
     params = {"appId": app_id, "statsDataId": stats_data_id, "lang": "E",
-              "metaGetFlg": "Y", "cntGetFlg": "N"}
-    for k in ("estat_cdArea", "estat_cdTab", "estat_cdCat01", "estat_cdCat02"):
-        if config.get(k):
-            params[k.replace("estat_cd", "cd")] = config[k]
+              "metaGetFlg": "Y", "cntGetFlg": "N",
+              "cdArea": config["estat_cdArea"], "cdCat01": config["estat_cdCat01"]}
     try:
         r = requests.get(f"{ESTAT_BASE}/getStatsData", params=params,
                          headers=headers, timeout=60)
@@ -834,32 +832,44 @@ def fetch_estat_cpi_series(config: Dict) -> List[Dict]:
               f"{result.get('ERROR_MSG')}); preserving curated JP")
         return []
 
-    # Map the monthly @time codes to (year, month) via the time CLASS metadata.
     classes = (sd.get("CLASS_INF", {}) or {}).get("CLASS_OBJ", [])
     if isinstance(classes, dict):
         classes = [classes]
-    time_labels = {}
+    time_labels, tab_names = {}, {}
     for cls in classes:
-        if cls.get("@id") != "time":
-            continue
         items = cls.get("CLASS", [])
         if isinstance(items, dict):
             items = [items]
-        for it in items:
-            time_labels[it.get("@code")] = it.get("@name", "")
+        if cls.get("@id") == "time":
+            for it in items:
+                time_labels[it.get("@code")] = it.get("@name", "")
+        elif cls.get("@id") == "tab":
+            for it in items:
+                tab_names[it.get("@code")] = it.get("@name", "")
+
+    # The table carries 3 tabs (index / change over the month / change over the
+    # year). Pick the year-on-year one by name — never assume a fixed code, and
+    # never confuse it with the month-on-month tab (CLAUDE.md #2).
+    yoy_tab = next((c for c, nm in tab_names.items()
+                    if "year" in nm.lower() and "month" not in nm.lower()), None)
+    if not yoy_tab:
+        print(f"  ⏸️  e-Stat: could not identify year-on-year tab in {tab_names}; preserving JP")
+        return []
 
     def _year_month(code: str, label: str):
-        # e-Stat monthly time code is YYYYMMMMNN (e.g. 2026000404 = Apr 2026);
-        # fall back to parsing the human label (e.g. "2026/4" or "Apr. 2026").
-        if code and len(code) == 10 and code.isdigit():
-            return int(code[:4]), int(code[8:10])
-        mm = _re.search(r"(\d{4})\D+(\d{1,2})", label or "")
+        # Prefer the human label (English e-Stat: "2026/4"); fall back to the
+        # 10-digit monthly time code (e.g. 2026000404 = Apr 2026).
+        mm = _re.search(r"(\d{4})\D+(\d{1,2})\b", label or "")
         if mm:
             return int(mm.group(1)), int(mm.group(2))
+        if code and len(code) == 10 and code.isdigit() and code[8:10] != "00":
+            return int(code[:4]), int(code[8:10])
         return None, None
 
     obs = []
     for v in values:
+        if v.get("@tab") != yoy_tab:
+            continue
         code = v.get("@time", "")
         y, mth = _year_month(code, time_labels.get(code, ""))
         if not y or not mth or not (1 <= mth <= 12):
