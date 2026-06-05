@@ -539,6 +539,52 @@ def fetch_eurostat_hicp_flash() -> List[Dict]:
     return []
 
 
+def fetch_eurostat_flash_release() -> List[Dict]:
+    """Euro-area HICP *flash* estimate from the Eurostat euro-indicators press
+    release (#60). The bulk datasets lag the flash, so we read the headline rate
+    straight from the release. DIAGNOSTIC PASS: confirms the release page is
+    reachable + parseable and probes how to discover the latest one (the URL is
+    date-slugged, e.g. .../w/2-02062026-ap). Returns [] (→ caller keeps ECB).
+    """
+    import re as _re
+    headers = {"User-Agent": _BROWSER_UA,
+               "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
+               "Accept-Language": "en"}
+    # 1) Can we parse a known release page? (May-2026 flash, released 2 Jun 2026)
+    known = "https://ec.europa.eu/eurostat/en/web/products-euro-indicators/w/2-02062026-ap"
+    try:
+        r = requests.get(known, headers=headers, timeout=40)
+        print(f"    [diag] flash release {known.rsplit('/',1)[-1]} -> {r.status_code}, {len(r.content)} bytes")
+        if r.status_code == 200:
+            txt = _re.sub(r"<[^>]+>", " ", r.text)
+            txt = _re.sub(r"\s+", " ", txt)
+            shown = 0
+            for sent in _re.split(r"(?<=[.!?]) ", txt):
+                low = sent.lower()
+                if ("inflation" in low or "%" in sent) and _re.search(r"\d", sent):
+                    print(f"      [diag] {sent.strip()[:180]}")
+                    shown += 1
+                    if shown >= 8:
+                        break
+    except Exception as e:
+        print(f"    [diag] flash release fetch -> {type(e).__name__}: {e}")
+    # 2) How to discover the latest? Dump euro-indicators listing release links.
+    for listing in ("https://ec.europa.eu/eurostat/web/products-euro-indicators",
+                    "https://ec.europa.eu/eurostat/en/web/products-euro-indicators"):
+        try:
+            lr = requests.get(listing, headers=headers, timeout=40)
+            links = _re.findall(r'href="([^"]*?/w/\d+-\d{8}-[a-z]{2})"[^>]*>([^<]{0,140})', lr.text)
+            print(f"    [diag] listing {listing.rsplit('/',2)[-2]}/.. -> {lr.status_code}, "
+                  f"{len(lr.content)} bytes, {len(links)} release link(s)")
+            for h, t in links[:15]:
+                print(f"      [diag] {h.rsplit('/',1)[-1]} :: {t.strip()[:80]}")
+            if links:
+                break
+        except Exception as e:
+            print(f"    [diag] listing {listing} -> {type(e).__name__}: {e}")
+    return []
+
+
 # -----------------------------------------------------------------------------
 # YoY Calculation
 # -----------------------------------------------------------------------------
@@ -1216,6 +1262,7 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             # one release. Append Eurostat's HICP flash when it's newer, flagged
             # provisional so the dashboard can mark it a flash estimate. #60
             try:
+                fetch_eurostat_flash_release()  # DIAGNOSTIC PASS (#60)
                 flash = fetch_eurostat_hicp_flash()
                 ecb_latest = yoy_data[-1]["date"] if yoy_data else ""
                 for fobs in flash:
