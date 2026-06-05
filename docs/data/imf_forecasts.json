@@ -164,14 +164,6 @@
         "2031": 2.2
       }
     },
-    "VE": {
-      "name": "Venezuela",
-      "imf_code": "VEN",
-      "forecasts": {
-        "2026": 387.4,
-        "2027": 94.4
-      }
-    },
     "EA": {
       "name": "Euro Area",
       "imf_code": "EURO",

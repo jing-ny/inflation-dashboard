@@ -41,7 +41,7 @@ Each table also has a **footer summary** counting current / stale / very-stale e
 
 This keeps real staleness visible (CLAUDE.md #4) without false positives on current data.
 
-**Disabled-scraper treatment (CLAUDE.md #4, layer 3).** Forecast rows whose auto-scraper is intentionally off render a distinct "paused" pill (not red) so a *missing scraper* isn't conflated with a *stale source*. IMF-sourced rows (CN, VE — central banks that publish no forecast) render a neutral "IMF WEO" badge instead. As of this writing the BoE (#10), SARB (#12) and MAS-SPF (#42) scrapers have landed; RBNZ (#6) remains paused.
+**Disabled-scraper treatment (CLAUDE.md #4, layer 3).** Forecast rows whose auto-scraper is intentionally off render a distinct "paused" pill (not red) so a *missing scraper* isn't conflated with a *stale source*. IMF-sourced rows (CN — central banks that publish no forecast) render a neutral "IMF WEO" badge instead. As of this writing the BoE (#10), SARB (#12) and MAS-SPF (#42) scrapers have landed; RBNZ (#6) remains paused.
 
 ---
 
@@ -65,7 +65,6 @@ This keeps real staleness visible (CLAUDE.md #4) without false positives on curr
 | 🇸🇬 Singapore | FRED (FPCPITOTLZGSGP) | [SingStat](https://www.singstat.gov.sg/) | Monthly |
 | 🇧🇷 Brazil | FRED (BRACPIALLMINMEI) | [IBGE](https://www.ibge.gov.br/) | Monthly |
 | 🇲🇽 Mexico | FRED (MEXCPIALLMINMEI) | [INEGI](https://www.inegi.org.mx/) | Monthly |
-| 🇻🇪 Venezuela | FRED (FPCPITOTLZGVEN) | [BCV](https://www.bcv.org.ve/) | Monthly |
 
 *Australia transitioned to monthly CPI in late 2025. Historical data is quarterly.
 
@@ -75,7 +74,6 @@ This keeps real staleness visible (CLAUDE.md #4) without false positives on curr
 - US BLS series uses base year 1982-84=100
 - Japan series changed from JPNCPIALLMINMEI (discontinued Jun 2021) to JPNCPALTT01IXNBM (COICOP 2018)
 - South Korea series changed from KORCPIALLMINMEI (discontinued Nov 2023) to KORCPALTT01IXNBM (COICOP 2018)
-- Venezuela data reliability varies; post-hyperinflation period only (2022+)
 
 ---
 
@@ -107,7 +105,7 @@ CPI actuals are fetched per country by [`scripts/fetch_historical_cpi.py`](scrip
 **Two classes of source:**
 
 - **Direct primary/national API (fresh):** US → BLS, Euro Area → ECB, UK → ONS, Canada → StatCan, Australia → ABS (monthly CPI indicator, #50). These track the national release closely.
-- **FRED's OECD relay (laggy):** the rest (NZ, ZA, JP, CN, IN, KR, BR, MX; SG via World Bank, VE via World Bank). The OECD aggregates and **re-publishes national CPI with a 1–3 month delay (sometimes 6–12)**, so these rows can sit a release or two behind the national agency *even though the weekly `Update Inflation Data` workflow runs and succeeds.* This — not a broken pipeline — is the usual reason a Current Inflation cell reads amber/red.
+- **FRED's OECD relay (laggy):** the rest (NZ, ZA, JP, CN, IN, KR, BR, MX; SG via World Bank). The OECD aggregates and **re-publishes national CPI with a 1–3 month delay (sometimes 6–12)**, so these rows can sit a release or two behind the national agency *even though the weekly `Update Inflation Data` workflow runs and succeeds.* This — not a broken pipeline — is the usual reason a Current Inflation cell reads amber/red.
 
 | Country | Source path | Typical lag vs national release |
 |---------|-------------|---------------------------------|
@@ -117,7 +115,6 @@ CPI actuals are fetched per country by [`scripts/fetch_historical_cpi.py`](scrip
 | Japan, Korea | FRED (COICOP index) | 1–3 months; manual supplement sometimes needed |
 | China, India, Brazil, Mexico | FRED-OECD | 1–3 months |
 | Singapore | FRED (World Bank annual — OECD series broken) | coarse |
-| Venezuela | FRED (World Bank) | irregular / contested |
 
 **Runner reachability is the gating constraint.** "Just switch the laggy countries to their national API" is the obvious fix (tracked per country in issues [#50–#60](https://github.com/jing-ny/inflation-dashboard/issues)), **but it only works if that API answers from where our automation actually runs** — GitHub Actions (Azure-hosted runners). Several national statistics APIs do **not** route to those cloud IPs. Two observed outcomes: the ABS Data API (`data.api.abs.gov.au`) **is** reachable from runners and now sources Australia directly (#50), whereas IBGE's SIDRA API (`apisidra.ibge.gov.br`) **connection-times-out from GitHub runners**, so a Brazil-via-SIDRA path falls back to FRED and yields no benefit (#54, deferred). The fetchers that work today (BLS/ONS/StatCan/ECB/ABS) are all CDN/large-institution endpoints reachable from cloud infra. So before adopting a new source, confirm it is reachable from a GitHub runner (the `update-data` workflow accepts a single-country dry-run for exactly this), and always keep the FRED series as a `fred_series` fallback.
 
@@ -145,11 +142,9 @@ When a source is stale or unreachable, the value is verified/supplemented from t
 | Banco Central do Brasil | BCB Website | IPCA Inflation | 8x/year |
 | Banco de México | Banxico Website | CPI Inflation | 8x/year |
 | China (PBOC) | IMF WEO | CPI Inflation | 2x/year |
-| Venezuela (BCV) | IMF WEO | CPI Inflation | 2x/year |
 
 **Notes:** 
 - China's PBOC does not publish multi-year inflation forecasts. We use IMF projections instead.
-- Venezuela's BCV does not publish reliable forecasts. We use IMF projections instead.
 - Singapore's MAS uses exchange rate policy (S$NEER band), not interest rates.
 
 ---
@@ -211,7 +206,7 @@ Failure-path emails (`if: failure()`) are tracked in [#28](https://github.com/ji
 
 ### Manual Updates Required
 
-- **Central bank forecasts:** Mostly automated (9/15) — see PROJECT_PLAN.md "Scraper status". The remaining banks (CN, IN, KR, SG, MX, VE) are updated manually after MPC meetings (see CPI_UPDATE_GUIDE.md), with PBoC and BCV explicit non-goals.
+- **Central bank forecasts:** Mostly automated (9/14) — see PROJECT_PLAN.md "Scraper status". The remaining banks (CN, IN, KR, SG, MX) are updated manually after MPC meetings (see CPI_UPDATE_GUIDE.md), with PBoC an explicit non-goal.
 - **IMF forecasts:** April and October — `fetch_imf_forecasts.py` pulls the latest WEO.
 - **CPI verification:** Monthly via `update_cpi.py` if FRED hasn't caught up. Direct-source paths (BLS for US, ONS for UK, StatCan for CA, ECB for EA) usually beat FRED to the release.
 
@@ -245,19 +240,13 @@ Failure-path emails (`if: failure()`) are tracked in [#28](https://github.com/ji
 - No explicit inflation target; implied ~2% for price stability
 - Core inflation excludes accommodation and private transport
 
-### Venezuela (VE)
-- Post-hyperinflation period only (2022+)
-- Hyperinflation 2016-2021 peaked at 1,000,000%+ in 2018
-- No formal inflation targeting framework (`target: null` in data)
-- Data reliability uncertain; IMF projections used for forecasts
-
 ---
 
 ## File Structure
 
 ```
 docs/data/                        # Single source of truth
-├── historical_cpi.json           # CPI history for all 15 countries
+├── historical_cpi.json           # CPI history for all 14 countries
 ├── cb_forecasts.json             # Central bank forecasts
 ├── imf_forecasts.json            # IMF WEO projections
 ├── cpi_supplements.json          # Manual supplements for FRED lag
@@ -267,7 +256,7 @@ docs/data/                        # Single source of truth
     └── imf_forecast_history.json # IMF forecast revision history
 
 scripts/                          # Data collection scripts
-├── fetch_historical_cpi.py       # FRED API fetcher (all 15 countries)
+├── fetch_historical_cpi.py       # FRED API fetcher (all 14 countries)
 ├── fetch_imf_forecasts.py        # IMF API fetcher
 ├── auto_scrape_cb_forecasts.py   # CB publication scraper (6 banks)
 ├── monitor_updates.py            # Automated checker
@@ -290,7 +279,6 @@ scripts/                          # Data collection scripts
 2. **Central Bank Forecasts:** Most require manual updates; not all banks provide multi-year projections
 3. **Methodology Differences:** Countries use slightly different CPI baskets and methodologies
 4. **Revisions:** Historical data may be revised by statistical agencies after initial release
-5. **Venezuela:** Data reliability uncertain due to economic instability
 
 ---
 
@@ -311,7 +299,6 @@ scripts/                          # Data collection scripts
 - **SingStat:** https://www.singstat.gov.sg/
 - **Brazil IBGE:** https://www.ibge.gov.br/
 - **Mexico INEGI:** https://www.inegi.org.mx/
-- **Venezuela BCV:** https://www.bcv.org.ve/
 
 ### Data APIs
 - **FRED:** https://fred.stlouisfed.org/

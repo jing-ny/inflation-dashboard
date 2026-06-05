@@ -50,7 +50,6 @@ COUNTRY_MAPPING = {
     "SG": "SGP",
     "BR": "BRA",
     "MX": "MEX",
-    "VE": "VEN",
 }
 
 # Country names for output
@@ -69,7 +68,6 @@ COUNTRY_NAMES = {
     "SG": "Singapore",
     "BR": "Brazil",
     "MX": "Mexico",
-    "VE": "Venezuela",
 }
 
 
@@ -193,7 +191,7 @@ def sync_imf_sourced_cb_forecasts(imf_data: Optional[Dict] = None) -> int:
     """
     Keep IMF-sourced rows in cb_forecasts.json in lockstep with the IMF WEO.
 
-    Some central banks (PBoC, BCV) publish no standardized inflation forecast,
+    Some central banks (e.g. PBoC) publish no standardized inflation forecast,
     so their Outlook rows display the IMF projection instead. Rather than a
     hand-maintained copy that silently ages (the misleading "broken scraper"
     red pill of #43 / #44), those rows are flagged
@@ -291,7 +289,7 @@ def main():
         # Save to JSON
         save_json(imf_data, "imf_forecasts.json")
 
-        # Keep IMF-sourced CB rows (CN, VE) in step with the fresh WEO data.
+        # Keep IMF-sourced CB rows (e.g. CN) in step with the fresh WEO data.
         print()
         print("Syncing IMF-sourced cb_forecasts rows...")
         sync_imf_sourced_cb_forecasts(imf_data)

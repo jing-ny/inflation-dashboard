@@ -8,7 +8,7 @@ const COUNTRY_PAGES = {
     US: 'us.html', EA: 'ea.html', UK: 'uk.html', AU: 'au.html',
     CA: 'ca.html', NZ: 'nz.html', ZA: 'za.html', BR: 'br.html',
     MX: 'mx.html', JP: 'jp.html',
-    KR: 'kr.html', SG: 'sg.html', IN: 'in.html', CN: 'cn.html', VE: 've.html'
+    KR: 'kr.html', SG: 'sg.html', IN: 'in.html', CN: 'cn.html'
 };
 
 // Target definitions (rarely change, ok to hardcode)
@@ -26,12 +26,11 @@ const TARGETS = {
     KR: { value: 2.0, display: '2.0%', range: null },
     SG: { value: 2.0, display: '~2%', range: null },
     IN: { value: 4.0, display: '2-6%', range: [2, 6] },
-    CN: { value: 3.0, display: '~3%', range: null },
-    VE: { value: null, display: 'N/A', range: null }
+    CN: { value: 3.0, display: '~3%', range: null }
 };
 
 // Display order - Japan added before China
-const DISPLAY_ORDER = ['US', 'EA', 'UK', 'CA', 'AU', 'NZ', 'ZA', 'BR', 'MX', 'JP', 'KR', 'SG', 'IN', 'CN', 'VE'];
+const DISPLAY_ORDER = ['US', 'EA', 'UK', 'CA', 'AU', 'NZ', 'ZA', 'BR', 'MX', 'JP', 'KR', 'SG', 'IN', 'CN'];
 
 /**
  * Load and render the current inflation table
@@ -363,7 +362,7 @@ async function loadOutlookTable() {
                 `Green ≤ 120d · Amber ≤ 180d · Red &gt; 180d since publication. ` +
                 `Paused rows are explicitly disabled scrapers awaiting fix; curated value preserved. ` +
                 `Pending rows have a draft awaiting human review (see cb_forecasts_draft.json). ` +
-                `<span class="freshness freshness-imf">IMF WEO</span> rows (CN, VE) track the IMF World Economic ` +
+                `<span class="freshness freshness-imf">IMF WEO</span> rows (CN) track the IMF World Economic ` +
                 `Outlook — the central bank publishes no standardized forecast, so there is no CB scraper to break.`;
         }
 

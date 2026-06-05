@@ -128,7 +128,7 @@ function pausedPill(issue, reason) {
 
 /**
  * Render an "IMF-sourced" pill — used for rows whose central bank publishes
- * no standardized inflation forecast (PBoC, BCV), so the Outlook value tracks
+ * no standardized inflation forecast (e.g. PBoC), so the Outlook value tracks
  * the IMF World Economic Outlook instead (#43 / #44).
  *
  * Unlike `pausedPill`, this is NOT a broken-scraper signal: there is no CB

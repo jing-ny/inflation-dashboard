@@ -28,7 +28,6 @@ Countries covered:
 - 🇸🇬 Singapore (FRED - OECD)
 - 🇧🇷 Brazil (FRED - OECD)
 - 🇲🇽 Mexico (FRED - OECD)
-- 🇻🇪 Venezuela (FRED - World Bank)
 
 Usage:
     python fetch_historical_cpi.py              # Merge mode (default)
@@ -253,21 +252,10 @@ COUNTRIES = {
         "data_type": "index",
         "notes": "Banxico target 3% with ±1pp tolerance band (2-4%)",
     },
-    "VE": {
-        "name": "Venezuela",
-        "flag": "🇻🇪",
-        "target": None,  # No formal target
-        "source": "BCV",
-        "source_url": "https://www.bcv.org.ve/",
-        "fred_series": "FPCPITOTLZGVEN",  # World Bank, annual
-        "frequency": "annual",
-        "data_type": "yoy",  # Already YoY
-        "notes": "Post-hyperinflation period only. Data updates irregularly.",
-    },
 }
 
 # Display order for output
-DISPLAY_ORDER = ['US', 'EA', 'UK', 'CA', 'AU', 'NZ', 'ZA', 'BR', 'MX', 'JP', 'CN', 'IN', 'KR', 'SG', 'VE']
+DISPLAY_ORDER = ['US', 'EA', 'UK', 'CA', 'AU', 'NZ', 'ZA', 'BR', 'MX', 'JP', 'CN', 'IN', 'KR', 'SG']
 
 
 # -----------------------------------------------------------------------------
