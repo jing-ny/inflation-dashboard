@@ -52,6 +52,15 @@ async function loadInflationTable() {
             const current = data.latest?.value ?? data.history?.[data.history.length - 1]?.value;
             const previous = data.previous?.value ?? data.history?.[data.history.length - 2]?.value;
             const currentDate = data.latest?.date ?? data.history?.[data.history.length - 1]?.date;
+            // Flash/provisional estimates (e.g. EA HICP flash, #60) are flagged on
+            // the record; mark them so readers know the value isn't final.
+            const isProvisional = (data.latest?.provisional
+                ?? data.history?.[data.history.length - 1]?.provisional) === true;
+            const flashBadge = isProvisional
+                ? ' <span title="Flash estimate — provisional, not the final print"'
+                  + ' style="font-size:0.7rem;color:#b45309;background:#fef3c7;'
+                  + 'padding:1px 5px;border-radius:4px;margin-left:4px;">flash</span>'
+                : '';
             const target = TARGETS[code];
             const page = COUNTRY_PAGES[code];
 
@@ -114,7 +123,7 @@ async function loadInflationTable() {
                     <td class="${changeClass}">${changeStr}</td>
                     <td>${targetDisplay}</td>
                     <td><span class="${statusClass}">${statusText}</span></td>
-                    <td>${formatDate(currentDate)}</td>
+                    <td>${formatDate(currentDate)}${flashBadge}</td>
                     <td>${freshnessCell}</td>
                 </tr>
             `;
