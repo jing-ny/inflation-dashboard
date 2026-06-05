@@ -6346,15 +6346,15 @@
     "flag": "🇨🇳",
     "target": 3.0,
     "frequency": "monthly",
-    "source": "NBS via OECD/FRED",
+    "source": "NBS",
     "last_updated": "2026-04-22",
     "latest": {
-      "date": "2026-03",
-      "value": 1.0
+      "date": "2026-04",
+      "value": 1.2
     },
     "previous": {
-      "date": "2026-02",
-      "value": 1.3
+      "date": "2026-03",
+      "value": 1.0
     },
     "history": [
       {
@@ -6816,8 +6816,14 @@
       {
         "date": "2026-03",
         "value": 1.0
+      },
+      {
+        "date": "2026-04",
+        "value": 1.2
       }
-    ]
+    ],
+    "source_url": "https://www.stats.gov.cn/english/",
+    "fred_series": "CHNCPIALLMINMEI"
   },
   "IN": {
     "code": "IN",

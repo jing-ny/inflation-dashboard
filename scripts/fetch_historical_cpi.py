@@ -177,9 +177,10 @@ COUNTRIES = {
         "target": 3.0,
         "source": "NBS",
         "source_url": "https://www.stats.gov.cn/english/",
-        "fred_series": "CHNCPIALLMINMEI",  # OECD index
+        "api": "NBS",  # primary national source (English CPI press release) (#56)
+        "fred_series": "CHNCPIALLMINMEI",  # OECD index — fallback only
         "frequency": "monthly",
-        "data_type": "index",
+        "data_type": "yoy",  # press release states the YoY rate directly
     },
     "IN": {
         "name": "India",
@@ -726,6 +727,98 @@ def fetch_mospi_cpi_series() -> List[Dict]:
     return obs
 
 
+def fetch_nbs_cpi_series() -> List[Dict]:
+    """China headline CPI (YoY %) from the NBS English press release (#56).
+
+    NBS publishes monthly CPI press releases as HTML under
+    /english/PressRelease/ with unpredictable numeric IDs, so we discover the
+    latest CPI releases from the listing pages rather than guessing a URL. Each
+    release carries a headline summary table whose first data row is
+
+        Consumer Price Index   <M/M %>   <Y/Y %>   <Jan-N cumulative Y/Y %>
+
+    e.g. "Consumer Price Index 0.3 1.2 0.9" for April 2026. We anchor on that
+    row and take the second number (the monthly year-on-year rate); the month
+    and year come from the release title "Consumer Price Index in <Month>
+    <Year>". Falls back to FRED on any failure (returns []).
+    """
+    import re as _re
+    headers = {"User-Agent": _BROWSER_UA,
+               "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
+               "Accept-Language": "en-US,en;q=0.9"}
+    # The press-release index is dominated by high-frequency price-monitoring
+    # bulletins, so the monthly CPI release is often a page or two back. Scan a
+    # few index pages and match the specific "Consumer Price Index in <Month>"
+    # title (not the broad "prices").
+    base = "https://www.stats.gov.cn/english/PressRelease/"
+    pages = [base, base + "index_1.html", base + "index_2.html", base + "index_3.html"]
+    links = []
+    for pg in pages:
+        try:
+            r = requests.get(pg, headers=headers, timeout=30)
+            if r.status_code == 200:
+                links += _re.findall(r'href="([^"]+\.html)"[^>]*>([^<]{0,140})', r.text)
+        except Exception as e:
+            print(f"[diag] NBS listing {pg} -> {type(e).__name__}", end="  ")
+    # Keep the monthly "Consumer Price Index in <Month> <Year>" releases only.
+    months = {name.lower(): i for i, name in enumerate(_MONTH_NAMES) if name}
+    title_re = _re.compile(r"Consumer Price Index in (\w+)\s+(\d{4})", _re.I)
+    seen = set()
+    cpi_links = []
+    for href, text in links:
+        m = title_re.search(text)
+        if not m:
+            continue
+        mi = months.get(m.group(1).lower())
+        if not mi:
+            continue
+        key = (int(m.group(2)), mi)
+        if key in seen:
+            continue
+        seen.add(key)
+        cpi_links.append((href, key))
+    if not cpi_links:
+        print("[diag] NBS: no 'Consumer Price Index in <Month> <Year>' release on listings")
+        return []
+    # Newest first; parse a few recent releases so latest/previous are populated.
+    cpi_links.sort(key=lambda x: x[1], reverse=True)
+
+    row_re = _re.compile(
+        r"Consumer Price Index\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)")
+    obs = []
+    for href, (yr, mi) in cpi_links[:3]:
+        if href.startswith("http"):
+            detail = href
+        elif href.startswith("/"):
+            detail = "https://www.stats.gov.cn" + href
+        else:
+            detail = base + href.lstrip("./")
+        try:
+            d = requests.get(detail, headers=headers, timeout=30)
+            if d.status_code != 200:
+                print(f"[diag] NBS detail {detail} -> {d.status_code}", end="  ")
+                continue
+        except Exception as e:
+            print(f"[diag] NBS detail unreachable: {type(e).__name__}", end="  ")
+            continue
+        dtext = _re.sub(r"<[^>]+>", " ", d.text)
+        dtext = _re.sub(r"\s+", " ", dtext)
+        rm = row_re.search(dtext)
+        if not rm:
+            print(f"[diag] NBS {yr}-{mi:02d}: headline CPI row not found", end="  ")
+            continue
+        yoy = float(rm.group(2))  # M/M, Y/Y, cumulative Y/Y -> take Y/Y
+        if -5.0 <= yoy <= 30.0:
+            obs.append({"date": f"{yr:04d}-{mi:02d}-01", "value": round(yoy, 2)})
+
+    if not obs:
+        print("  ⏸️  NBS: no headline CPI parsed; preserving curated CN")
+        return []
+    obs.sort(key=lambda o: o["date"])
+    print(f"  ✅ NBS headline CPI: {obs}")
+    return obs
+
+
 # YoY Calculation
 # -----------------------------------------------------------------------------
 
@@ -813,6 +906,21 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(ONS failed: {e}; falling back to FRED)...", end=" ")
+                    raw_data = fetch_fred_series(config["fred_series"])
+                    yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
+                else:
+                    raise
+        elif config.get("api") == "NBS":
+            # Direct NBS English CPI press release (HTML) — already YoY. #56
+            try:
+                raw_data = fetch_nbs_cpi_series()
+                if not raw_data:
+                    raise ValueError("No data returned from NBS press release")
+                yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)}
+                           for obs in raw_data]
+            except Exception as e:
+                if config.get("fred_series"):
+                    print(f"(NBS failed: {e}; falling back to FRED)...", end=" ")
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:
@@ -1007,7 +1115,19 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
             "frequency": config["frequency"],
             "history": []
         }
-    
+
+    # Config is the single source of truth for descriptive/provenance fields.
+    # Refresh them on every merge so that migrating a country to a national
+    # source (e.g. NBS direct instead of the OECD/FRED relay) updates the
+    # displayed source label AND keeps source_url on the record (CLAUDE.md #3),
+    # rather than leaving the stale value the existing JSON happened to carry.
+    merged["name"] = config["name"]
+    merged["flag"] = config["flag"]
+    merged["target"] = config["target"]
+    merged["source"] = config["source"]
+    merged["source_url"] = config.get("source_url", "")
+    merged["fred_series"] = config.get("fred_series", "")
+
     # Preserve notes if they exist
     if config.get("notes") and "notes" not in merged:
         merged["notes"] = config["notes"]
