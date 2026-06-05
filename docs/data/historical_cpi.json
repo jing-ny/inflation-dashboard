@@ -546,15 +546,16 @@
     "flag": "🇪🇺",
     "target": 2.0,
     "frequency": "monthly",
-    "source": "Eurostat via ECB",
+    "source": "Eurostat",
     "last_updated": "2026-04-22",
     "latest": {
-      "date": "2026-04",
-      "value": 3.0
+      "date": "2026-05",
+      "value": 3.2,
+      "provisional": true
     },
     "previous": {
-      "date": "2026-03",
-      "value": 2.6
+      "date": "2026-04",
+      "value": 3.0
     },
     "history": [
       {
@@ -1100,8 +1101,15 @@
       {
         "date": "2026-04",
         "value": 3.0
+      },
+      {
+        "date": "2026-05",
+        "value": 3.2,
+        "provisional": true
       }
-    ]
+    ],
+    "source_url": "https://ec.europa.eu/eurostat/",
+    "fred_series": ""
   },
   "UK": {
     "code": "UK",
