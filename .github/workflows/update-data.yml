@@ -41,6 +41,7 @@ jobs:
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           BLS_API_KEY: ${{ secrets.BLS_API_KEY }}  # optional; unkeyed BLS API works for ~10y window
+          ESTAT_APP_ID: ${{ secrets.ESTAT_APP_ID }}  # Japan: e-Stat getStatsData appId (#51)
         run: |
           CMD="python scripts/fetch_historical_cpi.py"
           if [ -n "${{ inputs.country }}" ]; then CMD="$CMD --country ${{ inputs.country }}"; fi

@@ -165,11 +165,19 @@ COUNTRIES = {
         "target": 2.0,
         "source": "MIC",
         "source_url": "https://www.stat.go.jp/english/data/cpi/",
-        "fred_series": "JPNCPALTT01IXNBM",  # COICOP 2018 index, monthly
+        "api": "eStat",  # primary national source: e-Stat getStatsData (#51)
+        "estat_stats_code": "00200573",  # Consumer Price Index (Statistics Bureau)
+        "estat_stats_data_id": "0003427113",  # 2020-Base Consumer Price Index (main table)
+        # Dimensions resolved from getMetaInfo: area 00000 = All Japan, cat01
+        # 0001 = All items (NOT 0161 "less fresh food" = core). The year-on-year
+        # tab code is picked from the response metadata by name at runtime.
+        "estat_cdArea": "00000",
+        "estat_cdCat01": "0001",
+        "fred_series": "JPNCPALTT01IXNBM",  # COICOP 2018 index, monthly — fallback only
         "fred_series_alt": "JPNCPIALLMINMEI",  # COICOP 1999 fallback (discontinued Jun 2021 but may still serve data)
         "frequency": "monthly",
         "data_type": "index",
-        "notes": "Primary: COICOP 2018 index. Fallback: COICOP 1999 (discontinued Jun 2021). Manual supplement recommended for latest data.",
+        "notes": "Primary: Statistics Bureau all-items CPI (YoY) via e-Stat API. Fallback: FRED COICOP 2018/1999 index.",
     },
     "CN": {
         "name": "China",
@@ -727,6 +735,160 @@ def fetch_mospi_cpi_series() -> List[Dict]:
     return obs
 
 
+ESTAT_BASE = "https://api.e-stat.go.jp/rest/3.0/app/json"
+
+
+def fetch_estat_cpi_series(config: Dict) -> List[Dict]:
+    """Japan headline all-items CPI (YoY %) from the e-Stat API (#51).
+
+    Japan's all-items monthly CPI is not published in any keyless machine-
+    readable form (the Statistics Bureau funnels its statistical tables through
+    e-Stat), so we use the official e-Stat ``getStatsData`` JSON API. This
+    requires a free application id supplied via the ``ESTAT_APP_ID`` secret.
+
+    Two phases:
+      * No ``estat_stats_data_id`` configured yet → DISCOVERY: call
+        ``getStatsList`` for the CPI stats code and log the candidate table ids
+        + titles so the exact national all-items monthly table can be pinned.
+      * Pinned id → fetch + parse the all-items (総合) year-on-year series.
+
+    Returns [] (→ FRED) when the appId is absent or on any structure change.
+    """
+    import re as _re
+    app_id = os.environ.get("ESTAT_APP_ID")
+    if not app_id:
+        print("(ESTAT_APP_ID not set)", end=" ")
+        return []
+    headers = {"User-Agent": _BROWSER_UA, "Accept": "application/json"}
+    stats_data_id = config.get("estat_stats_data_id")
+
+    # --- DISCOVERY phase: until the dimension codes (which area = All Japan,
+    # which tab = year-on-year, which item = all-items) are pinned in config,
+    # list the CPI tables and dump the pinned table's getMetaInfo so the codes
+    # can be read off and locked in. ---
+    if not config.get("estat_cdCat01"):
+        if not stats_data_id:
+            params = {"appId": app_id, "statsCode": config.get("estat_stats_code", "00200573"),
+                      "searchKind": "1", "lang": "E", "limit": "100"}
+            try:
+                j = requests.get(f"{ESTAT_BASE}/getStatsList", params=params,
+                                 headers=headers, timeout=40).json()
+            except Exception as e:
+                print(f"[diag] e-Stat getStatsList error: {type(e).__name__}: {e}")
+                return []
+            tables = (j.get("GET_STATS_LIST", {}).get("DATALIST_INF", {}) or {}).get("TABLE_INF", [])
+            if isinstance(tables, dict):
+                tables = [tables]
+            print(f"    [diag] e-Stat getStatsList: {len(tables)} CPI table(s)")
+            for t in tables:
+                tt = t.get("TITLE")
+                tt = tt.get("$", "") if isinstance(tt, dict) else (tt or "")
+                print(f"      [diag] id={t.get('@id')} :: {str(tt)[:90]}")
+            return []
+        # Meta-dump the pinned table's dimensions + codes.
+        try:
+            j = requests.get(f"{ESTAT_BASE}/getMetaInfo",
+                             params={"appId": app_id, "statsDataId": stats_data_id, "lang": "E"},
+                             headers=headers, timeout=40).json()
+        except Exception as e:
+            print(f"[diag] e-Stat getMetaInfo error: {type(e).__name__}: {e}")
+            return []
+        objs = (j.get("GET_META_INFO", {}).get("METADATA_INF", {}).get("CLASS_INF", {}) or {}).get("CLASS_OBJ", [])
+        if isinstance(objs, dict):
+            objs = [objs]
+        print(f"    [diag] e-Stat getMetaInfo {stats_data_id}: {len(objs)} dimension(s)")
+        for o in objs:
+            codes = o.get("CLASS", [])
+            if isinstance(codes, dict):
+                codes = [codes]
+            print(f"      [diag] dim @id={o.get('@id')} name={o.get('@name')} ({len(codes)} codes)")
+            # Show codes most likely to be the anchors we need.
+            for c in codes:
+                nm = c.get("@name", "")
+                if any(k in nm for k in ("All Japan", "All items", "year-on-year",
+                                          "Year-on-year", "全国", "総合", "前年同月")):
+                    print(f"        [diag] code={c.get('@code')} :: {nm[:60]}")
+        return []
+
+    # --- DATA phase: fetch all-items / All-Japan and parse the YoY series. ---
+    params = {"appId": app_id, "statsDataId": stats_data_id, "lang": "E",
+              "metaGetFlg": "Y", "cntGetFlg": "N",
+              "cdArea": config["estat_cdArea"], "cdCat01": config["estat_cdCat01"]}
+    try:
+        r = requests.get(f"{ESTAT_BASE}/getStatsData", params=params,
+                         headers=headers, timeout=60)
+        j = r.json()
+    except Exception as e:
+        print(f"  ⚠️  e-Stat getStatsData error: {type(e).__name__}: {e}")
+        return []
+
+    sd = j.get("GET_STATS_DATA", {}).get("STATISTICAL_DATA", {})
+    values = (sd.get("DATA_INF", {}) or {}).get("VALUE", [])
+    if isinstance(values, dict):
+        values = [values]
+    if not values:
+        result = j.get("GET_STATS_DATA", {}).get("RESULT", {})
+        print(f"  ⏸️  e-Stat returned no VALUEs (status {result.get('STATUS')}: "
+              f"{result.get('ERROR_MSG')}); preserving curated JP")
+        return []
+
+    classes = (sd.get("CLASS_INF", {}) or {}).get("CLASS_OBJ", [])
+    if isinstance(classes, dict):
+        classes = [classes]
+    time_labels, tab_names = {}, {}
+    for cls in classes:
+        items = cls.get("CLASS", [])
+        if isinstance(items, dict):
+            items = [items]
+        if cls.get("@id") == "time":
+            for it in items:
+                time_labels[it.get("@code")] = it.get("@name", "")
+        elif cls.get("@id") == "tab":
+            for it in items:
+                tab_names[it.get("@code")] = it.get("@name", "")
+
+    # The table carries 3 tabs (index / change over the month / change over the
+    # year). Pick the year-on-year one by name — never assume a fixed code, and
+    # never confuse it with the month-on-month tab (CLAUDE.md #2).
+    yoy_tab = next((c for c, nm in tab_names.items()
+                    if "year" in nm.lower() and "month" not in nm.lower()), None)
+    if not yoy_tab:
+        print(f"  ⏸️  e-Stat: could not identify year-on-year tab in {tab_names}; preserving JP")
+        return []
+
+    def _year_month(code: str, label: str):
+        # Prefer the human label (English e-Stat: "2026/4"); fall back to the
+        # 10-digit monthly time code (e.g. 2026000404 = Apr 2026).
+        mm = _re.search(r"(\d{4})\D+(\d{1,2})\b", label or "")
+        if mm:
+            return int(mm.group(1)), int(mm.group(2))
+        if code and len(code) == 10 and code.isdigit() and code[8:10] != "00":
+            return int(code[:4]), int(code[8:10])
+        return None, None
+
+    obs = []
+    for v in values:
+        if v.get("@tab") != yoy_tab:
+            continue
+        code = v.get("@time", "")
+        y, mth = _year_month(code, time_labels.get(code, ""))
+        if not y or not mth or not (1 <= mth <= 12):
+            continue
+        try:
+            val = float(v.get("$"))
+        except (TypeError, ValueError):
+            continue
+        if -10.0 <= val <= 30.0:
+            obs.append({"date": f"{y:04d}-{mth:02d}-01", "value": round(val, 2)})
+
+    if not obs:
+        print("  ⏸️  e-Stat: no all-items YoY rows parsed; preserving curated JP")
+        return []
+    obs.sort(key=lambda o: o["date"])
+    print(f"  ✅ e-Stat all-items CPI YoY: {len(obs)} pts, latest {obs[-1]}")
+    return obs
+
+
 def fetch_nbs_cpi_series() -> List[Dict]:
     """China headline CPI (YoY %) from the NBS English press release (#56).
 
@@ -921,6 +1083,21 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(NBS failed: {e}; falling back to FRED)...", end=" ")
+                    raw_data = fetch_fred_series(config["fred_series"])
+                    yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
+                else:
+                    raise
+        elif config.get("api") == "eStat":
+            # Direct e-Stat getStatsData — national all-items CPI, already YoY. #51
+            try:
+                raw_data = fetch_estat_cpi_series(config)
+                if not raw_data:
+                    raise ValueError("No data returned from e-Stat API")
+                yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)}
+                           for obs in raw_data]
+            except Exception as e:
+                if config.get("fred_series"):
+                    print(f"(e-Stat failed: {e}; falling back to FRED)...", end=" ")
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:
