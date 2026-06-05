@@ -491,6 +491,54 @@ def fetch_ecb_series(series_id: str, start_date: str = "2015-01-01") -> List[Dic
     return observations
 
 
+def fetch_eurostat_hicp_flash() -> List[Dict]:
+    """Euro-area HICP all-items YoY incl. the monthly *flash* estimate (#60).
+
+    The ECB ICP series only carries the final print, so the EA row lags one
+    release. Eurostat's ``prc_hicp_manr`` dataset (annual rate of change)
+    publishes the euro-area flash on the last working day of the reference
+    month — we ingest it so the latest point is as fresh as possible. The most
+    recent month is provisional (flash); callers should label it as such.
+    Returns [] on any structure change (→ caller keeps the ECB series).
+    """
+    import re as _re
+    base = ("https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/"
+            "prc_hicp_manr")
+    headers = {"User-Agent": _BROWSER_UA, "Accept": "application/json"}
+    obs = []
+    for geo in ("EA20", "EA19", "EA"):
+        params = {"format": "JSON", "lang": "EN", "freq": "M",
+                  "coicop": "CP00", "geo": geo, "sinceTimePeriod": "2015-01"}
+        try:
+            r = requests.get(base, params=params, headers=headers, timeout=40)
+            if r.status_code != 200:
+                print(f"    [diag] Eurostat flash geo={geo} -> {r.status_code}")
+                continue
+            j = r.json()
+        except Exception as e:
+            print(f"    [diag] Eurostat flash geo={geo} -> {type(e).__name__}: {e}")
+            continue
+        time_cat = (((j.get("dimension") or {}).get("time") or {})
+                    .get("category") or {}).get("index") or {}
+        values = j.get("value") or {}
+        if not time_cat or not values:
+            print(f"    [diag] Eurostat flash geo={geo}: empty (dims="
+                  f"{list((j.get('dimension') or {}).keys())})")
+            continue
+        idx_to_time = {int(v): k for k, v in time_cat.items()}
+        for k, val in values.items():
+            t = idx_to_time.get(int(k))
+            if not t or not _re.match(r"\d{4}-\d{2}$", t) or val is None:
+                continue
+            obs.append({"date": f"{t}-01", "value": float(val)})
+        if obs:
+            obs.sort(key=lambda o: o["date"])
+            print(f"  ℹ️  Eurostat HICP flash (geo={geo}): {len(obs)} pts, latest {obs[-1]}")
+            return obs
+    print("    [diag] Eurostat flash: no usable euro-area series found")
+    return []
+
+
 # -----------------------------------------------------------------------------
 # YoY Calculation
 # -----------------------------------------------------------------------------
@@ -1164,6 +1212,20 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             raw_data = fetch_ecb_series(config["series_id"])
             yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)}
                        for obs in raw_data]
+            # The ECB ICP series only carries the final print, so the EA row lags
+            # one release. Append Eurostat's HICP flash when it's newer, flagged
+            # provisional so the dashboard can mark it a flash estimate. #60
+            try:
+                flash = fetch_eurostat_hicp_flash()
+                ecb_latest = yoy_data[-1]["date"] if yoy_data else ""
+                for fobs in flash:
+                    fm = fobs["date"][:7]
+                    if fm > ecb_latest:
+                        yoy_data.append({"date": fm, "value": round(fobs["value"], 2),
+                                         "provisional": True})
+                yoy_data.sort(key=lambda x: x["date"])
+            except Exception as e:
+                print(f"(Eurostat flash skipped: {type(e).__name__}: {e})", end=" ")
         elif config.get("api") == "BLS":
             # Direct BLS Public Data API — no FRED lag.
             try:
