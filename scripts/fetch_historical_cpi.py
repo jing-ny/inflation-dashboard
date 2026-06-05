@@ -491,6 +491,62 @@ def fetch_ecb_series(series_id: str, start_date: str = "2015-01-01") -> List[Dic
     return observations
 
 
+def fetch_eurostat_flash_release() -> List[Dict]:
+    """Euro-area HICP *flash* estimate from the Eurostat euro-indicators press
+    release (#60). The bulk ECB/Eurostat datasets lag the flash, so we read the
+    headline rate straight from the release titled "Euro area annual inflation
+    up to/down to X.X%". The release URL is date-slugged (.../w/N-DDMMYYYY-ap),
+    so we discover the latest from the euro-indicators listing (newest first)
+    and take the first page that is the HICP flash. Returns a single
+    ``[{date, value}]`` for the flash month, or [] on any structure change.
+    """
+    import re as _re
+    headers = {"User-Agent": _BROWSER_UA,
+               "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
+               "Accept-Language": "en"}
+    months = {name[:3].lower(): i for i, name in enumerate(_MONTH_NAMES) if name}
+    listing = "https://ec.europa.eu/eurostat/web/products-euro-indicators"
+    try:
+        lr = requests.get(listing, headers=headers, timeout=40)
+        codes = _re.findall(r'/w/(\d+-\d{8}-[a-z]{2})', lr.text)
+    except Exception as e:
+        print(f"  ⚠️  Eurostat listing error: {type(e).__name__}: {e}")
+        return []
+    seen = set()
+    ordered = [c for c in codes if not (c in seen or seen.add(c))]
+    rel_base = "https://ec.europa.eu/eurostat/en/web/products-euro-indicators/w/"
+    # "up to 3.2%" / "down to 1.9%" / "stable at 2.0%" — capture the headline %.
+    val_re = _re.compile(r"Euro area annual inflation\D{0,24}?(\d+\.\d+)\s*%", _re.I)
+    for code in ordered[:8]:
+        try:
+            pr = requests.get(rel_base + code, headers=headers, timeout=40)
+            if pr.status_code != 200:
+                continue
+            txt = _re.sub(r"<[^>]+>", " ", pr.text)
+            txt = _re.sub(r"\s+", " ", txt)
+        except Exception:
+            continue
+        vm = val_re.search(txt)
+        if not vm:
+            continue  # not the HICP flash release
+        value = float(vm.group(1))
+        mm = _re.search(r"annual rate in (\w+)", txt)  # e.g. "...rate in May (10.9%..."
+        dm = _re.match(r"\d+-(\d{2})(\d{2})(\d{4})-", code)
+        if not mm or not dm:
+            continue
+        mi = months.get(mm.group(1)[:3].lower())
+        if not mi:
+            continue
+        rel_month, rel_year = int(dm.group(2)), int(dm.group(3))
+        year = rel_year - 1 if mi > rel_month else rel_year  # handle Dec→Jan rollover
+        if not (-5.0 <= value <= 30.0):
+            return []
+        print(f"  ℹ️  Eurostat HICP flash release {code}: {year}-{mi:02d} = {value}%")
+        return [{"date": f"{year:04d}-{mi:02d}-01", "value": round(value, 2)}]
+    print("    [diag] Eurostat flash: no inflation release found in recent listing")
+    return []
+
+
 # -----------------------------------------------------------------------------
 # YoY Calculation
 # -----------------------------------------------------------------------------
@@ -1164,6 +1220,28 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             raw_data = fetch_ecb_series(config["series_id"])
             yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)}
                        for obs in raw_data]
+            # The ECB ICP series only carries the final print, so the EA row lags
+            # one release. Append Eurostat's HICP flash when it's newer, flagged
+            # provisional so the dashboard can mark it a flash estimate. #60
+            try:
+                # Union already-stored finals the ECB pull didn't return (keeps a
+                # correct `previous` under the flash if the ECB feed is behind).
+                have = {p["date"] for p in yoy_data}
+                for p in (load_existing_data().get("EA", {}) or {}).get("history", []):
+                    if p.get("date") not in have and isinstance(p.get("value"), (int, float)) \
+                            and not p.get("provisional"):
+                        yoy_data.append({"date": p["date"], "value": p["value"]})
+                yoy_data.sort(key=lambda x: x["date"])
+                flash = fetch_eurostat_flash_release()
+                latest_final = yoy_data[-1]["date"] if yoy_data else ""
+                for fobs in flash:
+                    fm = fobs["date"][:7]
+                    if fm > latest_final:
+                        yoy_data.append({"date": fm, "value": round(fobs["value"], 2),
+                                         "provisional": True})
+                yoy_data.sort(key=lambda x: x["date"])
+            except Exception as e:
+                print(f"(Eurostat flash skipped: {type(e).__name__}: {e})", end=" ")
         elif config.get("api") == "BLS":
             # Direct BLS Public Data API — no FRED lag.
             try:

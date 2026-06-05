@@ -288,7 +288,13 @@ function updateMetrics(countryCode, data) {
         const pill = typeof freshnessPill === 'function'
             ? freshnessPill(current.date, 'cpi')
             : '';
-        currentDateEl.innerHTML = pill ? `${dateText} ${pill}` : dateText;
+        // Flag flash/provisional estimates (e.g. EA HICP flash, #60).
+        const flash = current.provisional === true
+            ? ' <span title="Flash estimate — provisional, not the final print"'
+              + ' style="font-size:0.75rem;color:#b45309;background:#fef3c7;'
+              + 'padding:1px 6px;border-radius:4px;margin-left:6px;">flash estimate</span>'
+            : '';
+        currentDateEl.innerHTML = (pill ? `${dateText} ${pill}` : dateText) + flash;
     }
 
     // Previous
