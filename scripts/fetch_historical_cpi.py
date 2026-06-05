@@ -167,7 +167,12 @@ COUNTRIES = {
         "source_url": "https://www.stat.go.jp/english/data/cpi/",
         "api": "eStat",  # primary national source: e-Stat getStatsData (#51)
         "estat_stats_code": "00200573",  # Consumer Price Index (Statistics Bureau)
-        "estat_stats_data_id": None,  # resolved on first keyed run (discovery), then pinned
+        "estat_stats_data_id": "0003427113",  # 2020-Base Consumer Price Index (main table)
+        # Dimension codes (cdArea = All Japan, cdTab = year-on-year, cdCat = all
+        # items) resolved from getMetaInfo on the first keyed run, then pinned:
+        "estat_cdTab": None,
+        "estat_cdArea": None,
+        "estat_cdCat01": None,
         "fred_series": "JPNCPALTT01IXNBM",  # COICOP 2018 index, monthly — fallback only
         "fred_series_alt": "JPNCPIALLMINMEI",  # COICOP 1999 fallback (discontinued Jun 2021 but may still serve data)
         "frequency": "monthly",
@@ -757,32 +762,52 @@ def fetch_estat_cpi_series(config: Dict) -> List[Dict]:
     headers = {"User-Agent": _BROWSER_UA, "Accept": "application/json"}
     stats_data_id = config.get("estat_stats_data_id")
 
-    # --- DISCOVERY phase: enumerate CPI tables so we can pin the right one. ---
-    if not stats_data_id:
-        params = {"appId": app_id, "statsCode": config.get("estat_stats_code", "00200573"),
-                  "searchKind": "1", "lang": "E", "limit": "100"}
-        try:
-            r = requests.get(f"{ESTAT_BASE}/getStatsList", params=params,
-                             headers=headers, timeout=40)
-            j = r.json()
-        except Exception as e:
-            print(f"[diag] e-Stat getStatsList error: {type(e).__name__}: {e}")
+    # --- DISCOVERY phase: until the dimension codes (which area = All Japan,
+    # which tab = year-on-year, which item = all-items) are pinned in config,
+    # list the CPI tables and dump the pinned table's getMetaInfo so the codes
+    # can be read off and locked in. ---
+    if not config.get("estat_cdTab"):
+        if not stats_data_id:
+            params = {"appId": app_id, "statsCode": config.get("estat_stats_code", "00200573"),
+                      "searchKind": "1", "lang": "E", "limit": "100"}
+            try:
+                j = requests.get(f"{ESTAT_BASE}/getStatsList", params=params,
+                                 headers=headers, timeout=40).json()
+            except Exception as e:
+                print(f"[diag] e-Stat getStatsList error: {type(e).__name__}: {e}")
+                return []
+            tables = (j.get("GET_STATS_LIST", {}).get("DATALIST_INF", {}) or {}).get("TABLE_INF", [])
+            if isinstance(tables, dict):
+                tables = [tables]
+            print(f"    [diag] e-Stat getStatsList: {len(tables)} CPI table(s)")
+            for t in tables:
+                tt = t.get("TITLE")
+                tt = tt.get("$", "") if isinstance(tt, dict) else (tt or "")
+                print(f"      [diag] id={t.get('@id')} :: {str(tt)[:90]}")
             return []
-        tables = (j.get("GET_STATS_LIST", {}).get("DATALIST_INF", {}) or {}).get("TABLE_INF", [])
-        if isinstance(tables, dict):
-            tables = [tables]
-        print(f"    [diag] e-Stat getStatsList: {len(tables)} CPI table(s)")
-        for t in tables:
-            def _txt(v):
-                return v.get("$", "") if isinstance(v, dict) else (v or "")
-            title = " | ".join(s for s in (
-                _txt(t.get("STAT_NAME")), _txt(t.get("TITLE")),
-                _txt(t.get("STATISTICS_NAME"))) if s)
-            cycle = _txt(t.get("CYCLE"))
-            sdate = _txt(t.get("SURVEY_DATE"))
-            if any(k in title.lower() for k in ("all japan", "all items", "monthly", "2020")) \
-                    or "Monthly" in cycle:
-                print(f"      [diag] id={t.get('@id')} cycle={cycle} survey={sdate} :: {title[:110]}")
+        # Meta-dump the pinned table's dimensions + codes.
+        try:
+            j = requests.get(f"{ESTAT_BASE}/getMetaInfo",
+                             params={"appId": app_id, "statsDataId": stats_data_id, "lang": "E"},
+                             headers=headers, timeout=40).json()
+        except Exception as e:
+            print(f"[diag] e-Stat getMetaInfo error: {type(e).__name__}: {e}")
+            return []
+        objs = (j.get("GET_META_INFO", {}).get("METADATA_INF", {}).get("CLASS_INF", {}) or {}).get("CLASS_OBJ", [])
+        if isinstance(objs, dict):
+            objs = [objs]
+        print(f"    [diag] e-Stat getMetaInfo {stats_data_id}: {len(objs)} dimension(s)")
+        for o in objs:
+            codes = o.get("CLASS", [])
+            if isinstance(codes, dict):
+                codes = [codes]
+            print(f"      [diag] dim @id={o.get('@id')} name={o.get('@name')} ({len(codes)} codes)")
+            # Show codes most likely to be the anchors we need.
+            for c in codes:
+                nm = c.get("@name", "")
+                if any(k in nm for k in ("All Japan", "All items", "year-on-year",
+                                          "Year-on-year", "全国", "総合", "前年同月")):
+                    print(f"        [diag] code={c.get('@code')} :: {nm[:60]}")
         return []
 
     # --- DATA phase: fetch the pinned table and parse all-items YoY. ---
