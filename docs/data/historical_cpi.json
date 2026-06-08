@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "last_updated": "2026-06-05",
+    "last_updated": "2026-06-08",
     "source": "Official national statistical agencies"
   },
   "US": {
@@ -9,7 +9,7 @@
     "flag": "🇺🇸",
     "target": 2.0,
     "frequency": "monthly",
-    "source": "Bureau of Labor Statistics via FRED",
+    "source": "BLS",
     "last_updated": "2026-04-22",
     "latest": {
       "date": "2026-04",
@@ -538,7 +538,9 @@
         },
         "fred_series": "PCEPILFE"
       }
-    }
+    },
+    "source_url": "https://www.bls.gov/cpi/",
+    "fred_series": "CPIAUCNS"
   },
   "EA": {
     "code": "EA",
@@ -1117,7 +1119,7 @@
     "flag": "🇬🇧",
     "target": 2.0,
     "frequency": "monthly",
-    "source": "ONS via OECD/FRED",
+    "source": "ONS",
     "last_updated": "2026-04-22",
     "latest": {
       "date": "2026-04",
@@ -2920,7 +2922,9 @@
         "date": "2026-04",
         "value": 2.8
       }
-    ]
+    ],
+    "source_url": "https://www.ons.gov.uk/economy/inflationandpriceindices",
+    "fred_series": "GBRCPIALLMINMEI"
   },
   "CA": {
     "code": "CA",
@@ -2928,7 +2932,7 @@
     "flag": "🇨🇦",
     "target": 2.0,
     "frequency": "monthly",
-    "source": "Statistics Canada via OECD/FRED",
+    "source": "Statistics Canada",
     "last_updated": "2026-04-22",
     "latest": {
       "date": "2026-04",
@@ -3855,7 +3859,9 @@
         "date": "2026-04",
         "value": 2.82
       }
-    ]
+    ],
+    "source_url": "https://www.statcan.gc.ca/",
+    "fred_series": "CANCPIALLMINMEI"
   },
   "AU": {
     "code": "AU",
@@ -3863,7 +3869,7 @@
     "flag": "🇦🇺",
     "target": 2.5,
     "frequency": "monthly",
-    "source": "Australian Bureau of Statistics",
+    "source": "ABS",
     "last_updated": "2026-04-22",
     "latest": {
       "date": "2026-04",
@@ -4223,7 +4229,9 @@
         "value": 4.2
       }
     ],
-    "notes": "ABS transitioned to monthly CPI in late 2025. FRED still quarterly."
+    "notes": "ABS transitioned to monthly CPI in late 2025. FRED still quarterly.",
+    "source_url": "https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/",
+    "fred_series": "AUSCPIALLQINMEI"
   },
   "NZ": {
     "code": "NZ",
@@ -4231,7 +4239,7 @@
     "flag": "🇳🇿",
     "target": 2.0,
     "frequency": "quarterly",
-    "source": "Stats NZ via OECD/FRED",
+    "source": "Stats NZ",
     "last_updated": "2026-04-22",
     "latest": {
       "date": "2026-Q1",
@@ -4546,15 +4554,17 @@
         "date": "2026-Q1",
         "value": 3.1
       }
-    ]
+    ],
+    "source_url": "https://www.stats.govt.nz/indicators/consumers-price-index-cpi/",
+    "fred_series": "NZLCPIALLQINMEI"
   },
   "ZA": {
     "code": "ZA",
     "name": "South Africa",
     "flag": "🇿🇦",
-    "target": 4.5,
+    "target": 3.0,
     "frequency": "monthly",
-    "source": "Stats SA via OECD/FRED",
+    "source": "Stats SA",
     "last_updated": "2026-02-03",
     "latest": {
       "date": "2026-04",
@@ -5018,7 +5028,9 @@
         "value": 4.0
       }
     ],
-    "notes": "SARB target changed to 3% in 2025"
+    "notes": "SARB target changed to 3% in 2025",
+    "source_url": "https://www.statssa.gov.za/",
+    "fred_series": "ZAFCPIALLMINMEI"
   },
   "JP": {
     "code": "JP",
@@ -8189,7 +8201,7 @@
     "flag": "🇮🇳",
     "target": 4.0,
     "frequency": "monthly",
-    "source": "Ministry of Statistics and Programme Implementation",
+    "source": "MOSPI",
     "last_updated": "2026-04-22",
     "latest": {
       "date": "2026-04",
@@ -8656,7 +8668,9 @@
         "date": "2026-04",
         "value": 3.48
       }
-    ]
+    ],
+    "source_url": "https://www.mospi.gov.in/",
+    "fred_series": "INDCPIALLMINMEI"
   },
   "KR": {
     "code": "KR",
@@ -8664,7 +8678,7 @@
     "flag": "🇰🇷",
     "target": 2.0,
     "frequency": "monthly",
-    "source": "Statistics Korea (KOSTAT)",
+    "source": "KOSTAT",
     "last_updated": "2026-04-22",
     "latest": {
       "date": "2026-03",
@@ -9064,7 +9078,9 @@
         "value": 2.2
       }
     ],
-    "notes": "Primary: COICOP 2018 index. Fallback: COICOP 1999 (discontinued Nov 2023). Manual supplement recommended for latest data."
+    "notes": "Primary: COICOP 2018 index. Fallback: COICOP 1999 (discontinued Nov 2023). Manual supplement recommended for latest data.",
+    "source_url": "https://kostat.go.kr/",
+    "fred_series": "KORCPALTT01IXNBM"
   },
   "SG": {
     "code": "SG",
