@@ -134,7 +134,8 @@ class DataMonitor:
                 updated = True
             
             # Check for stale data (more than 2 months old)
-            # Handle both monthly (2025-12) and quarterly (2025-Q4) formats
+            # Handle monthly (2025-12), quarterly (2025-Q4), and full-date
+            # (2025-12-15) formats
             try:
                 if '-Q' in current_date:
                     # Quarterly format: 2025-Q4 -> 2025-12
@@ -142,9 +143,16 @@ class DataMonitor:
                     month = int(quarter) * 3
                     latest_date = datetime(int(year), month, 1)
                 else:
-                    latest_date = datetime.strptime(current_date, '%Y-%m')
+                    latest_date = datetime.strptime(current_date[:7], '%Y-%m')
             except ValueError:
-                # Skip stale check if date format is unexpected
+                # An unparseable date means the staleness check can't run for
+                # this country. Surface it as an error (non-zero exit + email)
+                # instead of skipping silently — CLAUDE.md #4: "no signal" is
+                # not a valid state for a broken source.
+                self.errors.append(
+                    f"Unparseable latest date for {country_code}: "
+                    f"{current_date!r} — staleness check skipped"
+                )
                 continue
                 
             if (today - latest_date) > timedelta(days=75):
