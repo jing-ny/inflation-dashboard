@@ -173,19 +173,27 @@ async function initCountryPage(countryCode) {
         // showed the pre-Nov-2025 4.5% target for months)
         const [cpiResponse, targetsResponse] = await Promise.all([
             fetch('data/historical_cpi.json'),
-            fetch('data/targets.json'),
+            // Catch network failure here so a rejected targets fetch can't
+            // reject the Promise.all and abort the whole page — CPI data
+            // still renders with target UI degraded to N/A.
+            fetch('data/targets.json').catch((e) => {
+                console.error('Error fetching targets.json:', e);
+                return null;
+            }),
         ]);
         const allCpiData = await cpiResponse.json();
         const countryData = allCpiData[countryCode];
 
         let targetDef = null;
-        try {
-            const targetsData = await targetsResponse.json();
-            targetDef = targetsData[countryCode] || null;
-        } catch (e) {
-            // Missing/corrupt targets.json degrades target UI to N/A —
-            // never fall back to a second definition of the target.
-            console.error('Error loading targets.json:', e);
+        if (targetsResponse) {
+            try {
+                const targetsData = await targetsResponse.json();
+                targetDef = targetsData[countryCode] || null;
+            } catch (e) {
+                // Corrupt targets.json degrades target UI to N/A —
+                // never fall back to a second definition of the target.
+                console.error('Error parsing targets.json:', e);
+            }
         }
 
         if (!countryData) {
@@ -278,7 +286,8 @@ function updateMetrics(countryCode, data, targetDef) {
         statusEl.className = 'metric-value ' + (target !== null ? getValueClass(current.value, target) : 'neutral');
         
         if (statusDetailEl) {
-            if (diff > 2) statusDetailEl.textContent = 'Well above target';
+            if (diff === null) statusDetailEl.textContent = 'No target set';
+            else if (diff > 2) statusDetailEl.textContent = 'Well above target';
             else if (diff > 0.5) statusDetailEl.textContent = 'Above target';
             else if (diff < -0.5) statusDetailEl.textContent = 'Below target';
             else statusDetailEl.textContent = 'Near target';
