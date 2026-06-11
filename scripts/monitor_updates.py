@@ -132,6 +132,10 @@ class DataMonitor:
                 current_data[country_code]['latest'] = fred_latest
                 current_data[country_code]['history'].append(fred_latest)
                 updated = True
+                # Staleness below must judge the refreshed date, not the one
+                # this run just replaced (a malformed old date would otherwise
+                # report an error the update already repaired).
+                current_date = fred_latest['date']
             
             # Check for stale data (more than 2 months old)
             # Handle monthly (2025-12), quarterly (2025-Q4), and full-date
@@ -142,8 +146,12 @@ class DataMonitor:
                     year, quarter = current_date.split('-Q')
                     month = int(quarter) * 3
                     latest_date = datetime(int(year), month, 1)
+                elif len(current_date) == 10:
+                    # Full date (2025-12-15) — keep the day so ages near the
+                    # 75-day threshold aren't overstated by up to a month
+                    latest_date = datetime.strptime(current_date, '%Y-%m-%d')
                 else:
-                    latest_date = datetime.strptime(current_date[:7], '%Y-%m')
+                    latest_date = datetime.strptime(current_date, '%Y-%m')
             except ValueError:
                 # An unparseable date means the staleness check can't run for
                 # this country. Surface it as an error (non-zero exit + email)
