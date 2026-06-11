@@ -44,15 +44,15 @@
       "flag": "🇪🇺",
       "source": "ECB",
       "source_full": "European Central Bank - Staff Projections",
-      "source_url": "https://www.ecb.europa.eu/press/projections/html/ecb.projections202603_ecbstaff~ebe291cd3d.en.html",
-      "publication_date": "March 2026",
+      "source_url": "https://www.ecb.europa.eu/press/projections/html/ecb.projections202606_eurosystemstaff~a495110f8d.en.html",
+      "publication_date": "June 2026",
       "forecast_type": "Staff projection (HICP)",
       "note": "ECB revised 2026 inflation up sharply (1.9%→2.6%) due to Middle East energy price surge. Rates held at 2.00%.",
       "projections": {
         "2025": 2.1,
-        "2026": 2.6,
-        "2027": 2.0,
-        "2028": 2.1
+        "2026": 3.0,
+        "2027": 2.3,
+        "2028": 2.0
       },
       "key_quote": "Headline inflation projected to increase to 2.6% in 2026 reflecting energy price rises",
       "policy_rate": {
