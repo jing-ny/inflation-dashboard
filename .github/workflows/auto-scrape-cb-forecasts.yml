@@ -62,13 +62,10 @@ jobs:
           fi
           
           echo "Running: $CMD"
+          # pipefail so a scraper crash fails this step (and triggers the
+          # failure-alert email) instead of being masked by tee's exit 0.
+          set -o pipefail
           $CMD | tee scraper_output.txt
-          
-          if grep -q "Updates found: [1-9]" scraper_output.txt; then
-            echo "has_updates=true" >> $GITHUB_OUTPUT
-          else
-            echo "has_updates=false" >> $GITHUB_OUTPUT
-          fi
 
       - name: Check for changes
         id: changes
