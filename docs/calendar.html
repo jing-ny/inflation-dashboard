@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Release Calendar — Inflation, Officially</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-brand">Inflation, Officially</a>
+            <a href="index.html" class="nav-back">← Overview</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="section">
+            <div class="section-header">
+                <h2 class="section-title">Upcoming CPI Releases</h2>
+                <p class="section-subtitle">Next expected print per country, projected from each agency's typical publication lag</p>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Country</th>
+                        <th>Next Release</th>
+                        <th>Cadence</th>
+                        <th>Expected</th>
+                        <th>Status</th>
+                        <th>Official Calendar</th>
+                    </tr>
+                </thead>
+                <tbody id="calendarTableBody">
+                    <tr><td colspan="6">Loading...</td></tr>
+                </tbody>
+            </table>
+            <p class="freshness-footer" id="calendarNote"></p>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p><a href="https://github.com/jing-ny/inflation-dashboard" target="_blank">GitHub</a> · For informational purposes only · Not investment advice</p>
+    </footer>
+
+    <script src="calendar.js"></script>
+</body>
+</html>
