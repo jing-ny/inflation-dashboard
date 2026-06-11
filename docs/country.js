@@ -17,84 +17,61 @@
 // Target descriptions and quotes
 const TARGET_INFO = {
     US: {
-        target: 2.0,
         description: 'The Federal Reserve targets 2% inflation as measured by the annual change in the price index for personal consumption expenditures (PCE).',
         quote: 'The Committee judges that inflation at the rate of 2 percent, as measured by the annual change in the price index for personal consumption expenditures, is most consistent over the longer run with the Federal Reserve\'s statutory mandate.',
         quoteSource: 'FOMC Statement on Longer-Run Goals, January 2024'
     },
     CA: {
-        target: 2.0,
-        targetRange: '1-3%',
         description: 'The Bank of Canada targets 2% CPI inflation, the midpoint of a 1-3% target range. The inflation-control target has been in place since 1991.',
         quote: 'The target aims to keep total CPI inflation at the 2 per cent midpoint of a target range of 1 to 3 per cent over the medium term.',
         quoteSource: 'Bank of Canada Inflation-Control Target'
     },
     UK: {
-        target: 2.0,
         description: 'The Bank of England has a 2% CPI inflation target set by the government. If inflation deviates by more than 1 percentage point, the Governor must write a letter to the Chancellor explaining why.',
         quote: 'The inflation target of 2% is expressed in terms of an annual rate of inflation based on the Consumer Prices Index (CPI).',
         quoteSource: 'Bank of England Monetary Policy Framework'
     },
     EA: {
-        target: 2.0,
         description: 'The ECB aims for 2% inflation over the medium term, measured by the Harmonised Index of Consumer Prices (HICP).',
         quote: 'The Governing Council considers that price stability is best maintained by aiming for a 2% inflation target over the medium term. This target is symmetric.',
         quoteSource: 'ECB Monetary Policy Strategy, July 2021'
     },
     AU: {
-        target: 2.5,
-        targetRange: '2-3%',
         description: 'The RBA targets inflation of 2-3% on average over time, focusing on underlying (trimmed mean) inflation.',
         quote: 'The Governor and the Treasurer have agreed that the appropriate target for monetary policy in Australia is to achieve an inflation rate of 2–3 per cent, on average, over time.',
         quoteSource: 'Statement on the Conduct of Monetary Policy, September 2024'
     },
     NZ: {
-        target: 2.0,
-        targetRange: '1-3%',
         description: 'The RBNZ targets 1-3% CPI inflation, with a focus on keeping inflation near the 2% midpoint.',
         quote: 'The Reserve Bank shall formulate and implement monetary policy with the goals of keeping future annual CPI inflation between 1 and 3 percent over the medium term, with a focus on keeping future inflation near the 2 percent mid-point.',
         quoteSource: 'Remit for the Monetary Policy Committee, 2024'
     },
     ZA: {
-        target: 3.0,
-        targetRange: '2-4%',
         description: 'The SARB targets 3% CPI inflation with a ±1 percentage point tolerance band (2-4%). This replaced the previous 3-6% target range in November 2025—the first change in 25 years. The new lower target aims to anchor inflation expectations and reduce borrowing costs over time.',
         quote: 'South Africa\'s inflation target is 3%, with a tolerance band of plus or minus 1 percentage point. This target refers to the headline change in the consumer price index.',
-        quoteSource: 'SARB Monetary Policy Framework, November 2025',
-        targetChange: {
-            date: 'November 2025',
-            previous: '3-6% (4.5% midpoint)',
-            current: '3% ± 1pp',
-            note: 'First target change in 25 years'
-        }
+        quoteSource: 'SARB Monetary Policy Framework, November 2025'
     },
     JP: {
-        target: 2.0,
         description: 'The Bank of Japan targets 2% CPI inflation, a goal adopted in January 2013 after decades of deflation. Japan achieved sustained inflation above target for the first time since the 1990s in 2022-2024.',
         quote: 'The Bank will achieve the price stability target of 2 percent in terms of the year-on-year rate of change in the consumer price index (CPI) at the earliest possible time.',
         quoteSource: 'Bank of Japan Price Stability Target'
     },
     IN: {
-        target: 4.0,
-        targetRange: '2-6%',
         description: 'The Reserve Bank of India targets 4% CPI inflation with a ±2 percentage point tolerance band (2-6%). The flexible inflation targeting framework was adopted in 2016. India experienced record-low inflation below 2% in late 2025 due to falling food prices.',
         quote: 'The primary objective of monetary policy is to maintain price stability while keeping in mind the objective of growth. The inflation target is set at 4 per cent with a tolerance band of +/- 2 per cent.',
         quoteSource: 'RBI Monetary Policy Framework'
     },
     KR: {
-        target: 2.0,
         description: 'The Bank of Korea targets 2% CPI inflation. The inflation targeting framework was adopted in 1998 following the Asian financial crisis. Korea has maintained relatively stable inflation near target in recent years.',
         quote: 'The Bank of Korea sets the inflation target at 2% in terms of consumer price inflation.',
         quoteSource: 'Bank of Korea Monetary Policy'
     },
     SG: {
-        target: 2.0,
         description: 'The Monetary Authority of Singapore (MAS) does not have an explicit inflation target. Instead, MAS uses the exchange rate as its primary monetary policy tool to maintain price stability. The implied target is around 2% for medium-term price stability.',
         quote: 'MAS conducts monetary policy by managing the trade-weighted exchange rate of the Singapore dollar within an undisclosed policy band.',
         quoteSource: 'MAS Monetary Policy Framework'
     },
     CN: {
-        target: 3.0,
         description: 'China sets an annual CPI target, typically around 3%, as part of its government work report. The target is more of a ceiling than a strict objective.',
         quote: 'We will keep the consumer price index increase at around 3 percent.',
         quoteSource: 'Government Work Report, March 2024'
@@ -190,10 +167,26 @@ const DATA_SOURCES = {
  */
 async function initCountryPage(countryCode) {
     try {
-        // Load CPI data
-        const cpiResponse = await fetch('data/historical_cpi.json');
+        // Load CPI data + targets (data/targets.json is the single source
+        // of truth for inflation targets, #82 — NOT the per-country target
+        // field historical_cpi.json used to carry, which drifted once: ZA
+        // showed the pre-Nov-2025 4.5% target for months)
+        const [cpiResponse, targetsResponse] = await Promise.all([
+            fetch('data/historical_cpi.json'),
+            fetch('data/targets.json'),
+        ]);
         const allCpiData = await cpiResponse.json();
         const countryData = allCpiData[countryCode];
+
+        let targetDef = null;
+        try {
+            const targetsData = await targetsResponse.json();
+            targetDef = targetsData[countryCode] || null;
+        } catch (e) {
+            // Missing/corrupt targets.json degrades target UI to N/A —
+            // never fall back to a second definition of the target.
+            console.error('Error loading targets.json:', e);
+        }
 
         if (!countryData) {
             showError('Country data not found');
@@ -201,10 +194,10 @@ async function initCountryPage(countryCode) {
         }
 
         // Update metrics cards
-        updateMetrics(countryCode, countryData);
+        updateMetrics(countryCode, countryData, targetDef);
 
         // Render historical chart
-        renderHistoricalChart(countryCode, countryData);
+        renderHistoricalChart(countryCode, countryData, targetDef);
 
         // Render supplementary metrics (Core CPI, PCE) if available
         renderSupplementaryMetrics(countryData);
@@ -213,7 +206,7 @@ async function initCountryPage(countryCode) {
         await renderForecastTable(countryCode);
 
         // Render target information
-        renderTargetInfo(countryCode);
+        renderTargetInfo(countryCode, targetDef);
 
         // Render data sources
         renderDataSources(countryCode);
@@ -228,11 +221,10 @@ async function initCountryPage(countryCode) {
 // METRICS UPDATE
 // ============================================================
 
-function updateMetrics(countryCode, data) {
+function updateMetrics(countryCode, data, targetDef) {
     const current = data.latest;
     const previous = data.previous;
-    const target = data.target;
-    const targetInfo = TARGET_INFO[countryCode];
+    const target = Number.isFinite(targetDef?.value) ? targetDef.value : null;
 
     // Current inflation
     const currentEl = document.getElementById('currentValue');
@@ -272,8 +264,9 @@ function updateMetrics(countryCode, data) {
 
     // Target
     const targetEl = document.getElementById('targetValue');
-    if (targetEl && targetInfo) {
-        targetEl.textContent = targetInfo.targetRange || (target !== null ? target.toFixed(1) + '%' : 'N/A');
+    if (targetEl) {
+        targetEl.textContent = targetDef?.display
+            || (target !== null ? target.toFixed(1) + '%' : 'N/A');
     }
 
     // Status vs target
@@ -328,45 +321,49 @@ function renderSupplementaryMetrics(data) {
 // HISTORICAL CHART
 // ============================================================
 
-function renderHistoricalChart(countryCode, data) {
+function renderHistoricalChart(countryCode, data, targetDef) {
     const canvas = document.getElementById('historyChart');
     if (!canvas || !data.history || data.history.length === 0) return;
 
-    const target = data.target;
+    const target = Number.isFinite(targetDef?.value) ? targetDef.value : null;
     const history = data.history;
 
     // Prepare chart data
     const labels = history.map(d => d.date);
     const values = history.map(d => d.value);
 
-    // Target line
-    const targetLine = history.map(() => target);
+    const datasets = [
+        {
+            label: 'YoY Inflation',
+            data: values,
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0,
+            pointHoverRadius: 4
+        }
+    ];
+
+    // Target line — omitted entirely when targets.json has no entry for
+    // the country (no line at 0, no dangling legend entry)
+    if (target !== null) {
+        datasets.push({
+            label: 'Target',
+            data: history.map(() => target),
+            borderColor: '#dc2626',
+            borderDash: [5, 5],
+            borderWidth: 2,
+            pointRadius: 0,
+            fill: false
+        });
+    }
 
     new Chart(canvas, {
         type: 'line',
         data: {
             labels: labels,
-            datasets: [
-                {
-                    label: 'YoY Inflation',
-                    data: values,
-                    borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 0,
-                    pointHoverRadius: 4
-                },
-                {
-                    label: 'Target',
-                    data: targetLine,
-                    borderColor: '#dc2626',
-                    borderDash: [5, 5],
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    fill: false
-                }
-            ]
+            datasets: datasets
         },
         options: {
             responsive: true,
@@ -643,7 +640,7 @@ async function renderForecastTable(countryCode) {
 // TARGET INFO AND DATA SOURCES
 // ============================================================
 
-function renderTargetInfo(countryCode) {
+function renderTargetInfo(countryCode, targetDef) {
     const container = document.getElementById('targetInfo');
     if (!container) return;
 
@@ -651,26 +648,29 @@ function renderTargetInfo(countryCode) {
     if (!info) return;
 
     let html = `<p>${info.description}</p>`;
-    
+
     // Add target change alert box if there's a recent policy change
-    if (info.targetChange) {
+    // (recent_change lives in targets.json — the single source of truth
+    // for target facts; TARGET_INFO carries only editorial copy)
+    const change = targetDef?.recent_change;
+    if (change) {
         html += `
             <div class="policy-change-alert">
                 <div class="policy-change-header">
                     <span class="policy-change-icon">📋</span>
                     <strong>Recent Policy Change</strong>
-                    <span class="policy-change-date">${info.targetChange.date}</span>
+                    <span class="policy-change-date">${change.date}</span>
                 </div>
                 <div class="policy-change-details">
                     <div class="policy-change-row">
                         <span class="policy-label">Previous target:</span>
-                        <span class="policy-value previous">${info.targetChange.previous}</span>
+                        <span class="policy-value previous">${change.previous}</span>
                     </div>
                     <div class="policy-change-row">
                         <span class="policy-label">New target:</span>
-                        <span class="policy-value current">${info.targetChange.current}</span>
+                        <span class="policy-value current">${change.current}</span>
                     </div>
-                    ${info.targetChange.note ? `<p class="policy-change-note">${info.targetChange.note}</p>` : ''}
+                    ${change.note ? `<p class="policy-change-note">${change.note}</p>` : ''}
                 </div>
             </div>
         `;

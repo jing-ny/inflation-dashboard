@@ -1,0 +1,91 @@
+{
+  "_metadata": {
+    "description": "Single source of truth for central-bank inflation targets (#82). Consumed by docs/index.js, docs/country.js, and scripts/fetch_historical_cpi.py. Edit ONLY this file when a central bank changes its target.",
+    "last_updated": "2026-06-10",
+    "fields": {
+      "value": "midpoint / point target in %, used for status math and chart target lines",
+      "range": "[low, high] tolerance band in %, or null for point/implied targets",
+      "display": "human-readable target string shown in tables and metric cards",
+      "source_url": "canonical central-bank page documenting the target",
+      "recent_change": "optional; set when a target changed recently enough to badge in the UI"
+    }
+  },
+  "US": {
+    "value": 2.0,
+    "range": null,
+    "display": "2.0%",
+    "source_url": "https://www.federalreserve.gov/monetarypolicy/review-of-monetary-policy-strategy-tools-and-communications-statement-on-longer-run-goals-monetary-policy-strategy.htm"
+  },
+  "EA": {
+    "value": 2.0,
+    "range": null,
+    "display": "2.0%",
+    "source_url": "https://www.ecb.europa.eu/mopo/strategy/html/index.en.html"
+  },
+  "UK": {
+    "value": 2.0,
+    "range": null,
+    "display": "2.0%",
+    "source_url": "https://www.bankofengland.co.uk/monetary-policy"
+  },
+  "CA": {
+    "value": 2.0,
+    "range": [1, 3],
+    "display": "1-3%",
+    "source_url": "https://www.bankofcanada.ca/rates/indicators/key-variables/inflation-control-target/"
+  },
+  "AU": {
+    "value": 2.5,
+    "range": [2, 3],
+    "display": "2-3%",
+    "source_url": "https://www.rba.gov.au/monetary-policy/framework/stmt-conduct-mp.html"
+  },
+  "NZ": {
+    "value": 2.0,
+    "range": [1, 3],
+    "display": "1-3%",
+    "source_url": "https://www.rbnz.govt.nz/monetary-policy/about-monetary-policy/remit-for-the-monetary-policy-committee"
+  },
+  "ZA": {
+    "value": 3.0,
+    "range": [2, 4],
+    "display": "2-4%",
+    "source_url": "https://www.resbank.co.za/en/home/what-we-do/monetary-policy",
+    "recent_change": {
+      "date": "November 2025",
+      "previous": "3-6% (4.5% midpoint)",
+      "current": "3% ± 1pp",
+      "note": "First target change in 25 years"
+    }
+  },
+  "JP": {
+    "value": 2.0,
+    "range": null,
+    "display": "2.0%",
+    "source_url": "https://www.boj.or.jp/en/mopo/outline/index.htm"
+  },
+  "KR": {
+    "value": 2.0,
+    "range": null,
+    "display": "2.0%",
+    "source_url": "https://www.bok.or.kr/eng/main/main.do"
+  },
+  "SG": {
+    "value": 2.0,
+    "range": null,
+    "display": "~2%",
+    "source_url": "https://www.mas.gov.sg/monetary-policy"
+  },
+  "IN": {
+    "value": 4.0,
+    "range": [2, 6],
+    "display": "2-6%",
+    "source_url": "https://www.rbi.org.in/"
+  },
+  "CN": {
+    "value": 3.0,
+    "range": null,
+    "display": "~3%",
+    "source_url": "http://english.www.gov.cn/"
+  }
+}
