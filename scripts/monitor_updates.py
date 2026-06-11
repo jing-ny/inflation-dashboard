@@ -132,19 +132,35 @@ class DataMonitor:
                 current_data[country_code]['latest'] = fred_latest
                 current_data[country_code]['history'].append(fred_latest)
                 updated = True
+                # Staleness below must judge the refreshed date, not the one
+                # this run just replaced (a malformed old date would otherwise
+                # report an error the update already repaired).
+                current_date = fred_latest['date']
             
             # Check for stale data (more than 2 months old)
-            # Handle both monthly (2025-12) and quarterly (2025-Q4) formats
+            # Handle monthly (2025-12), quarterly (2025-Q4), and full-date
+            # (2025-12-15) formats
             try:
                 if '-Q' in current_date:
                     # Quarterly format: 2025-Q4 -> 2025-12
                     year, quarter = current_date.split('-Q')
                     month = int(quarter) * 3
                     latest_date = datetime(int(year), month, 1)
+                elif len(current_date) == 10:
+                    # Full date (2025-12-15) — keep the day so ages near the
+                    # 75-day threshold aren't overstated by up to a month
+                    latest_date = datetime.strptime(current_date, '%Y-%m-%d')
                 else:
                     latest_date = datetime.strptime(current_date, '%Y-%m')
             except ValueError:
-                # Skip stale check if date format is unexpected
+                # An unparseable date means the staleness check can't run for
+                # this country. Surface it as an error (non-zero exit + email)
+                # instead of skipping silently — CLAUDE.md #4: "no signal" is
+                # not a valid state for a broken source.
+                self.errors.append(
+                    f"Unparseable latest date for {country_code}: "
+                    f"{current_date!r} — staleness check skipped"
+                )
                 continue
                 
             if (today - latest_date) > timedelta(days=75):
