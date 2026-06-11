@@ -65,6 +65,28 @@ FRED_API_KEY = os.environ.get("FRED_API_KEY")
 # Output directory - single source of truth
 OUTPUT_DIR = Path(__file__).parent.parent / "docs" / "data" if Path(__file__).parent.name == "scripts" else Path("docs/data")
 DATA_FILE = OUTPUT_DIR / "historical_cpi.json"
+TARGETS_FILE = OUTPUT_DIR / "targets.json"
+
+_TARGETS_CACHE: Optional[Dict] = None
+
+
+def get_target(code: str) -> Optional[float]:
+    """Inflation target midpoint from docs/data/targets.json — the single
+    source of truth for targets (#82). Returns None when the country has no
+    entry; never falls back to a hardcoded value (that duplication is what
+    let ZA's pre-Nov-2025 target linger in historical_cpi.json for months).
+    """
+    global _TARGETS_CACHE
+    if _TARGETS_CACHE is None:
+        try:
+            with open(TARGETS_FILE) as f:
+                _TARGETS_CACHE = json.load(f)
+        except (OSError, json.JSONDecodeError) as e:
+            print(f"WARNING: could not load {TARGETS_FILE}: {e} — "
+                  f"target fields will be written as null")
+            _TARGETS_CACHE = {}
+    entry = _TARGETS_CACHE.get(code) or {}
+    return entry.get("value")
 
 # -----------------------------------------------------------------------------
 # Country Configuration - All 15 Countries
@@ -74,7 +96,6 @@ COUNTRIES = {
     "US": {
         "name": "United States",
         "flag": "🇺🇸",
-        "target": 2.0,
         "source": "BLS",
         "source_url": "https://www.bls.gov/cpi/",
         "api": "BLS",
@@ -86,7 +107,6 @@ COUNTRIES = {
     "EA": {
         "name": "Euro Area",
         "flag": "🇪🇺",
-        "target": 2.0,
         "source": "Eurostat",
         "source_url": "https://ec.europa.eu/eurostat/",
         "api": "ECB",
@@ -97,7 +117,6 @@ COUNTRIES = {
     "UK": {
         "name": "United Kingdom",
         "flag": "🇬🇧",
-        "target": 2.0,
         "source": "ONS",
         "source_url": "https://www.ons.gov.uk/economy/inflationandpriceindices",
         "api": "ONS",
@@ -110,7 +129,6 @@ COUNTRIES = {
     "CA": {
         "name": "Canada",
         "flag": "🇨🇦",
-        "target": 2.0,
         "source": "Statistics Canada",
         "source_url": "https://www.statcan.gc.ca/",
         "api": "StatCan",
@@ -123,7 +141,6 @@ COUNTRIES = {
     "AU": {
         "name": "Australia",
         "flag": "🇦🇺",
-        "target": 2.5,
         "source": "ABS",
         "source_url": "https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/",
         "api": "ABS",  # primary national source (monthly CPI indicator); fresher than FRED's quarterly OECD relay (#50)
@@ -136,7 +153,6 @@ COUNTRIES = {
     "NZ": {
         "name": "New Zealand",
         "flag": "🇳🇿",
-        "target": 2.0,
         "source": "Stats NZ",
         "source_url": "https://www.stats.govt.nz/indicators/consumers-price-index-cpi/",
         "fred_series": "NZLCPIALLQINMEI",  # OECD quarterly index
@@ -146,7 +162,6 @@ COUNTRIES = {
     "ZA": {
         "name": "South Africa",
         "flag": "🇿🇦",
-        "target": 3.0,  # Changed from 4.5% (3-6% range) to 3% in Nov 2025
         "source": "Stats SA",
         "source_url": "https://www.statssa.gov.za/",
         "api": "StatsSA",  # primary national source (P0141 PDF); FRED-OECD lags 6-12mo (#53)
@@ -159,7 +174,6 @@ COUNTRIES = {
     "JP": {
         "name": "Japan",
         "flag": "🇯🇵",
-        "target": 2.0,
         "source": "MIC",
         "source_url": "https://www.stat.go.jp/english/data/cpi/",
         "api": "eStat",  # primary national source: e-Stat getStatsData (#51)
@@ -179,7 +193,6 @@ COUNTRIES = {
     "CN": {
         "name": "China",
         "flag": "🇨🇳",
-        "target": 3.0,
         "source": "NBS",
         "source_url": "https://www.stats.gov.cn/english/",
         "api": "NBS",  # primary national source (English CPI press release) (#56)
@@ -190,7 +203,6 @@ COUNTRIES = {
     "IN": {
         "name": "India",
         "flag": "🇮🇳",
-        "target": 4.0,
         "source": "MOSPI",
         "source_url": "https://www.mospi.gov.in/",
         "api": "MoSPI",  # primary national source (CPI press release PDF) (#57)
@@ -201,7 +213,6 @@ COUNTRIES = {
     "KR": {
         "name": "South Korea",
         "flag": "🇰🇷",
-        "target": 2.0,
         "source": "KOSTAT",
         "source_url": "https://kostat.go.kr/",
         "fred_series": "KORCPALTT01IXNBM",  # COICOP 2018 index, monthly
@@ -213,7 +224,6 @@ COUNTRIES = {
     "SG": {
         "name": "Singapore",
         "flag": "🇸🇬",
-        "target": 2.0,
         "source": "SingStat",
         "source_url": "https://www.singstat.gov.sg/find-data/explore-data-themes/economy-prices/consumer-price-index/latest-news-data",
         "api": "SingStat",  # primary national source: TableBuilder API (#52)
@@ -1469,7 +1479,7 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
         merged = {
             "name": config["name"],
             "flag": config["flag"],
-            "target": config["target"],
+            "target": get_target(code),
             "source": config["source"],
             "source_url": config.get("source_url", ""),
             "fred_series": config.get("fred_series", ""),
@@ -1484,7 +1494,7 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
     # rather than leaving the stale value the existing JSON happened to carry.
     merged["name"] = config["name"]
     merged["flag"] = config["flag"]
-    merged["target"] = config["target"]
+    merged["target"] = get_target(code)
     merged["source"] = config["source"]
     merged["source_url"] = config.get("source_url", "")
     merged["fred_series"] = config.get("fred_series", "")

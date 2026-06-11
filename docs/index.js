@@ -10,21 +10,22 @@ const COUNTRY_PAGES = {
     KR: 'kr.html', SG: 'sg.html', IN: 'in.html', CN: 'cn.html'
 };
 
-// Target definitions (rarely change, ok to hardcode)
-const TARGETS = {
-    US: { value: 2.0, display: '2.0%', range: null },
-    EA: { value: 2.0, display: '2.0%', range: null },
-    UK: { value: 2.0, display: '2.0%', range: null },
-    AU: { value: 2.5, display: '2-3%', range: [2, 3] },
-    CA: { value: 2.0, display: '1-3%', range: [1, 3] },
-    NZ: { value: 2.0, display: '1-3%', range: [1, 3] },
-    ZA: { value: 3.0, display: '2-4%', range: [2, 4], recentChange: true },
-    JP: { value: 2.0, display: '2.0%', range: null },
-    KR: { value: 2.0, display: '2.0%', range: null },
-    SG: { value: 2.0, display: '~2%', range: null },
-    IN: { value: 4.0, display: '2-6%', range: [2, 6] },
-    CN: { value: 3.0, display: '~3%', range: null }
-};
+// Inflation targets — single source of truth is data/targets.json (#82).
+// Loaded once and cached; a fetch failure degrades target-dependent cells
+// to "—" rather than rendering stale hardcoded values.
+let _targetsPromise = null;
+function loadTargets() {
+    if (!_targetsPromise) {
+        _targetsPromise = fetch('data/targets.json')
+            .then(r => r.json())
+            .then(t => { delete t._metadata; return t; })
+            .catch(err => {
+                console.error('Error loading targets.json:', err);
+                return {};
+            });
+    }
+    return _targetsPromise;
+}
 
 // Display order - Japan added before China
 const DISPLAY_ORDER = ['US', 'EA', 'UK', 'CA', 'AU', 'NZ', 'ZA', 'JP', 'KR', 'SG', 'IN', 'CN'];
@@ -36,7 +37,10 @@ async function loadInflationTable() {
     const tbody = document.getElementById('inflationTableBody');
     
     try {
-        const response = await fetch('data/historical_cpi.json');
+        const [response, targets] = await Promise.all([
+            fetch('data/historical_cpi.json'),
+            loadTargets(),
+        ]);
         const cpiData = await response.json();
 
         let html = '';
@@ -57,7 +61,7 @@ async function loadInflationTable() {
                   + ' style="font-size:0.7rem;color:#b45309;background:#fef3c7;'
                   + 'padding:1px 5px;border-radius:4px;margin-left:4px;">flash</span>'
                 : '';
-            const target = TARGETS[code];
+            const target = targets[code];
             const page = COUNTRY_PAGES[code];
 
             // Calculate change. current/previous come from optional chains and
@@ -71,9 +75,10 @@ async function loadInflationTable() {
                 (change > 0 ? `▲ ${change.toFixed(1)}` : change < 0 ? `▼ ${Math.abs(change).toFixed(1)}` : '—') : '—';
             const changeClass = change > 0.05 ? 'change-up' : change < -0.05 ? 'change-down' : '';
 
-            // Determine status
+            // Determine status (degrades to "—" when the country has no
+            // entry in targets.json, same as when the value is missing)
             let statusClass, statusText;
-            if (!hasCurrent) {
+            if (!hasCurrent || !target) {
                 statusClass = '';
                 statusText = '—';
             } else if (target.range) {
@@ -110,9 +115,10 @@ async function loadInflationTable() {
             }
 
             // Target display with optional "NEW" badge for recent changes
-            const targetDisplay = target.recentChange
-                ? `${target.display} <span class="target-new-badge" title="Target changed Nov 2025">NEW</span>`
-                : target.display;
+            const targetDisplay = !target ? '—'
+                : target.recent_change
+                    ? `${target.display} <span class="target-new-badge" title="Target changed ${target.recent_change.date}">NEW</span>`
+                    : target.display;
 
             // Freshness pill — CPI thresholds track each series' cadence
             // (monthly 75d/120d, quarterly 135d/225d; see freshness.js).
