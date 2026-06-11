@@ -229,13 +229,17 @@ def get_snapshot_before(snapshots: List[Dict], week_start: str) -> Optional[Dict
 
     Used to compute the *previous* week's delta, which is what direction-
     reversal detection compares against. week_start strings are YYYY-MM-DD,
-    so lexicographic comparison is chronological.
+    so lexicographic comparison is chronological. Selects by max week_start
+    rather than list position so an out-of-order list (e.g. after a manual
+    backfill) still yields the chronologically nearest older snapshot.
     """
-    for snapshot in reversed(snapshots):
-        ws = snapshot.get("week_start")
-        if ws and ws < week_start:
-            return snapshot
-    return None
+    older = [
+        s for s in snapshots
+        if s.get("week_start") and s["week_start"] < week_start
+    ]
+    if not older:
+        return None
+    return max(older, key=lambda s: s["week_start"])
 
 def compare_snapshots(
     current: WeeklySnapshot,
