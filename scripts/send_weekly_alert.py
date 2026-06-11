@@ -224,8 +224,34 @@ def get_previous_snapshot(snapshots: List[Dict]) -> Optional[Dict]:
     
     return None
 
-def compare_snapshots(current: WeeklySnapshot, previous: Optional[Dict]) -> List[CountryChange]:
-    """Compare current snapshot with previous, detect changes."""
+def get_snapshot_before(snapshots: List[Dict], week_start: str) -> Optional[Dict]:
+    """Get the most recent snapshot strictly older than week_start.
+
+    Used to compute the *previous* week's delta, which is what direction-
+    reversal detection compares against. week_start strings are YYYY-MM-DD,
+    so lexicographic comparison is chronological. Selects by max week_start
+    rather than list position so an out-of-order list (e.g. after a manual
+    backfill) still yields the chronologically nearest older snapshot.
+    """
+    older = [
+        s for s in snapshots
+        if s.get("week_start") and s["week_start"] < week_start
+    ]
+    if not older:
+        return None
+    return max(older, key=lambda s: s["week_start"])
+
+def compare_snapshots(
+    current: WeeklySnapshot,
+    previous: Optional[Dict],
+    before_previous: Optional[Dict] = None,
+) -> List[CountryChange]:
+    """Compare current snapshot with previous, detect changes.
+
+    before_previous (the snapshot preceding `previous`) supplies the prior
+    week's delta so direction reversals (rising -> falling and vice versa)
+    can actually be detected.
+    """
     changes = []
     
     for code, current_country in current.countries.items():
@@ -248,10 +274,18 @@ def compare_snapshots(current: WeeklySnapshot, previous: Optional[Dict]) -> List
         
         # Determine directions
         current_direction = ChangeRules.get_direction(delta)
-        
-        # For previous direction, we need historical context
-        # Simplified: use current delta direction
-        previous_direction = "stable"  # Assume stable if no history
+
+        # Previous direction = last week's delta (previous vs the snapshot
+        # before it). Without two weeks of history it stays "stable", which
+        # makes the reversal rule a no-op for that country.
+        previous_direction = "stable"
+        if (
+            previous and code in previous.get("countries", {})
+            and before_previous and code in before_previous.get("countries", {})
+        ):
+            prior_yoy = before_previous["countries"][code]["yoy_inflation"]
+            prev_delta = round(previous_yoy - prior_yoy, 2)
+            previous_direction = ChangeRules.get_direction(prev_delta)
         
         # Check if material
         is_material = ChangeRules.is_material_change(
@@ -544,7 +578,11 @@ def run_weekly_alert(dry_run: bool = False) -> Dict:
     
     # Compare and detect changes
     print("Comparing snapshots...")
-    changes = compare_snapshots(current_snapshot, previous_snapshot)
+    before_previous = (
+        get_snapshot_before(snapshots, previous_snapshot["week_start"])
+        if previous_snapshot else None
+    )
+    changes = compare_snapshots(current_snapshot, previous_snapshot, before_previous)
     
     material_changes = [c for c in changes if c.is_material]
     print(f"Material changes detected: {len(material_changes)}")
