@@ -20,7 +20,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def load_summary():
     """Load the monitor summary from the last run"""
-    summary_path = os.path.join(BASE_DIR, 'docs/data/monitor_summary.json')
+    # Must match the path monitor_updates.py writes (repo-root data/, an
+    # ephemeral run artifact — deliberately outside the committed docs/data/).
+    summary_path = os.path.join(BASE_DIR, 'data/monitor_summary.json')
     if os.path.exists(summary_path):
         with open(summary_path, 'r') as f:
             return json.load(f)
