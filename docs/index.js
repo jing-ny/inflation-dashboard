@@ -60,15 +60,23 @@ async function loadInflationTable() {
             const target = TARGETS[code];
             const page = COUNTRY_PAGES[code];
 
-            // Calculate change
-            const change = previous !== null ? (current - previous) : null;
-            const changeStr = change !== null ? 
+            // Calculate change. current/previous come from optional chains and
+            // are undefined (not null) when absent — guard with Number.isFinite
+            // so one country's missing field renders as "—" in that cell
+            // instead of throwing and blanking the whole table via the catch.
+            const hasCurrent = Number.isFinite(current);
+            const hasPrevious = Number.isFinite(previous);
+            const change = hasCurrent && hasPrevious ? (current - previous) : null;
+            const changeStr = change !== null ?
                 (change > 0 ? `▲ ${change.toFixed(1)}` : change < 0 ? `▼ ${Math.abs(change).toFixed(1)}` : '—') : '—';
             const changeClass = change > 0.05 ? 'change-up' : change < -0.05 ? 'change-down' : '';
 
             // Determine status
             let statusClass, statusText;
-            if (target.range) {
+            if (!hasCurrent) {
+                statusClass = '';
+                statusText = '—';
+            } else if (target.range) {
                 if (current >= target.range[0] && current <= target.range[1]) {
                     statusClass = 'status-good';
                     statusText = 'In Range';
@@ -94,7 +102,7 @@ async function loadInflationTable() {
             }
 
             // Special case for China (deflationary)
-            if (code === 'CN' && current < 1) {
+            if (code === 'CN' && hasCurrent && current < 1) {
                 statusClass = 'status-alert';
                 statusText = 'Deflationary';
             }
@@ -114,8 +122,8 @@ async function loadInflationTable() {
             html += `
                 <tr onclick="window.location='${page}'" class="clickable-row">
                     <td class="country-cell">${data.flag || ''} ${data.name || code}</td>
-                    <td class="value-cell"><strong>${current.toFixed(1)}%</strong></td>
-                    <td>${previous !== null ? previous.toFixed(1) + '%' : '—'}</td>
+                    <td class="value-cell"><strong>${hasCurrent ? current.toFixed(1) + '%' : '—'}</strong></td>
+                    <td>${hasPrevious ? previous.toFixed(1) + '%' : '—'}</td>
                     <td class="${changeClass}">${changeStr}</td>
                     <td>${targetDisplay}</td>
                     <td><span class="${statusClass}">${statusText}</span></td>
@@ -266,16 +274,19 @@ async function loadOutlookTable() {
                 return (v !== null && v !== undefined) ? `${v.toFixed(1)}%` : '—';
             };
 
-            // Format source with date abbreviation
-            const sourceDate = forecast.publication_date
+            // Format source with date abbreviation. String(... || '') so a
+            // record with no publication_date degrades to '' instead of
+            // throwing and blanking the whole table; the year is abbreviated
+            // via regex so it keeps working past 2026.
+            const sourceDate = String(forecast.publication_date || '')
                 .replace('January', 'Jan').replace('February', 'Feb').replace('March', 'Mar')
                 .replace('April', 'Apr').replace('September', 'Sep')
                 .replace('December', 'Dec').replace('November', 'Nov').replace('October', 'Oct')
-                .replace('2025', "'25").replace('2026', "'26");
+                .replace(/\b20(\d{2})\b/g, "'$1");
 
             // Highlight divergence between CB and IMF (skipped for ranged
             // scenario rows — a range vs a point estimate isn't a clean diff).
-            const cbCurrentYear = range ? null : proj[currentYearStr];
+            const cbCurrentYear = range ? null : (proj?.[currentYearStr] ?? null);
             let imfCell = '—';
             if (imfCurrentYear !== undefined && imfCurrentYear !== null) {
                 const diff = cbCurrentYear !== null ? Math.abs(cbCurrentYear - imfCurrentYear) : 0;
