@@ -102,7 +102,7 @@ async function loadInflationTable() {
             }
 
             // Special case for China (deflationary)
-            if (code === 'CN' && current < 1) {
+            if (code === 'CN' && hasCurrent && current < 1) {
                 statusClass = 'status-alert';
                 statusText = 'Deflationary';
             }
