@@ -101,8 +101,10 @@ async function loadInflationTable() {
                 }
             }
 
-            // Special case for China (deflationary)
-            if (code === 'CN' && hasCurrent && current < 1) {
+            // Special case for China: label actual deflation (negative YoY).
+            // Low positive inflation (0–1%) is not deflation — the generic
+            // below-target status already covers it.
+            if (code === 'CN' && hasCurrent && current < 0) {
                 statusClass = 'status-alert';
                 statusText = 'Deflationary';
             }
