@@ -182,12 +182,12 @@ This enables tracking how forecasts change over time and comparing forecast accu
 
 ### Anomaly Detection
 
-Both the manual entry path (`update_cpi.py`) and the historical fetcher (`fetch_historical_cpi.py`) run two checks on each new value:
+The historical fetcher (`fetch_historical_cpi.py`) runs two checks on each new value:
 
 - **Step threshold (1.0pp):** any month-over-month YoY change > 1pp is flagged as anomalous. Backfill points are exempt (skipped if their date is older than the existing latest) to prevent false positives when sources widen their history window — see PR #2.
 - **Prior-year-same-period match:** if a new value matches the prior year's same-month value within 0.01pp, it's flagged. This catches the BR/MX 2026-01/02 failure mode where comparison-text values were captured as current readings.
 
-In both scripts, hitting an anomaly **exits non-zero** so CI surfaces it. The auto-scraper has a related but independent **merge-gate** (`MERGE_THRESHOLD_PP = 1.0`) that routes large jumps to `cb_forecasts_draft.json` instead of auto-merging — see [`merge_into_main`](scripts/auto_scrape_cb_forecasts.py).
+Hitting an anomaly **exits non-zero** so CI surfaces it. The auto-scraper has a related but independent **merge-gate** (`MERGE_THRESHOLD_PP = 1.0`) that routes large jumps to `cb_forecasts_draft.json` instead of auto-merging — see [`merge_into_main`](scripts/auto_scrape_cb_forecasts.py).
 
 Per CLAUDE.md #5: when these checks fire, the fix is to investigate *why*, not to raise the threshold.
 
@@ -202,9 +202,9 @@ Failure-path emails (`if: failure()`) are tracked in [#28](https://github.com/ji
 
 ### Manual Updates Required
 
-- **Central bank forecasts:** Mostly automated (9/12) — see PROJECT_PLAN.md "Scraper status". The remaining banks (CN, IN, KR) are updated manually after MPC meetings (see CPI_UPDATE_GUIDE.md), with PBoC an explicit non-goal.
+- **Central bank forecasts:** Mostly automated (9/12) — see PROJECT_PLAN.md "Scraper status". The remaining banks (CN, IN, KR) are updated after MPC meetings, with PBoC an explicit non-goal.
 - **IMF forecasts:** April and October — `fetch_imf_forecasts.py` pulls the latest WEO.
-- **CPI verification:** Monthly via `update_cpi.py` if FRED hasn't caught up. Direct-source paths (BLS for US, ONS for UK, StatCan for CA, ECB for EA) usually beat FRED to the release.
+- **CPI freshness:** All CPI ingestion is automated (direct agency APIs/press releases, FRED as fallback). Per CLAUDE.md #1 there is no manual-entry path: when a source lags or breaks, the value stays visibly stale (freshness pills, release calendar) until the fetcher is fixed.
 
 ---
 
@@ -260,11 +260,6 @@ scripts/                          # Data collection scripts
 ├── send_weekly_alert.py          # Weekly change detection + email
 └── generate_newsletter.py        # Claude API newsletter draft generation
 
-# Manual update tools (repo root)
-├── update.sh                     # One-command update tool (cpi/forecast/imf/status)
-├── update_cpi.py                 # Single-value CPI updates
-├── batch_update_cpi.py           # Multi-country batch updates
-└── CPI_UPDATE_GUIDE.md           # Update procedures and sources
 ```
 
 ---

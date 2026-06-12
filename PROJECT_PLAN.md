@@ -178,18 +178,18 @@
 | 6.10 | RBI scraper | rbi.org.in Monetary Policy Report (PDF) | 6x/year | Paused |
 | 6.11 | MAS scraper | mas.gov.sg Macroeconomic Review (PDF) | 2x/year | Paused |
 
-**Pause rationale (2026-04-25):** Tier 1 already removed ~80 manual updates per year. The four Tier 2 banks publish 2–6 times per year combined, so finishing Tier 2 only removes ~16 more updates per year — much lower marginal payoff per hour of work than Tier 1. Better to let the new pipeline (BLS / ONS / StatCan / Fed / BoJ / BCB) run for a couple of cycles and prove itself before stacking more PDF parsers on top. Each Tier 2 bank can still be updated through `./update.sh forecast` after meetings; the anomaly gates from Phase 5 prevent the old BR/MX-style miscapture pattern. Revisit Tier 2 if any of these banks turn out to publish more often than expected or the manual cadence becomes annoying.
+**Pause rationale (2026-04-25):** Tier 1 already removed ~80 manual updates per year. The four Tier 2 banks publish 2–6 times per year combined, so finishing Tier 2 only removes ~16 more updates per year — much lower marginal payoff per hour of work than Tier 1. Better to let the new pipeline (BLS / ONS / StatCan / Fed / BoJ / BCB) run for a couple of cycles and prove itself before stacking more PDF parsers on top. Each Tier 2 bank can still be updated after meetings by editing `cb_forecasts.json` through a reviewed PR (`update.sh` was removed in #84); the anomaly gates from Phase 5 prevent the old BR/MX-style miscapture pattern. Revisit Tier 2 if any of these banks turn out to publish more often than expected or the manual cadence becomes annoying.
 
 **Explicit non-goals:**
 - **PBoC**: China does not publish numerical inflation forecasts in a standardized schedule. Track policy rate manually; skip forecast scraping.
 - **BCV**: Venezuela publishes irregularly and inconsistently. Keep manual.
-- **CPI for 11 countries without clean APIs**: Continue WebSearch + manual gate via `update_cpi.py` (anomaly gates now prevent past BR/MX-style miscaptures).
+- ~~CPI manual gate via `update_cpi.py`~~ — removed 2026-06 (#84); per-country direct-source fetchers (#50–#57) replaced it.
 
 **Current automation surface (after Tier 1):**
 - **CB forecasts auto-updated**: US, JP, BR, EA, UK, AU, CA, NZ, ZA (9/15)
 - **CB forecasts still manual**: CN, IN, KR, SG, MX, VE — but PBoC and BCV are explicit non-goals, so the realistic remaining surface is 4 banks (Banxico, BOK, RBI, MAS).
 - **CPI direct-from-source**: US (BLS), EA (ECB), UK (ONS), CA (StatCan) — the four largest economies, no FRED lag.
-- **CPI via FRED with lag**: AU, NZ, ZA, JP, CN, IN, KR, SG, BR, MX, VE — supplemented by manual `update_cpi.py` when fresh values are needed.
+- **CPI via FRED with lag**: countries not yet migrated to a direct source stay on FRED; lag shows as staleness on the dashboard until the direct fetcher ships (no manual supplement path, CLAUDE.md #1).
 
 **Success criteria (when Phase 6 closes):**
 - The automated Mon/Thu workflows pick up 90%+ of release cadence on their own.
@@ -312,7 +312,7 @@ Python Scripts (fetch / update data)
 
 | File | Contents | Updated By |
 |------|----------|------------|
-| `historical_cpi.json` | 10-year CPI history + latest/previous readings for 15 countries | `fetch_historical_cpi.py` (auto) + `update_cpi.py` (manual) |
+| `historical_cpi.json` | 10-year CPI history + latest/previous readings | `fetch_historical_cpi.py` (auto) |
 | `cb_forecasts.json` | Central bank forecasts, policy rates, key quotes | Manual edit after MPC meetings |
 | `imf_forecasts.json` | IMF WEO inflation projections | Manual (2x/year: Apr + Oct) |
 | `cpi_supplements.json` | Manual CPI supplements when FRED lags | Manual |
@@ -338,8 +338,8 @@ Python Scripts (fetch / update data)
 ┌─────────────────────────────────────────────────────────────────┐
 │                  Data Sources                                    │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐   │
-│  │ FRED API │  │ ECB API  │  │ Official │  │ Manual Input │   │
-│  │ (15 ctry)│  │ (EA only)│  │ Websites │  │ update_cpi.py│   │
+│  │ FRED API │  │ ECB API  │  │ Official │  │   IMF API    │   │
+│  │ (15 ctry)│  │ (EA only)│  │ Websites │  │ (WEO fetch)  │   │
 │  └────┬─────┘  └────┬─────┘  └─────┬────┘  └──────┬───────┘   │
 └───────┼──────────────┼──────────────┼──────────────┼───────────┘
         │              │              │              │
@@ -370,15 +370,10 @@ inflation-dashboard/
 ├── README.md
 ├── PROJECT_PLAN.md              # This file
 ├── METHODOLOGY.md               # Data methodology documentation
-├── CPI_UPDATE_GUIDE.md          # Official source URLs + release calendar
 ├── CHANGELOG.md
 ├── LICENSE
 ├── .env.local                   # Local API keys (gitignored)
 ├── .gitignore
-├── update.sh                    # One-command update tool (cpi/forecast/imf/status)
-├── update_cpi.py                # Manual CPI update tool (single country)
-├── batch_update_cpi.py          # Manual CPI update tool (batch)
-│
 ├── scripts/
 │   ├── fetch_historical_cpi.py  # FRED/ECB CPI fetch (all 15 countries)
 │   ├── fetch_imf_forecasts.py   # IMF WEO fetch
@@ -441,7 +436,6 @@ inflation-dashboard/
 | Task | Automated? | Notes |
 |------|-----------|-------|
 | CPI data fetch (all 15) | Yes (FRED/ECB) | But FRED lags 1-6 months for most countries |
-| CPI manual update tool | Yes (CLI) | `update_cpi.py` — requires human to look up values |
 | CB forecasts (6 banks) | Partial | ECB, BoE, RBA, BoC, RBNZ, SARB — scraper generates drafts |
 | CB forecasts (7 banks) | No | Fed, BoJ, BOK, MAS, RBI, PBoC, IMF(VE/CN) — manual only |
 | CB meeting reminders | Yes | `monitor_updates.py` |
@@ -457,19 +451,13 @@ inflation-dashboard/
 
 ### Monthly: CPI Data Update
 
-**When:** After each country's CPI release (see schedule in CPI_UPDATE_GUIDE.md)
-**How:**
+CPI ingestion is fully automated (`update-data.yml`, Mon/Thu). There is no
+manual-entry path (CLAUDE.md #1, #84): if a country's print is missing past
+its expected date (see the dashboard's Release Calendar tab), fix or extend
+the fetcher in `scripts/fetch_historical_cpi.py` — don't hand-edit the JSON.
 ```bash
-# Example: update US January 2026 data
-python3 update_cpi.py -c US -d 2026-01 -v 2.8
-
-# View current state
-python3 update_cpi.py --show-all
-
-# Commit
-git add docs/data/historical_cpi.json
-git commit -m "Update CPI data: US Jan 2026"
-git push
+# Run the fetcher locally for one country
+python3 scripts/fetch_historical_cpi.py --country US
 ```
 
 ### After CB Meetings: Forecast Update
@@ -544,8 +532,15 @@ cd ~/Projects/inflation-dashboard
 git log --oneline -5
 git status
 
-# Data freshness
-python3 update_cpi.py --show-all
+# Data freshness — see the dashboard freshness pills / Release Calendar tab,
+# or inspect the JSON directly:
+python3 -c "
+import json
+d = json.load(open('docs/data/historical_cpi.json'))
+for c, v in d.items():
+    if isinstance(v, dict) and v.get('latest'):
+        print(f\"{c}: {v['latest']['date']} = {v['latest']['value']}\")
+"
 
 # CB forecast dates
 python3 -c "
@@ -575,12 +570,9 @@ git log --oneline --since="30 days ago" -- docs/data/historical_cpi.json
 
 ### 4. If Data Is Stale
 ```bash
-# Option A: Run automated fetch (may not help if FRED lags)
+# Run the automated fetch; if the source itself is broken, fix the fetcher
+# or leave the value visibly stale (CLAUDE.md #1 — no manual entry).
 python3 scripts/fetch_historical_cpi.py
-
-# Option B: Manual update from official sources
-# See CPI_UPDATE_GUIDE.md for URLs
-python3 update_cpi.py -c US -d YYYY-MM -v X.X
 ```
 
 ---

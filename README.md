@@ -101,30 +101,22 @@ docs/data/
 
 ### Keeping Data Current
 
-Use `update.sh` for all manual updates. One command handles data entry, git commit, and push.
+Data ingestion is fully automated — there is no manual-entry path (CLAUDE.md
+principle #1; the old `update.sh` / `update_cpi.py` tools were removed in #84).
+When a source lags or breaks, the dashboard shows it as visibly stale
+(freshness pills, the Release Calendar tab) until the fetcher is fixed:
 
 ```bash
-# Check what's current
-./update.sh status
+# Run the CPI fetch locally (same as the scheduled workflow)
+python3 scripts/fetch_historical_cpi.py
 
-# When new CPI data comes out
-./update.sh cpi
-> US 2026-03 2.8
-> UK 2026-02 2.9
-> done
-# Commits, pushes, and triggers newsletter draft automatically
-
-# After a CB meeting with new projections
-./update.sh forecast
-# Opens cb_forecasts.json in your editor — edit, save, close
-# Then confirms and pushes
-
-# After IMF WEO release (April & October)
-./update.sh imf
-# Same flow — opens imf_forecasts.json for editing
+# One country only
+python3 scripts/fetch_historical_cpi.py --country US
 ```
 
-Set `EDITOR=nano` or `EDITOR=vim` if you don't use VS Code.
+Curated edits that remain by design (e.g. `cb_forecasts.json` entries for
+banks without scrapers) go through a reviewed pull request, not a local
+edit-and-push script.
 
 ### What's Automated
 
@@ -135,7 +127,7 @@ Set `EDITOR=nano` or `EDITOR=vim` if you don't use VS Code.
 | CB forecast scrape | Mon & Thu | `auto-scrape-cb-forecasts.yml` (6 banks) |
 | Newsletter draft | 1st of month + on CPI push | `newsletter-draft.yml` (Claude API → `docs/drafts/`) |
 
-FRED lags official releases by 1-6 months for most countries, so manual CPI updates via `./update.sh cpi` remain necessary for timely data.
+Most countries are now fetched directly from their statistical agency (#50–#57); the few still on FRED's relay show their lag as staleness on the dashboard rather than being patched by hand.
 
 ### Release Calendar
 
@@ -150,7 +142,7 @@ CPI data releases follow a predictable monthly pattern:
 Quarterly: NZ (mid-month of Jan/Apr/Jul/Oct)
 ```
 
-See [CPI_UPDATE_GUIDE.md](CPI_UPDATE_GUIDE.md) for full procedures and official source URLs.
+See the live [Release Calendar](https://jing-ny.github.io/inflation-dashboard/calendar.html) for each country's next expected print and official agency calendars.
 
 ---
 
@@ -170,9 +162,6 @@ See [CPI_UPDATE_GUIDE.md](CPI_UPDATE_GUIDE.md) for full procedures and official 
 # Clone the repository
 git clone https://github.com/jing-ny/inflation-dashboard.git
 cd inflation-dashboard
-
-# View current CPI data
-python3 update_cpi.py --show-all
 
 # Start a local server
 python3 -m http.server 8000 --directory docs
