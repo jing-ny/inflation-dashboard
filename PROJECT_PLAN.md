@@ -193,7 +193,7 @@
 
 **Success criteria (when Phase 6 closes):**
 - The automated Mon/Thu workflows pick up 90%+ of release cadence on their own.
-- Manual updates are confined to: PBoC + BCV (non-goals), Tier 2 banks until they ship, and CPI for the 11 non-API countries when fresh values are needed before FRED catches up.
+- Manual curation is confined to cb_forecasts.json entries for non-scraped banks (via reviewed PRs). CPI has no manual path (#84): countries still on FRED show their lag as staleness until a direct fetcher ships.
 
 ### Phase 4: Expansion & Polish (Priority: Low)
 

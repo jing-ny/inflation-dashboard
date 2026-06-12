@@ -110,7 +110,7 @@ CPI actuals are fetched per country by [`scripts/fetch_historical_cpi.py`](scrip
 | US, EA, UK, CA, AU | Direct (BLS / ECB / ONS / StatCan / ABS) | ~current |
 | South Africa | FRED-OECD | 6–12 months |
 | New Zealand | FRED-OECD (quarterly) | quarterly cadence |
-| Japan, Korea | FRED (COICOP index) | 1–3 months; manual supplement sometimes needed |
+| Japan, Korea | JP direct (e-Stat); KR on FRED (COICOP index) | KR 1–3 months — shows as stale until #58 lands |
 | China, India | FRED-OECD | 1–3 months |
 | Singapore | FRED (World Bank annual — OECD series broken) | coarse |
 
@@ -118,7 +118,7 @@ CPI actuals are fetched per country by [`scripts/fetch_historical_cpi.py`](scrip
 
 > **Note for contributors / forks:** there are *two* network environments to keep distinct. (1) Claude Code's dev sandbox has **allowlisted egress** — most central-bank, IMF and national-stats hosts are unreachable from it, so source-touching code is validated on GitHub's runners, not locally. (2) GitHub's runners have open internet but, as above, some government APIs still refuse their cloud IPs. A source must be reachable from environment (2) to be usable in production, since that is where scheduled updates run.
 
-When a source is stale or unreachable, the value is verified/supplemented from the official agency (see *Source Links*), and per CLAUDE.md #1 we **fix the source or defer** — we do not adopt hand-entry as a standing fallback.
+When a source is stale or unreachable, per CLAUDE.md #1 we **fix the source or defer** — the value stays visibly stale (freshness pills, Release Calendar) until the fetcher is fixed; we do not hand-enter values.
 
 ---
 
@@ -265,8 +265,8 @@ scripts/                          # Data collection scripts
 
 ## Limitations
 
-1. **Data Timeliness:** FRED data may lag official releases; we supplement manually when needed
-2. **Central Bank Forecasts:** Most require manual updates; not all banks provide multi-year projections
+1. **Data Timeliness:** countries still on FRED's relay lag official releases; the lag is shown as staleness rather than patched by hand (CLAUDE.md #1)
+2. **Central Bank Forecasts:** 9 banks auto-scraped; the rest are curated via reviewed PRs, and not all banks provide multi-year projections
 3. **Methodology Differences:** Countries use slightly different CPI baskets and methodologies
 4. **Revisions:** Historical data may be revised by statistical agencies after initial release
 

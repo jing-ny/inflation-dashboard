@@ -219,7 +219,7 @@ COUNTRIES = {
         "fred_series_alt": "KORCPIALLMINMEI",  # COICOP 1999 fallback (discontinued Nov 2023)
         "frequency": "monthly",
         "data_type": "index",
-        "notes": "Primary: COICOP 2018 index. Fallback: COICOP 1999 (discontinued Nov 2023). Manual supplement recommended for latest data.",
+        "notes": "Primary: COICOP 2018 index. Fallback: COICOP 1999 (discontinued Nov 2023).",
     },
     "SG": {
         "name": "Singapore",
