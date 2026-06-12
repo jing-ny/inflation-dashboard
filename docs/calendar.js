@@ -81,7 +81,12 @@ async function loadCalendar() {
         const cpiData = await cpiResponse.json();
         const calData = await calResponse.json();
 
-        const now = Date.now();
+        // Normalize "now" to the UTC calendar day. `expected` values are
+        // midnight-UTC dates, so comparing against the raw timestamp made
+        // "due today" span ±12h around that instant instead of the UTC day.
+        const nowDate = new Date();
+        const todayUtc = Date.UTC(
+            nowDate.getUTCFullYear(), nowDate.getUTCMonth(), nowDate.getUTCDate());
         const rows = [];
 
         for (const [code, cal] of Object.entries(calData)) {
@@ -98,7 +103,7 @@ async function loadCalendar() {
             if (!next || end == null) continue;
 
             const expected = end + cal.typical_lag_days * 86_400_000;
-            const daysAway = Math.round((expected - now) / 86_400_000);
+            const daysAway = Math.round((expected - todayUtc) / 86_400_000);
 
             let status, statusClass;
             if (daysAway < 0) {
