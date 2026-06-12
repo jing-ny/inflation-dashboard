@@ -155,7 +155,11 @@ function imfSourcedPill(publicationDate, version) {
     const title = `Tracks the IMF World Economic Outlook (auto-updated each April & October). ` +
         `The central bank publishes no standardized inflation forecast, so there is no CB scraper for this row. ${age}.`;
     const label = `IMF WEO${shortVer ? ' ' + shortVer : ''}${stale ? ' · stale' : ''}`;
-    return `<span class="freshness ${cls}" title="${title}">${label}</span>`;
+    // data-days so this age-bearing pill sorts chronologically with the
+    // green/amber/red pills (status-only pills like paused/pending stay
+    // text-sorted by design).
+    const daysAttr = fr ? ` data-days="${fr.days}"` : '';
+    return `<span class="freshness ${cls}"${daysAttr} title="${title}">${label}</span>`;
 }
 
 /**
