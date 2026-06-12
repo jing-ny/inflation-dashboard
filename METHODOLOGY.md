@@ -182,6 +182,8 @@ This enables tracking how forecasts change over time and comparing forecast accu
 
 ### Anomaly Detection
 
+Every history point appended by the fetchers (and by the monitor's FRED path) carries record-level provenance — `source` (which agency/API produced it) and `fetch_date` (when we retrieved it) — per CLAUDE.md #3 (#83). Points fetched before this was recorded are left as-is rather than given fabricated provenance.
+
 The historical fetcher (`fetch_historical_cpi.py`) runs two checks on each new value:
 
 - **Step threshold (1.0pp):** any month-over-month YoY change > 1pp is flagged as anomalous. Backfill points are exempt (skipped if their date is older than the existing latest) to prevent false positives when sources widen their history window — see PR #2.

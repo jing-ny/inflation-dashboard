@@ -1510,6 +1510,13 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
     existing_dates = {h["date"] for h in merged.get("history", [])}
     existing_latest_date = max(existing_dates) if existing_dates else ""
 
+    # Per-record provenance (CLAUDE.md #3, #83): histories are now
+    # mixed-source (FRED/OECD backfill + direct-agency fetchers), so each
+    # point we append records which source produced it and when we got it.
+    # Pre-existing points are left untouched — we don't fabricate
+    # provenance for data fetched before this was recorded.
+    fetch_stamp = datetime.now().strftime("%Y-%m-%d")
+
     # Add new history points from FRED
     new_points = 0
     for point in fetched.get("history", []):
@@ -1524,6 +1531,8 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
                 prior = [h for h in hist_so_far if h["date"] < point["date"]]
                 prev = prior[-1] if prior else None
                 detect_anomalies(code, point, prev, hist_so_far)
+            point.setdefault("source", config["source"])
+            point.setdefault("fetch_date", fetch_stamp)
             merged.setdefault("history", []).append(point)
             new_points += 1
     
@@ -1537,6 +1546,8 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
         
         if fred_latest_date > existing_latest_date:
             # FRED has newer data
+            fetched["latest"].setdefault("source", config["source"])
+            fetched["latest"].setdefault("fetch_date", fetch_stamp)
             merged["latest"] = fetched["latest"]
             merged["previous"] = fetched.get("previous") or merged.get("previous")
             print(f"    → Updated latest: {fred_latest_date}")
