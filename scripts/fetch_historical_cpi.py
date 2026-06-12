@@ -1188,7 +1188,13 @@ def fetch_country_data(code: str) -> Optional[Dict]:
     """
     config = COUNTRIES[code]
     print(f"  Fetching {config['flag']} {config['name']}...", end=" ")
-    
+
+    # Tracks the source that actually produced the data, for per-record
+    # provenance (#83): national fetchers can fall back to FRED, and the
+    # NZ/KR rows are FRED-primary even though config["source"] names the
+    # national agency.
+    via_fred = False
+
     try:
         if config.get("api") == "ECB":
             raw_data = fetch_ecb_series(config["series_id"])
@@ -1226,6 +1232,7 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(BLS failed: {e}; falling back to FRED)...", end=" ")
+                    via_fred = True
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:
@@ -1241,6 +1248,7 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(ONS failed: {e}; falling back to FRED)...", end=" ")
+                    via_fred = True
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:
@@ -1256,6 +1264,7 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(NBS failed: {e}; falling back to FRED)...", end=" ")
+                    via_fred = True
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:
@@ -1271,6 +1280,7 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(e-Stat failed: {e}; falling back to FRED)...", end=" ")
+                    via_fred = True
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:
@@ -1286,6 +1296,7 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(MoSPI failed: {e}; falling back to FRED)...", end=" ")
+                    via_fred = True
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:
@@ -1301,6 +1312,7 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(StatsSA failed: {e}; falling back to FRED)...", end=" ")
+                    via_fred = True
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:
@@ -1316,6 +1328,7 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(ABS failed: {e}; falling back to FRED)...", end=" ")
+                    via_fred = True
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:
@@ -1331,6 +1344,7 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(SingStat failed: {e}; falling back to FRED)...", end=" ")
+                    via_fred = True
                     raw_data = fetch_fred_series(config["fred_series"])
                     # The SG fallback is a World Bank annual YoY series (already a
                     # rate), not an index — don't run the YoY calc on it.
@@ -1351,12 +1365,14 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(StatCan failed: {e}; falling back to FRED)...", end=" ")
+                    via_fred = True
                     raw_data = fetch_fred_series(config["fred_series"])
                     yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:
                     raise
         else:
             # FRED API - try primary series, fall back to alt if available
+            via_fred = True
             series_id = config.get("fred_series")
             used_alt = False
             data_type = config.get("data_type", "index")
@@ -1398,7 +1414,8 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             return {
                 "history": yoy_data,
                 "latest": latest,
-                "previous": yoy_data[-2] if len(yoy_data) > 1 else None
+                "previous": yoy_data[-2] if len(yoy_data) > 1 else None,
+                "fetched_from": "FRED" if via_fred else config["source"],
             }
         else:
             print("⚠️ No data")
@@ -1516,6 +1533,7 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
     # Pre-existing points are left untouched — we don't fabricate
     # provenance for data fetched before this was recorded.
     fetch_stamp = datetime.now().strftime("%Y-%m-%d")
+    actual_source = fetched.get("fetched_from") or config["source"]
 
     # Add new history points from FRED
     new_points = 0
@@ -1531,7 +1549,7 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
                 prior = [h for h in hist_so_far if h["date"] < point["date"]]
                 prev = prior[-1] if prior else None
                 detect_anomalies(code, point, prev, hist_so_far)
-            point.setdefault("source", config["source"])
+            point.setdefault("source", actual_source)
             point.setdefault("fetch_date", fetch_stamp)
             merged.setdefault("history", []).append(point)
             new_points += 1
@@ -1545,11 +1563,19 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
         existing_latest_date = merged.get("latest", {}).get("date", "")
         
         if fred_latest_date > existing_latest_date:
-            # FRED has newer data
-            fetched["latest"].setdefault("source", config["source"])
+            # Source has newer data
+            fetched["latest"].setdefault("source", actual_source)
             fetched["latest"].setdefault("fetch_date", fetch_stamp)
+            # Promote the outgoing latest to previous when the dates match —
+            # it carries provenance the freshly-fetched previous dict lacks
+            # (that date was already in history, so the append loop above
+            # never stamped it).
+            old_latest = merged.get("latest")
+            new_prev = fetched.get("previous")
+            if old_latest and new_prev and old_latest.get("date") == new_prev.get("date"):
+                new_prev = old_latest
             merged["latest"] = fetched["latest"]
-            merged["previous"] = fetched.get("previous") or merged.get("previous")
+            merged["previous"] = new_prev or merged.get("previous")
             print(f"    → Updated latest: {fred_latest_date}")
         elif fred_latest_date < existing_latest_date:
             print(f"    → Kept manual data (FRED lags: {fred_latest_date} vs {existing_latest_date})")
