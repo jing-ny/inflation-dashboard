@@ -655,3 +655,38 @@ a.freshness-paused:hover {
     color: #475569;
     margin: 0;
 }
+
+/* Release calendar page (#85) */
+.cal-overdue {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.cal-due-soon {
+    color: #b45309;
+    font-weight: 600;
+}
+
+.cal-upcoming {
+    color: #6b7280;
+}
+
+.cal-est {
+    font-size: 0.7rem;
+    color: #6b7280;
+    background: #f3f4f6;
+    padding: 1px 5px;
+    border-radius: 4px;
+    margin-left: 4px;
+    cursor: help;
+}
+
+.nav-back {
+    color: #6b7280;
+    font-size: 0.875rem;
+    text-decoration: none;
+}
+
+.nav-back:hover {
+    color: #111;
+}

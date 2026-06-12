@@ -1,0 +1,84 @@
+{
+  "_metadata": {
+    "description": "Per-country CPI release cadence + typical publication lag (#85). Consumed by docs/calendar.js to project each country's next expected print from the latest reference period in historical_cpi.json.",
+    "last_updated": "2026-06-11",
+    "fields": {
+      "agency": "statistical agency that publishes the CPI print",
+      "cadence": "monthly | quarterly — reference-period frequency",
+      "typical_lag_days": "ESTIMATE of the agency's usual delay between the end of the reference period and publication. Dates derived from it are estimates and must be labeled 'est.' in the UI (CLAUDE.md #2); the linked calendar_url is the authoritative schedule.",
+      "calendar_url": "agency's official release calendar / schedule page (verified reachable 2026-06-11; BLS 403s non-browser agents but the page is canonical, KOSTAT is geo-restricted from some networks)"
+    }
+  },
+  "US": {
+    "agency": "BLS",
+    "cadence": "monthly",
+    "typical_lag_days": 13,
+    "calendar_url": "https://www.bls.gov/schedule/news_release/cpi.htm"
+  },
+  "EA": {
+    "agency": "Eurostat",
+    "cadence": "monthly",
+    "typical_lag_days": 2,
+    "calendar_url": "https://ec.europa.eu/eurostat/web/main/news/release-calendar"
+  },
+  "UK": {
+    "agency": "ONS",
+    "cadence": "monthly",
+    "typical_lag_days": 19,
+    "calendar_url": "https://www.ons.gov.uk/releasecalendar"
+  },
+  "CA": {
+    "agency": "Statistics Canada",
+    "cadence": "monthly",
+    "typical_lag_days": 18,
+    "calendar_url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm"
+  },
+  "AU": {
+    "agency": "ABS",
+    "cadence": "monthly",
+    "typical_lag_days": 28,
+    "calendar_url": "https://www.abs.gov.au/release-calendar/future-releases"
+  },
+  "NZ": {
+    "agency": "Stats NZ",
+    "cadence": "quarterly",
+    "typical_lag_days": 18,
+    "calendar_url": "https://www.stats.govt.nz/release-calendar/"
+  },
+  "ZA": {
+    "agency": "Stats SA",
+    "cadence": "monthly",
+    "typical_lag_days": 21,
+    "calendar_url": "https://www.statssa.gov.za/?page_id=620"
+  },
+  "JP": {
+    "agency": "Statistics Bureau of Japan",
+    "cadence": "monthly",
+    "typical_lag_days": 19,
+    "calendar_url": "https://www.stat.go.jp/english/data/cpi/index.html"
+  },
+  "KR": {
+    "agency": "KOSTAT",
+    "cadence": "monthly",
+    "typical_lag_days": 3,
+    "calendar_url": "https://kostat.go.kr/en/"
+  },
+  "SG": {
+    "agency": "SingStat",
+    "cadence": "monthly",
+    "typical_lag_days": 23,
+    "calendar_url": "https://www.singstat.gov.sg/"
+  },
+  "IN": {
+    "agency": "MoSPI",
+    "cadence": "monthly",
+    "typical_lag_days": 12,
+    "calendar_url": "https://www.mospi.gov.in/"
+  },
+  "CN": {
+    "agency": "NBS",
+    "cadence": "monthly",
+    "typical_lag_days": 9,
+    "calendar_url": "https://www.stats.gov.cn/english/PressRelease/"
+  }
+}
