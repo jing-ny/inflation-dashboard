@@ -99,7 +99,9 @@ function freshnessFor(publicationDate, kind) {
 function freshnessPill(publicationDate, kind) {
     const fr = freshnessFor(publicationDate, kind);
     if (!fr) return '';
-    return `<span class="freshness freshness-${fr.tier}" title="${fr.days} days since publication">${fr.label}</span>`;
+    // data-days lets table sorting compare by age in days — the visible
+    // label mixes units ("12d" vs "3mo") and is useless as a sort key.
+    return `<span class="freshness freshness-${fr.tier}" data-days="${fr.days}" title="${fr.days} days since publication">${fr.label}</span>`;
 }
 
 /**
