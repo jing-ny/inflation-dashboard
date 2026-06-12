@@ -110,7 +110,7 @@ CPI actuals are fetched per country by [`scripts/fetch_historical_cpi.py`](scrip
 | US, EA, UK, CA, AU | Direct (BLS / ECB / ONS / StatCan / ABS) | ~current |
 | South Africa | FRED-OECD | 6–12 months |
 | New Zealand | FRED-OECD (quarterly) | quarterly cadence |
-| Japan, Korea | FRED (COICOP index) | 1–3 months; manual supplement sometimes needed |
+| Japan, Korea | JP direct (e-Stat); KR on FRED (COICOP index) | KR 1–3 months — shows as stale until #58 lands |
 | China, India | FRED-OECD | 1–3 months |
 | Singapore | FRED (World Bank annual — OECD series broken) | coarse |
 
@@ -118,7 +118,7 @@ CPI actuals are fetched per country by [`scripts/fetch_historical_cpi.py`](scrip
 
 > **Note for contributors / forks:** there are *two* network environments to keep distinct. (1) Claude Code's dev sandbox has **allowlisted egress** — most central-bank, IMF and national-stats hosts are unreachable from it, so source-touching code is validated on GitHub's runners, not locally. (2) GitHub's runners have open internet but, as above, some government APIs still refuse their cloud IPs. A source must be reachable from environment (2) to be usable in production, since that is where scheduled updates run.
 
-When a source is stale or unreachable, the value is verified/supplemented from the official agency (see *Source Links*), and per CLAUDE.md #1 we **fix the source or defer** — we do not adopt hand-entry as a standing fallback.
+When a source is stale or unreachable, per CLAUDE.md #1 we **fix the source or defer** — the value stays visibly stale (freshness pills, Release Calendar) until the fetcher is fixed; we do not hand-enter values.
 
 ---
 
@@ -182,12 +182,12 @@ This enables tracking how forecasts change over time and comparing forecast accu
 
 ### Anomaly Detection
 
-Both the manual entry path (`update_cpi.py`) and the historical fetcher (`fetch_historical_cpi.py`) run two checks on each new value:
+The historical fetcher (`fetch_historical_cpi.py`) runs two checks on each new value:
 
 - **Step threshold (1.0pp):** any month-over-month YoY change > 1pp is flagged as anomalous. Backfill points are exempt (skipped if their date is older than the existing latest) to prevent false positives when sources widen their history window — see PR #2.
 - **Prior-year-same-period match:** if a new value matches the prior year's same-month value within 0.01pp, it's flagged. This catches the BR/MX 2026-01/02 failure mode where comparison-text values were captured as current readings.
 
-In both scripts, hitting an anomaly **exits non-zero** so CI surfaces it. The auto-scraper has a related but independent **merge-gate** (`MERGE_THRESHOLD_PP = 1.0`) that routes large jumps to `cb_forecasts_draft.json` instead of auto-merging — see [`merge_into_main`](scripts/auto_scrape_cb_forecasts.py).
+Hitting an anomaly **exits non-zero** so CI surfaces it. The auto-scraper has a related but independent **merge-gate** (`MERGE_THRESHOLD_PP = 1.0`) that routes large jumps to `cb_forecasts_draft.json` instead of auto-merging — see [`merge_into_main`](scripts/auto_scrape_cb_forecasts.py).
 
 Per CLAUDE.md #5: when these checks fire, the fix is to investigate *why*, not to raise the threshold.
 
@@ -202,9 +202,9 @@ Failure-path emails (`if: failure()`) are tracked in [#28](https://github.com/ji
 
 ### Manual Updates Required
 
-- **Central bank forecasts:** Mostly automated (9/12) — see PROJECT_PLAN.md "Scraper status". The remaining banks (CN, IN, KR) are updated manually after MPC meetings (see CPI_UPDATE_GUIDE.md), with PBoC an explicit non-goal.
+- **Central bank forecasts:** Mostly automated (9/12) — see PROJECT_PLAN.md "Scraper status". The remaining banks (CN, IN, KR) are updated after MPC meetings, with PBoC an explicit non-goal.
 - **IMF forecasts:** April and October — `fetch_imf_forecasts.py` pulls the latest WEO.
-- **CPI verification:** Monthly via `update_cpi.py` if FRED hasn't caught up. Direct-source paths (BLS for US, ONS for UK, StatCan for CA, ECB for EA) usually beat FRED to the release.
+- **CPI freshness:** All CPI ingestion is automated (direct agency APIs/press releases, FRED as fallback). Per CLAUDE.md #1 there is no manual-entry path: when a source lags or breaks, the value stays visibly stale (freshness pills, release calendar) until the fetcher is fixed.
 
 ---
 
@@ -245,7 +245,6 @@ docs/data/                        # Single source of truth
 ├── historical_cpi.json           # CPI history for all 12 countries
 ├── cb_forecasts.json             # Central bank forecasts
 ├── imf_forecasts.json            # IMF WEO projections
-├── cpi_supplements.json          # Manual supplements for FRED lag
 ├── weekly_snapshots.json         # Weekly data snapshots
 └── history/
     ├── cb_forecast_history.json  # CB forecast revision history
@@ -260,19 +259,14 @@ scripts/                          # Data collection scripts
 ├── send_weekly_alert.py          # Weekly change detection + email
 └── generate_newsletter.py        # Claude API newsletter draft generation
 
-# Manual update tools (repo root)
-├── update.sh                     # One-command update tool (cpi/forecast/imf/status)
-├── update_cpi.py                 # Single-value CPI updates
-├── batch_update_cpi.py           # Multi-country batch updates
-└── CPI_UPDATE_GUIDE.md           # Update procedures and sources
 ```
 
 ---
 
 ## Limitations
 
-1. **Data Timeliness:** FRED data may lag official releases; we supplement manually when needed
-2. **Central Bank Forecasts:** Most require manual updates; not all banks provide multi-year projections
+1. **Data Timeliness:** countries still on FRED's relay lag official releases; the lag is shown as staleness rather than patched by hand (CLAUDE.md #1)
+2. **Central Bank Forecasts:** 9 banks auto-scraped; the rest are curated via reviewed PRs, and not all banks provide multi-year projections
 3. **Methodology Differences:** Countries use slightly different CPI baskets and methodologies
 4. **Revisions:** Historical data may be revised by statistical agencies after initial release
 
