@@ -245,7 +245,6 @@ docs/data/                        # Single source of truth
 ├── historical_cpi.json           # CPI history for all 12 countries
 ├── cb_forecasts.json             # Central bank forecasts
 ├── imf_forecasts.json            # IMF WEO projections
-├── cpi_supplements.json          # Manual supplements for FRED lag
 ├── weekly_snapshots.json         # Weekly data snapshots
 └── history/
     ├── cb_forecast_history.json  # CB forecast revision history

@@ -315,7 +315,6 @@ Python Scripts (fetch / update data)
 | `historical_cpi.json` | 10-year CPI history + latest/previous readings | `fetch_historical_cpi.py` (auto) |
 | `cb_forecasts.json` | Central bank forecasts, policy rates, key quotes | Manual edit after MPC meetings |
 | `imf_forecasts.json` | IMF WEO inflation projections | Manual (2x/year: Apr + Oct) |
-| `cpi_supplements.json` | Manual CPI supplements when FRED lags | Manual |
 | `weekly_snapshots.json` | Weekly alert snapshots for change detection | `send_weekly_alert.py` |
 | `history/cb_forecast_history.json` | CB forecast revision tracking | `monitor_updates.py` |
 | `history/imf_forecast_history.json` | IMF forecast revision tracking | `monitor_updates.py` |
@@ -382,7 +381,6 @@ inflation-dashboard/
 │   ├── send_notification.py     # Email via Resend API
 │   ├── send_weekly_alert.py     # Weekly change detection + email alert
 │   ├── generate_newsletter.py   # Claude API newsletter draft generation
-│   ├── patch_cpi_supplements.py # Patches FRED gaps
 │   └── test_data_sources.py     # Data source testing
 │
 ├── docs/                        # GitHub Pages root
@@ -394,7 +392,6 @@ inflation-dashboard/
 │       ├── historical_cpi.json  # CPI data for all 15 countries
 │       ├── cb_forecasts.json    # Central bank forecasts + policy rates
 │       ├── imf_forecasts.json   # IMF WEO projections
-│       ├── cpi_supplements.json # Manual CPI supplements
 │       ├── weekly_snapshots.json
 │       └── history/
 │           ├── cb_forecast_history.json   # Forecast revision history
@@ -451,7 +448,7 @@ inflation-dashboard/
 
 ### Monthly: CPI Data Update
 
-CPI ingestion is fully automated (`update-data.yml`, Mon/Thu). There is no
+CPI ingestion is fully automated (`update-data.yml`, Mondays). There is no
 manual-entry path (CLAUDE.md #1, #84): if a country's print is missing past
 its expected date (see the dashboard's Release Calendar tab), fix or extend
 the fetcher in `scripts/fetch_historical_cpi.py` — don't hand-edit the JSON.

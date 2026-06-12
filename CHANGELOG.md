@@ -8,7 +8,9 @@ All notable changes to the Inflation Dashboard project are documented here.
 
 ### Removed
 - **Manual CPI/forecast entry tools deleted (#84, CLAUDE.md #1).** `update_cpi.py`,
-  `batch_update_cpi.py`, `update.sh`, and `CPI_UPDATE_GUIDE.md` are gone. They predate the
+  `batch_update_cpi.py`, `update.sh`, `CPI_UPDATE_GUIDE.md`, and the dormant manual-supplement
+  path (`scripts/patch_cpi_supplements.py` + `docs/data/cpi_supplements.json`, unreferenced by
+  any workflow, data frozen at 2026-01) are gone. They predate the
   automation-first principle and provided exactly the hand-edit fallback it rules out (including
   an `--confirm-anomaly` override of the step gate). CPI ingestion is fully automated via
   `scripts/fetch_historical_cpi.py` + `update-data.yml`; when a source breaks, the value stays

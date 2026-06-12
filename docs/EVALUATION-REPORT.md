@@ -1,5 +1,8 @@
 # Inflation Dashboard 项目评估报告
 
+> **⚠️ 历史存档(2026-06-12 标注):** 本报告反映撰写时的项目状态。其中提到的 `update_cpi.py`、`batch_update_cpi.py`、`CPI_UPDATE_GUIDE.md` 等手动更新工具已于 #84 移除(CLAUDE.md 原则 #1:不设手动录入通道)。文中操作指引仅作历史参考,请勿照做。
+
+
 **评估日期：** 2026-03-23
 **评估范围：** 项目整体状态、数据时效性、自动化流程、扩展机会
 **项目地址：** https://jing-ny.github.io/inflation-dashboard/

@@ -95,7 +95,6 @@ docs/data/
 ├── historical_cpi.json       # CPI history for all 12 countries
 ├── cb_forecasts.json         # Central bank inflation forecasts
 ├── imf_forecasts.json        # IMF WEO projections
-├── cpi_supplements.json      # Manual supplements for lagging FRED data
 └── history/                  # Forecast revision tracking
 ```
 
