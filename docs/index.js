@@ -476,9 +476,21 @@ function makeSortable(table) {
                 originalRows = Array.from(tbody.querySelectorAll('tr'));
             }
 
-            // Toggle direction or switch column
+            // Cycle per column: ascending → descending → original order
             if (currentCol === colIndex) {
-                ascending = !ascending;
+                if (ascending) {
+                    ascending = false;
+                } else {
+                    // Third click: restore the original order
+                    currentCol = -1;
+                    ths.forEach(h => {
+                        h.classList.remove('sort-active');
+                        const ind = h.querySelector('.sort-indicator');
+                        if (ind) ind.textContent = '▲';
+                    });
+                    originalRows.forEach(r => tbody.appendChild(r));
+                    return;
+                }
             } else {
                 currentCol = colIndex;
                 ascending = true;
@@ -496,6 +508,16 @@ function makeSortable(table) {
             // Get rows and sort
             const rows = Array.from(tbody.querySelectorAll('tr'));
 
+            // Sort key for a cell: prefer an explicit data-days attribute
+            // (set by freshness pills — their visible text mixes units like
+            // "12d" vs "3mo", which would otherwise compare 12 > 3 wrongly);
+            // fall back to the visible text.
+            const sortNum = (cell) => {
+                const tagged = cell.querySelector('[data-days]');
+                if (tagged) return Number(tagged.dataset.days);
+                return parseFloat(cell.textContent.trim().replace(/[▲▼%,]/g, '').trim());
+            };
+
             rows.sort((a, b) => {
                 const cellA = a.children[colIndex];
                 const cellB = b.children[colIndex];
@@ -504,9 +526,8 @@ function makeSortable(table) {
                 let valA = cellA.textContent.trim();
                 let valB = cellB.textContent.trim();
 
-                // Extract numeric value (handle %, ▲, ▼, —, N/A)
-                const numA = parseFloat(valA.replace(/[▲▼%,]/g, '').trim());
-                const numB = parseFloat(valB.replace(/[▲▼%,]/g, '').trim());
+                const numA = sortNum(cellA);
+                const numB = sortNum(cellB);
 
                 let result;
                 if (!isNaN(numA) && !isNaN(numB)) {
