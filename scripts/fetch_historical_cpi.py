@@ -1194,6 +1194,9 @@ def fetch_country_data(code: str) -> Optional[Dict]:
     # NZ/KR rows are FRED-primary even though config["source"] names the
     # national agency.
     via_fred = False
+    # The FRED series that actually produced the data (primary by default;
+    # the FRED-primary path below may switch to fred_series_alt).
+    fred_series_used = config.get("fred_series")
 
     try:
         if config.get("api") == "ECB":
@@ -1399,6 +1402,7 @@ def fetch_country_data(code: str) -> Optional[Dict]:
                     series_id = config["fred_series_alt"]
                     raw_data = fetch_fred_series(series_id)
                     used_alt = True
+                    fred_series_used = series_id
                     # Alt series may have different data_type
                     # World Bank FPCPITOTLZG* series are annual YoY rates
                     if series_id.startswith("FPCPITOTLZG"):
@@ -1426,6 +1430,7 @@ def fetch_country_data(code: str) -> Optional[Dict]:
                 "latest": latest,
                 "previous": yoy_data[-2] if len(yoy_data) > 1 else None,
                 "fetched_from": "FRED" if via_fred else config["source"],
+                "fred_series_used": fred_series_used if via_fred else None,
             }
         else:
             print("⚠️ No data")
@@ -1544,9 +1549,10 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
     # provenance for data fetched before this was recorded.
     fetch_stamp = datetime.now().strftime("%Y-%m-%d")
     actual_source = fetched.get("fetched_from") or config["source"]
+    fred_series_used = fetched.get("fred_series_used") or config.get("fred_series")
     actual_source_url = (
-        f"https://fred.stlouisfed.org/series/{config['fred_series']}"
-        if actual_source == "FRED" and config.get("fred_series")
+        f"https://fred.stlouisfed.org/series/{fred_series_used}"
+        if actual_source == "FRED" and fred_series_used
         else config.get("source_url", "")
     )
 
