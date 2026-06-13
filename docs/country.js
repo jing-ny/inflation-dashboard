@@ -310,14 +310,20 @@ function renderSupplementaryMetrics(data) {
     for (const [key, metric] of Object.entries(sup)) {
         const val = metric.latest.value;
         const dateStr = formatDate(metric.latest.date);
-        const fredUrl = 'https://fred.stlouisfed.org/series/' + metric.fred_series;
+        const fredUrl = metric.source_url
+            || ('https://fred.stlouisfed.org/series/' + metric.fred_series);
         const colorClass = getValueClass(val, 2.0);
+        // CLAUDE.md #4 (#99): age these cards like every other CPI value —
+        // they froze for months once with no visible signal.
+        const pill = typeof freshnessPill === 'function'
+            ? freshnessPill(metric.latest.date, 'cpi')
+            : '';
 
         html += `
             <div class="metric-card">
                 <div class="metric-label">${metric.name}</div>
                 <div class="metric-value ${colorClass}">${val.toFixed(1)}%</div>
-                <div class="metric-detail">${dateStr} · <a href="${fredUrl}" target="_blank" style="color:#2563eb;text-decoration:none;font-size:0.8rem;">${metric.fred_series}</a></div>
+                <div class="metric-detail">${dateStr}${pill ? ' ' + pill : ''} · <a href="${fredUrl}" target="_blank" style="color:#2563eb;text-decoration:none;font-size:0.8rem;">${metric.fred_series}</a></div>
             </div>
         `;
     }
