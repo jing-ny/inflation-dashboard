@@ -182,7 +182,7 @@ This enables tracking how forecasts change over time and comparing forecast accu
 
 ### Anomaly Detection
 
-Every history point appended by the fetchers (and by the monitor's FRED path) carries record-level provenance — `source` (which agency/API produced it) and `fetch_date` (when we retrieved it) — per CLAUDE.md #3 (#83). Points fetched before this was recorded are left as-is rather than given fabricated provenance.
+Every history point appended by the fetchers (and by the monitor's FRED path) carries record-level provenance — `source` (which agency/API actually produced it, FRED fallbacks included), `source_url` (the canonical page/series), and `fetch_date` (when we retrieved it) — per CLAUDE.md #3 (#83). Points fetched before this was recorded are left as-is rather than given fabricated provenance.
 
 The historical fetcher (`fetch_historical_cpi.py`) runs two checks on each new value:
 

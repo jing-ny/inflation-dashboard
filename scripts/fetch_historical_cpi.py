@@ -1210,7 +1210,17 @@ def fetch_country_data(code: str) -> Optional[Dict]:
                 for p in (load_existing_data().get("EA", {}) or {}).get("history", []):
                     if p.get("date") not in have and isinstance(p.get("value"), (int, float)) \
                             and not p.get("provisional"):
-                        yoy_data.append({"date": p["date"], "value": p["value"]})
+                        entry = {"date": p["date"], "value": p["value"]}
+                        for k in ("source", "source_url", "fetch_date"):
+                            if k in p:
+                                entry[k] = p[k]
+                        if "source" not in entry:
+                            # Reused stored final from before provenance was
+                            # recorded — mark it so an --overwrite run can't
+                            # stamp it as fetched today (#83).
+                            entry["source"] = "ECB (stored final)"
+                            entry["fetch_date"] = None
+                        yoy_data.append(entry)
                 yoy_data.sort(key=lambda x: x["date"])
                 flash = fetch_eurostat_flash_release()
                 latest_final = yoy_data[-1]["date"] if yoy_data else ""
@@ -1534,6 +1544,11 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
     # provenance for data fetched before this was recorded.
     fetch_stamp = datetime.now().strftime("%Y-%m-%d")
     actual_source = fetched.get("fetched_from") or config["source"]
+    actual_source_url = (
+        f"https://fred.stlouisfed.org/series/{config['fred_series']}"
+        if actual_source == "FRED" and config.get("fred_series")
+        else config.get("source_url", "")
+    )
 
     # Add new history points from FRED
     new_points = 0
@@ -1550,6 +1565,7 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
                 prev = prior[-1] if prior else None
                 detect_anomalies(code, point, prev, hist_so_far)
             point.setdefault("source", actual_source)
+            point.setdefault("source_url", actual_source_url)
             point.setdefault("fetch_date", fetch_stamp)
             merged.setdefault("history", []).append(point)
             new_points += 1
@@ -1565,6 +1581,7 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
         if fred_latest_date > existing_latest_date:
             # Source has newer data
             fetched["latest"].setdefault("source", actual_source)
+            fetched["latest"].setdefault("source_url", actual_source_url)
             fetched["latest"].setdefault("fetch_date", fetch_stamp)
             # Promote the outgoing latest to previous when the dates match —
             # it carries provenance the freshly-fetched previous dict lacks

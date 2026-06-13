@@ -98,6 +98,7 @@ class DataMonitor:
                         # Per-record provenance (CLAUDE.md #3, #83) — this
                         # point is appended to history/latest by the monitor
                         'source': 'FRED',
+                        'source_url': f'https://fred.stlouisfed.org/series/{series_id}',
                         'fetch_date': datetime.now().strftime('%Y-%m-%d')
                     }
         except Exception as e:

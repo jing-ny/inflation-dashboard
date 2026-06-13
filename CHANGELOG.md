@@ -8,8 +8,8 @@ All notable changes to the Inflation Dashboard project are documented here.
 
 ### Added
 - **Record-level provenance on history points (#83, CLAUDE.md #3).** Every CPI point appended
-  by `fetch_historical_cpi.py` (and by `monitor_updates.py`'s FRED path) now carries `source`
-  and `fetch_date`. Histories are mixed-source after the #50–#57 migrations, so per-country
+  by `fetch_historical_cpi.py` (and by `monitor_updates.py`'s FRED path) now carries `source`,
+  `source_url`, and `fetch_date` (with FRED fallbacks labeled as FRED, not the national agency). Histories are mixed-source after the #50–#57 migrations, so per-country
   provenance no longer identified which source produced an individual point. Pre-existing
   points are left untouched — no fabricated provenance.
 
