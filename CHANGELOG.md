@@ -6,6 +6,13 @@ All notable changes to the Inflation Dashboard project are documented here.
 
 ## [Unreleased]
 
+### Added
+- **Record-level provenance on history points (#83, CLAUDE.md #3).** Every CPI point appended
+  by `fetch_historical_cpi.py` (and by `monitor_updates.py`'s FRED path) now carries `source`,
+  `source_url`, and `fetch_date` (with FRED fallbacks labeled as FRED, not the national agency). Histories are mixed-source after the #50–#57 migrations, so per-country
+  provenance no longer identified which source produced an individual point. Pre-existing
+  points are left untouched — no fabricated provenance.
+
 ### Removed
 - **Manual CPI/forecast entry tools deleted (#84, CLAUDE.md #1).** `update_cpi.py`,
   `batch_update_cpi.py`, `update.sh`, `CPI_UPDATE_GUIDE.md`, and the dormant manual-supplement
