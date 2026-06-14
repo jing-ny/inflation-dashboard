@@ -1,12 +1,12 @@
 {
   "metadata": {
-    "last_updated": "2026-06-11",
+    "last_updated": "2026-06-14",
     "source": "Official national statistical agencies"
   },
   "US": {
     "code": "US",
     "name": "United States",
-    "flag": "\ud83c\uddfa\ud83c\uddf8",
+    "flag": "🇺🇸",
     "target": 2.0,
     "frequency": "monthly",
     "source": "BLS",
@@ -521,26 +521,35 @@
       "core_cpi": {
         "name": "Core CPI (ex Food & Energy)",
         "latest": {
-          "date": "2026-02",
-          "value": 3.1
+          "date": "2026-05",
+          "value": 2.82
         },
-        "fred_series": "CPILFESL"
+        "fred_series": "CPILFESL",
+        "source": "FRED",
+        "source_url": "https://fred.stlouisfed.org/series/CPILFESL",
+        "fetch_date": "2026-06-14"
       },
       "pce": {
         "name": "PCE Price Index",
         "latest": {
-          "date": "2026-01",
-          "value": 2.5
+          "date": "2026-04",
+          "value": 3.77
         },
-        "fred_series": "PCEPI"
+        "fred_series": "PCEPI",
+        "source": "FRED",
+        "source_url": "https://fred.stlouisfed.org/series/PCEPI",
+        "fetch_date": "2026-06-14"
       },
       "core_pce": {
         "name": "Core PCE",
         "latest": {
-          "date": "2026-01",
-          "value": 2.6
+          "date": "2026-04",
+          "value": 3.29
         },
-        "fred_series": "PCEPILFE"
+        "fred_series": "PCEPILFE",
+        "source": "FRED",
+        "source_url": "https://fred.stlouisfed.org/series/PCEPILFE",
+        "fetch_date": "2026-06-14"
       }
     },
     "source_url": "https://www.bls.gov/cpi/",
@@ -549,7 +558,7 @@
   "EA": {
     "code": "EA",
     "name": "Euro Area",
-    "flag": "\ud83c\uddea\ud83c\uddfa",
+    "flag": "🇪🇺",
     "target": 2.0,
     "frequency": "monthly",
     "source": "Eurostat",
@@ -1120,7 +1129,7 @@
   "UK": {
     "code": "UK",
     "name": "United Kingdom",
-    "flag": "\ud83c\uddec\ud83c\udde7",
+    "flag": "🇬🇧",
     "target": 2.0,
     "frequency": "monthly",
     "source": "ONS",
@@ -2933,7 +2942,7 @@
   "CA": {
     "code": "CA",
     "name": "Canada",
-    "flag": "\ud83c\udde8\ud83c\udde6",
+    "flag": "🇨🇦",
     "target": 2.0,
     "frequency": "monthly",
     "source": "Statistics Canada",
@@ -3870,7 +3879,7 @@
   "AU": {
     "code": "AU",
     "name": "Australia",
-    "flag": "\ud83c\udde6\ud83c\uddfa",
+    "flag": "🇦🇺",
     "target": 2.5,
     "frequency": "monthly",
     "source": "ABS",
@@ -4240,7 +4249,7 @@
   "NZ": {
     "code": "NZ",
     "name": "New Zealand",
-    "flag": "\ud83c\uddf3\ud83c\uddff",
+    "flag": "🇳🇿",
     "target": 2.0,
     "frequency": "quarterly",
     "source": "Stats NZ",
@@ -4565,7 +4574,7 @@
   "ZA": {
     "code": "ZA",
     "name": "South Africa",
-    "flag": "\ud83c\uddff\ud83c\udde6",
+    "flag": "🇿🇦",
     "target": 3.0,
     "frequency": "monthly",
     "source": "Stats SA",
@@ -5039,7 +5048,7 @@
   "JP": {
     "code": "JP",
     "name": "Japan",
-    "flag": "\ud83c\uddef\ud83c\uddf5",
+    "flag": "🇯🇵",
     "target": 2.0,
     "frequency": "monthly",
     "source": "MIC",
@@ -7717,7 +7726,7 @@
   "CN": {
     "code": "CN",
     "name": "China",
-    "flag": "\ud83c\udde8\ud83c\uddf3",
+    "flag": "🇨🇳",
     "target": 3.0,
     "frequency": "monthly",
     "source": "NBS",
@@ -8202,7 +8211,7 @@
   "IN": {
     "code": "IN",
     "name": "India",
-    "flag": "\ud83c\uddee\ud83c\uddf3",
+    "flag": "🇮🇳",
     "target": 4.0,
     "frequency": "monthly",
     "source": "MOSPI",
@@ -8679,7 +8688,7 @@
   "KR": {
     "code": "KR",
     "name": "South Korea",
-    "flag": "\ud83c\uddf0\ud83c\uddf7",
+    "flag": "🇰🇷",
     "target": 2.0,
     "frequency": "monthly",
     "source": "KOSTAT",
@@ -9089,7 +9098,7 @@
   "SG": {
     "code": "SG",
     "name": "Singapore",
-    "flag": "\ud83c\uddf8\ud83c\uddec",
+    "flag": "🇸🇬",
     "target": 2.0,
     "frequency": "monthly",
     "source": "SingStat",
