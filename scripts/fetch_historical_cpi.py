@@ -1441,6 +1441,63 @@ def fetch_country_data(code: str) -> Optional[Dict]:
         return None
 
 
+US_SUPPLEMENTARY_SERIES = {
+    "core_cpi": {"name": "Core CPI (ex Food & Energy)", "fred_series": "CPILFESL"},
+    "pce": {"name": "PCE Price Index", "fred_series": "PCEPI"},
+    "core_pce": {"name": "Core PCE", "fred_series": "PCEPILFE"},
+}
+
+
+def fetch_us_supplementary(existing: Optional[Dict]) -> Optional[Dict]:
+    """Refresh the US supplementary metrics (Core CPI / PCE / Core PCE) from
+    FRED as YoY rates (units=pc1).
+
+    #99: these were hand-entered once (2026-03-24) and then frozen — nothing
+    updated them. Now refreshed on every US merge, stamped with per-record
+    provenance (#83). If FRED is unavailable the existing values are kept
+    unchanged so they stay *visibly* stale (the freshness pill ages) rather
+    than being silently fabricated or dropped.
+    """
+    if not FRED_API_KEY:
+        print("    (supplementary skipped: FRED_API_KEY not set)")
+        return existing
+    fetch_stamp = datetime.now().strftime("%Y-%m-%d")
+    out = {}
+    for key, meta in US_SUPPLEMENTARY_SERIES.items():
+        sid = meta["fred_series"]
+        try:
+            resp = requests.get(
+                "https://api.stlouisfed.org/fred/series/observations",
+                params={
+                    "series_id": sid, "api_key": FRED_API_KEY,
+                    "file_type": "json", "sort_order": "desc",
+                    "limit": 1, "units": "pc1",
+                },
+                timeout=30,
+            )
+            resp.raise_for_status()
+            obs = [o for o in resp.json().get("observations", [])
+                   if o.get("value") not in (None, ".")]
+            if not obs:
+                raise ValueError("no observations returned")
+            out[key] = {
+                "name": meta["name"],
+                "latest": {
+                    "date": obs[0]["date"][:7],
+                    "value": round(float(obs[0]["value"]), 2),
+                },
+                "fred_series": sid,
+                "source": "FRED",
+                "source_url": f"https://fred.stlouisfed.org/series/{sid}",
+                "fetch_date": fetch_stamp,
+            }
+        except Exception as e:
+            print(f"    (supplementary {sid} failed: {e}; keeping existing)")
+            if existing and key in existing:
+                out[key] = existing[key]
+    return out or existing
+
+
 def load_existing_data() -> Dict:
     """Load existing historical_cpi.json if it exists."""
     if DATA_FILE.exists():
@@ -1534,7 +1591,13 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
     # Preserve notes if they exist
     if config.get("notes") and "notes" not in merged:
         merged["notes"] = config["notes"]
-    
+
+    # US carries supplementary metrics (Core CPI / PCE / Core PCE) — refresh
+    # them from FRED on every merge (#99); runs even when the headline fetch
+    # failed so the cards don't freeze while the main series keeps moving.
+    if code == "US":
+        merged["supplementary"] = fetch_us_supplementary(merged.get("supplementary"))
+
     if not fetched:
         return merged
     
