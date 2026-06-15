@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "last_updated": "2026-06-14",
+    "last_updated": "2026-06-15",
     "source": "Official national statistical agencies"
   },
   "US": {
@@ -527,7 +527,7 @@
         "fred_series": "CPILFESL",
         "source": "FRED",
         "source_url": "https://fred.stlouisfed.org/series/CPILFESL",
-        "fetch_date": "2026-06-14"
+        "fetch_date": "2026-06-15"
       },
       "pce": {
         "name": "PCE Price Index",
@@ -538,7 +538,7 @@
         "fred_series": "PCEPI",
         "source": "FRED",
         "source_url": "https://fred.stlouisfed.org/series/PCEPI",
-        "fetch_date": "2026-06-14"
+        "fetch_date": "2026-06-15"
       },
       "core_pce": {
         "name": "Core PCE",
@@ -549,7 +549,7 @@
         "fred_series": "PCEPILFE",
         "source": "FRED",
         "source_url": "https://fred.stlouisfed.org/series/PCEPILFE",
-        "fetch_date": "2026-06-14"
+        "fetch_date": "2026-06-15"
       }
     },
     "source_url": "https://www.bls.gov/cpi/",
@@ -7732,12 +7732,15 @@
     "source": "NBS",
     "last_updated": "2026-04-22",
     "latest": {
-      "date": "2026-04",
-      "value": 1.2
+      "date": "2026-05",
+      "value": 1.2,
+      "source": "NBS",
+      "source_url": "https://www.stats.gov.cn/english/",
+      "fetch_date": "2026-06-15"
     },
     "previous": {
-      "date": "2026-03",
-      "value": 1.0
+      "date": "2026-04",
+      "value": 1.2
     },
     "history": [
       {
@@ -8203,6 +8206,13 @@
       {
         "date": "2026-04",
         "value": 1.2
+      },
+      {
+        "date": "2026-05",
+        "value": 1.2,
+        "source": "NBS",
+        "source_url": "https://www.stats.gov.cn/english/",
+        "fetch_date": "2026-06-15"
       }
     ],
     "source_url": "https://www.stats.gov.cn/english/",

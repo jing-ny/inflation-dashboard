@@ -295,7 +295,7 @@
       },
       "scraper_status": "imf_sourced",
       "scraper_status_reason": "PBoC publishes no standardized forecast; row tracks IMF WEO (auto-updated each April & October)",
-      "source_date": "2026-06-08"
+      "source_date": "2026-06-15"
     }
   }
 }
