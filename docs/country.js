@@ -109,7 +109,7 @@ const DATA_SOURCES = {
     ],
     AU: [
         { label: 'CPI Data (headline)', value: 'ABS Monthly CPI Indicator', url: 'https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/' },
-        { label: 'Historical series', value: 'AUSCPIALLQINMEI (OECD, Quarterly via FRED)', url: 'https://fred.stlouisfed.org/series/AUSCPIALLQINMEI' },
+        { label: 'Historical series', value: 'ABS Quarterly CPI (FRED relay fallback)', url: 'https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/' },
         { label: 'Forecasts', value: 'RBA Statement on Monetary Policy', url: 'https://www.rba.gov.au/publications/smp/' },
         { label: 'Target', value: 'Statement on Conduct of Monetary Policy', url: 'https://www.rba.gov.au/monetary-policy/framework/stmt-conduct-mp.html' }
     ],
