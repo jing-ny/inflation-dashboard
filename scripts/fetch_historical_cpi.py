@@ -1355,31 +1355,35 @@ def fetch_country_data(code: str) -> Optional[Dict]:
                 except Exception as e:
                     print(f"(FRED quarterly history failed: {e})...", end=" ")
 
-            if monthly_yoy:
-                latest = monthly_yoy[-1]
-                print(f"✅ ABS monthly latest {latest['date']}={latest['value']}%, "
-                      f"{len(quarterly_history)} quarterly history pts")
-                return {
-                    # Quarterly history for the chart; fall back to the monthly
-                    # series only if FRED quarterly is unavailable, so the chart
-                    # never goes empty (CLAUDE.md #4).
-                    "history": quarterly_history or monthly_yoy,
-                    "latest": latest,
-                    "previous": monthly_yoy[-2] if len(monthly_yoy) > 1 else None,
-                    "fetched_from": config["source"],          # ABS (monthly headline)
-                    "fred_series_used": config.get("fred_series"),
-                    # Rebuild the quarterly history wholesale only when we truly
-                    # have it; on the monthly fallback keep append semantics so a
-                    # partial fetch can't wipe good history.
-                    "history_replace": bool(quarterly_history),
-                    "history_source": "FRED" if quarterly_history else config["source"],
-                }
-            elif quarterly_history:
-                # ABS down — fall back fully to FRED quarterly for everything.
-                via_fred = True
-                yoy_data = quarterly_history
-            else:
+            if not monthly_yoy and not quarterly_history:
                 raise ValueError("Both ABS monthly and FRED quarterly failed for AU")
+
+            # latest/previous come from ABS monthly. If ABS is down we return
+            # latest=None so merge KEEPS the existing monthly headline rather
+            # than overwriting it with a coarser/older quarterly point (a
+            # "YYYY-Qn" string sorts after "YYYY-MM", so the merge date guard
+            # would otherwise treat an older quarter as newer).
+            latest = monthly_yoy[-1] if monthly_yoy else None
+            previous = (monthly_yoy[-2] if monthly_yoy and len(monthly_yoy) > 1
+                        else None)
+            print(f"✅ ABS monthly latest "
+                  f"{latest['date'] if latest else 'n/a (ABS down)'}, "
+                  f"{len(quarterly_history)} quarterly history pts")
+            return {
+                # Quarterly history drives the chart. When FRED quarterly is
+                # down we return an EMPTY history (NOT the monthly series): with
+                # history_replace False, merge appends nothing and the existing
+                # quarterly history is preserved — never polluted with monthly
+                # points (the leak this change exists to scrub).
+                "history": quarterly_history,
+                "latest": latest,
+                "previous": previous,
+                "fetched_from": config["source"] if monthly_yoy else "FRED",
+                "fred_series_used": config.get("fred_series"),
+                # Rebuild the quarterly history wholesale only when we have it.
+                "history_replace": bool(quarterly_history),
+                "history_source": "FRED",
+            }
         elif config.get("api") == "SingStat":
             # Direct SingStat TableBuilder — monthly CPI All-Items, already YoY. #52
             try:
