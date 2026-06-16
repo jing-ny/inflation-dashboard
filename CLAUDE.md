@@ -54,3 +54,9 @@ For any change to this repo, the workflow is: **open a GitHub issue** describing
 Do not commit directly to `main`, do not self-merge, and do not merge a PR on the maintainer's behalf — even for a one-line fix, a "trivial" cleanup, or something that looks obviously correct. The issue gives the change a paper trail; the PR gives the maintainer a reviewable diff and the chance to say no. "It's small" is not an exception.
 
 Claude may create the issue, the branch, and the PR, and may push follow-up commits to that PR's branch in response to review — but the **merge** is the maintainer's action, not Claude's.
+
+### 7. Every PR gets an independent Codex review before merge
+
+Before any PR is merged, run an **independent code review with Codex** (the OpenAI Codex CLI, via the `/codex` skill) over the PR's diff and post its findings on the PR. This is a deliberately *independent* second opinion — separate from Claude, which authored the change, and from the maintainer's own review (#6). It must not be skipped on the grounds that Claude "already reviewed" the diff; the whole point is a different model's eyes.
+
+Every Codex finding must be either fixed or explicitly dispositioned (with a one-line reason it's a non-issue) before merge. A clean Codex review is a **precondition** for merge — it does not replace the maintainer's approval required by #6.
