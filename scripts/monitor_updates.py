@@ -160,12 +160,11 @@ class DataMonitor:
                 current_date = fred_latest['date']
             
             # Check for stale data against cadence-aware thresholds
-            # (CPI_STALE_THRESHOLDS, mirroring docs/freshness.js). Handle
-            # monthly (2025-12), quarterly (2025-Q4), and full-date
-            # (2025-12-15) formats.
-            is_quarterly = '-Q' in current_date
+            # (CPI_STALE_THRESHOLDS, mirroring docs/freshness.js). Parse the
+            # latest date from its stored *string shape* — monthly (2025-12),
+            # quarterly (2025-Q4), or full-date (2025-12-15).
             try:
-                if is_quarterly:
+                if '-Q' in current_date:
                     # Quarterly format: 2025-Q4 -> 2025-12 (last month of quarter)
                     year, quarter = current_date.split('-Q')
                     month = int(quarter) * 3
@@ -188,6 +187,15 @@ class DataMonitor:
                 continue
 
             days_old = max(0, (today - latest_date).days)
+            # Cadence drives the thresholds, and it can't be read from the date
+            # *shape* alone: fetch_fred_latest() truncates every FRED date to
+            # YYYY-MM, so a quarterly series (AU, NZ) gets stored as a month
+            # string and would otherwise be judged on the monthly threshold —
+            # firing a false red weeks before the quarterly red line (the [P2]
+            # Codex flagged). Detect quarterly from the FRED series id itself
+            # (OECD MEI quarterly series carry "ALLQ", monthly "ALLM"), OR-ed
+            # with the "-Q" date shape as a backstop for non-MEI sources.
+            is_quarterly = ('ALLQ' in series_id) or ('-Q' in current_date)
             _green_max, amber_max = CPI_STALE_THRESHOLDS[
                 'quarterly' if is_quarterly else 'monthly'
             ]
