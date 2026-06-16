@@ -7,8 +7,7 @@ Checks FRED API, IMF WEO, and tracks central bank meeting schedules.
 import json
 import os
 import sys
-from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta
+from datetime import datetime
 import requests
 
 FRED_API_KEY = os.environ.get('FRED_API_KEY')
@@ -48,6 +47,24 @@ CB_MEETINGS = {
 
 # IMF WEO release months
 IMF_WEO_MONTHS = [4, 10]  # April and October
+
+# CPI staleness thresholds, in days — kept in lockstep with the dashboard
+# front-end (docs/freshness.js, freshnessFor()'s 'cpi' branch) so the email
+# monitor and the on-page freshness pills agree on what "stale" means.
+#
+# Age is measured from the reference month/quarter (anchored to day 1), NOT the
+# release date, so the freshest-possible monthly print is already ~45-75 days
+# "old" by this measure and a quarterly print stays current for a full quarter.
+# A flat threshold therefore cried wolf on up-to-date data every cycle. These
+# thresholds track the real publication cadence instead:
+#   (green_max, amber_max) — green ≤ green_max ("latest release"),
+#   amber ≤ amber_max ("a release behind"), red > amber_max ("genuinely
+#   lagging"). A STALE push alert fires only at the red tier — the same point
+#   the dashboard paints the pill red (CLAUDE.md #4).
+CPI_STALE_THRESHOLDS = {
+    'monthly':   (75, 120),
+    'quarterly': (135, 225),
+}
 
 
 class DataMonitor:
@@ -142,18 +159,20 @@ class DataMonitor:
                 # report an error the update already repaired).
                 current_date = fred_latest['date']
             
-            # Check for stale data (more than 2 months old)
-            # Handle monthly (2025-12), quarterly (2025-Q4), and full-date
-            # (2025-12-15) formats
+            # Check for stale data against cadence-aware thresholds
+            # (CPI_STALE_THRESHOLDS, mirroring docs/freshness.js). Handle
+            # monthly (2025-12), quarterly (2025-Q4), and full-date
+            # (2025-12-15) formats.
+            is_quarterly = '-Q' in current_date
             try:
-                if '-Q' in current_date:
-                    # Quarterly format: 2025-Q4 -> 2025-12
+                if is_quarterly:
+                    # Quarterly format: 2025-Q4 -> 2025-12 (last month of quarter)
                     year, quarter = current_date.split('-Q')
                     month = int(quarter) * 3
                     latest_date = datetime(int(year), month, 1)
                 elif len(current_date) == 10:
-                    # Full date (2025-12-15) — keep the day so ages near the
-                    # 75-day threshold aren't overstated by up to a month
+                    # Full date (2025-12-15) — keep the day so ages near a
+                    # threshold aren't overstated by up to a month
                     latest_date = datetime.strptime(current_date, '%Y-%m-%d')
                 else:
                     latest_date = datetime.strptime(current_date, '%Y-%m')
@@ -167,13 +186,20 @@ class DataMonitor:
                     f"{current_date!r} — staleness check skipped"
                 )
                 continue
-                
-            if (today - latest_date) > timedelta(days=75):
+
+            days_old = max(0, (today - latest_date).days)
+            _green_max, amber_max = CPI_STALE_THRESHOLDS[
+                'quarterly' if is_quarterly else 'monthly'
+            ]
+            # Only the red tier (past amber_max — "genuinely lagging", i.e.
+            # multiple releases missed) warrants a push alert. Green/amber stay
+            # visible on the dashboard's own freshness pills without emailing.
+            if days_old > amber_max:
                 self.alerts.append({
                     'type': 'STALE_DATA',
                     'country': country_code,
                     'last_update': current_date,
-                    'days_old': (today - latest_date).days
+                    'days_old': days_old
                 })
         
         if updated:
