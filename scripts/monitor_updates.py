@@ -187,15 +187,17 @@ class DataMonitor:
                 continue
 
             days_old = max(0, (today - latest_date).days)
-            # Cadence drives the thresholds, and it can't be read from the date
-            # *shape* alone: fetch_fred_latest() truncates every FRED date to
-            # YYYY-MM, so a quarterly series (AU, NZ) gets stored as a month
-            # string and would otherwise be judged on the monthly threshold —
-            # firing a false red weeks before the quarterly red line (the [P2]
-            # Codex flagged). Detect quarterly from the FRED series id itself
-            # (OECD MEI quarterly series carry "ALLQ", monthly "ALLM"), OR-ed
-            # with the "-Q" date shape as a backstop for non-MEI sources.
-            is_quarterly = ('ALLQ' in series_id) or ('-Q' in current_date)
+            # Cadence drives the thresholds and comes from the record's explicit
+            # `frequency` field — the single source of truth shared with the
+            # front-end (docs/freshness.js). Neither the date shape nor the FRED
+            # series id is reliable: fetch_fred_latest() truncates every date to
+            # YYYY-MM (so a quarterly series can be stored month-shaped), and a
+            # series id can be a quarterly OECD series (AU's AUSCPIALLQINMEI)
+            # even when the data we actually track is monthly. Fall back to the
+            # "-Q" date shape only if `frequency` is missing.
+            frequency = (current_data[country_code].get('frequency') or '').lower()
+            is_quarterly = (frequency == 'quarterly'
+                            or (not frequency and '-Q' in current_date))
             _green_max, amber_max = CPI_STALE_THRESHOLDS[
                 'quarterly' if is_quarterly else 'monthly'
             ]

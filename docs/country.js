@@ -245,10 +245,11 @@ function updateMetrics(countryCode, data, targetDef) {
     if (currentDateEl && current) {
         const dateText = formatDate(current.date);
         // CLAUDE.md #4: append a freshness pill aged against the CPI cadence
-        // (monthly 75d/120d, quarterly 135d/225d — see freshness.js). The pill
-        // is loaded from freshness.js; defensively check before calling.
+        // (monthly 75d/120d, quarterly 135d/225d — see freshness.js). Cadence
+        // comes from the record's `frequency` field, not the date shape. The
+        // pill is loaded from freshness.js; defensively check before calling.
         const pill = typeof freshnessPill === 'function'
-            ? freshnessPill(current.date, 'cpi')
+            ? freshnessPill(current.date, 'cpi', data.frequency)
             : '';
         // Flag flash/provisional estimates (e.g. EA HICP flash, #60).
         const flash = current.provisional === true
