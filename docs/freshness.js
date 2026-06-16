@@ -52,7 +52,15 @@ function parsePublicationDate(s) {
  *   kind = 'forecast'  thresholds 120d / 180d (quarterly CB publications)
  *   kind = 'cpi'       thresholds depend on the series' publication cadence:
  *                        monthly   75d / 120d
- *                        quarterly 135d / 225d (auto-detected from "YYYY-Qn")
+ *                        quarterly 135d / 225d
+ *
+ * Cadence comes from the data record's explicit `frequency` field, passed in as
+ * the third argument — this is the single source of truth shared with the
+ * back-end monitor (scripts/monitor_updates.py). Do NOT infer cadence from the
+ * date string shape: a quarterly series (e.g. NZ) can be stored as a "YYYY-MM"
+ * string, which would then be mis-judged as monthly. When `frequency` is absent
+ * (e.g. supplementary metric cards), fall back to the "YYYY-Qn" shape so old
+ * call sites keep working.
  *
  * Why the CPI thresholds aren't tighter: official CPI is released a few weeks
  * after its reference month, and the age here is measured from the *reference
@@ -64,7 +72,7 @@ function parsePublicationDate(s) {
  *
  * Returns { tier, label, days } or null if the input is unparseable.
  */
-function freshnessFor(publicationDate, kind) {
+function freshnessFor(publicationDate, kind, frequency) {
     const ts = parsePublicationDate(publicationDate);
     if (ts == null) return null;
 
@@ -73,7 +81,9 @@ function freshnessFor(publicationDate, kind) {
     if (kind === 'forecast') {
         [t1, t2] = [120, 180];
     } else {
-        const isQuarterly = /^\s*\d{4}-Q[1-4]\s*$/i.test(publicationDate || '');
+        const freq = (frequency || '').toLowerCase();
+        const isQuarterly = freq === 'quarterly'
+            || (!freq && /^\s*\d{4}-Q[1-4]\s*$/i.test(publicationDate || ''));
         [t1, t2] = isQuarterly ? [135, 225] : [75, 120];
     }
     const tier = days <= t1 ? 'green' : days <= t2 ? 'amber' : 'red';
@@ -96,8 +106,8 @@ function freshnessFor(publicationDate, kind) {
  * Render a freshness pill as inline HTML. Empty string if the date is
  * unparseable — we never substitute placeholder values per CLAUDE.md #2.
  */
-function freshnessPill(publicationDate, kind) {
-    const fr = freshnessFor(publicationDate, kind);
+function freshnessPill(publicationDate, kind, frequency) {
+    const fr = freshnessFor(publicationDate, kind, frequency);
     if (!fr) return '';
     // data-days lets table sorting compare by age in days — the visible
     // label mixes units ("12d" vs "3mo") and is useless as a sort key.

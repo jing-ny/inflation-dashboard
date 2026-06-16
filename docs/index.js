@@ -122,10 +122,10 @@ async function loadInflationTable() {
 
             // Freshness pill — CPI thresholds track each series' cadence
             // (monthly 75d/120d, quarterly 135d/225d; see freshness.js).
-            const fr = freshnessFor(currentDate, 'cpi');
+            const fr = freshnessFor(currentDate, 'cpi', data.frequency);
             if (fr) inflationFreshnessCounts[fr.tier]++;
             else inflationFreshnessCounts.unknown++;
-            const freshnessCell = freshnessPill(currentDate, 'cpi') || '—';
+            const freshnessCell = freshnessPill(currentDate, 'cpi', data.frequency) || '—';
 
             html += `
                 <tr onclick="window.location='${page}'" class="clickable-row">
