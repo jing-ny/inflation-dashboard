@@ -46,3 +46,11 @@ Acceptable patterns: a "last updated" badge per country/source, a visual greying
 When `STEP_THRESHOLD_PP` (or any future check) fires, treat it as a signal that something's wrong with the source data, the scraper, or the comparison logic — **not** as a CI annoyance to be raised, looser-ed, or `|| true`'d away.
 
 If anomalies fire on real data, the fix is to investigate *why* — fetcher bug, scraper miscapture, source revision, threshold being applied to the wrong neighbor — and address the cause. Bumping the threshold or adding broad exemptions is a strict last resort, and never the first move.
+
+### 6. Every change goes through an issue and a PR — never merge without review
+
+For any change to this repo, the workflow is: **open a GitHub issue** describing the problem/intent, then **open a pull request** (on a branch, never committing straight to `main`) that references it, and **wait for the maintainer's explicit review and approval before merging**.
+
+Do not commit directly to `main`, do not self-merge, and do not merge a PR on the maintainer's behalf — even for a one-line fix, a "trivial" cleanup, or something that looks obviously correct. The issue gives the change a paper trail; the PR gives the maintainer a reviewable diff and the chance to say no. "It's small" is not an exception.
+
+Claude may create the issue, the branch, and the PR, and may push follow-up commits to that PR's branch in response to review — but the **merge** is the maintainer's action, not Claude's.
