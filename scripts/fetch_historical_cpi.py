@@ -1331,21 +1331,59 @@ def fetch_country_data(code: str) -> Optional[Dict]:
                 else:
                     raise
         elif config.get("api") == "ABS":
-            # Direct ABS Data API — monthly CPI indicator, already YoY. #50
+            # Australia (#106): the landing-page headline tracks the ABS monthly
+            # CPI indicator, but the underlying historical series stays the
+            # quarterly OECD CPI from FRED. Fetch BOTH and split them — monthly
+            # drives latest/previous (the headline), quarterly is the chart
+            # history — and flag history_replace so merge rebuilds (not appends)
+            # the quarterly series, scrubbing any monthly points appended before.
+            monthly_yoy = None
             try:
-                raw_data = fetch_abs_cpi_series()
+                raw_data = fetch_abs_cpi_series()  # monthly, already YoY (#50)
                 if not raw_data:
                     raise ValueError("No YoY rows returned from ABS Data API")
-                yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)}
-                           for obs in raw_data]
+                monthly_yoy = [{"date": obs["date"][:7], "value": round(obs["value"], 2)}
+                               for obs in raw_data]
             except Exception as e:
-                if config.get("fred_series"):
-                    print(f"(ABS failed: {e}; falling back to FRED)...", end=" ")
-                    via_fred = True
-                    raw_data = fetch_fred_series(config["fred_series"])
-                    yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
-                else:
-                    raise
+                print(f"(ABS monthly failed: {e})...", end=" ")
+
+            quarterly_history = []
+            if config.get("fred_series"):
+                try:
+                    quarterly_history = calculate_yoy_from_index(
+                        fetch_fred_series(config["fred_series"]), "quarterly")
+                except Exception as e:
+                    print(f"(FRED quarterly history failed: {e})...", end=" ")
+
+            if not monthly_yoy and not quarterly_history:
+                raise ValueError("Both ABS monthly and FRED quarterly failed for AU")
+
+            # latest/previous come from ABS monthly. If ABS is down we return
+            # latest=None so merge KEEPS the existing monthly headline rather
+            # than overwriting it with a coarser/older quarterly point (a
+            # "YYYY-Qn" string sorts after "YYYY-MM", so the merge date guard
+            # would otherwise treat an older quarter as newer).
+            latest = monthly_yoy[-1] if monthly_yoy else None
+            previous = (monthly_yoy[-2] if monthly_yoy and len(monthly_yoy) > 1
+                        else None)
+            print(f"✅ ABS monthly latest "
+                  f"{latest['date'] if latest else 'n/a (ABS down)'}, "
+                  f"{len(quarterly_history)} quarterly history pts")
+            return {
+                # Quarterly history drives the chart. When FRED quarterly is
+                # down we return an EMPTY history (NOT the monthly series): with
+                # history_replace False, merge appends nothing and the existing
+                # quarterly history is preserved — never polluted with monthly
+                # points (the leak this change exists to scrub).
+                "history": quarterly_history,
+                "latest": latest,
+                "previous": previous,
+                "fetched_from": config["source"] if monthly_yoy else "FRED",
+                "fred_series_used": config.get("fred_series"),
+                # Rebuild the quarterly history wholesale only when we have it.
+                "history_replace": bool(quarterly_history),
+                "history_source": "FRED",
+            }
         elif config.get("api") == "SingStat":
             # Direct SingStat TableBuilder — monthly CPI All-Items, already YoY. #52
             try:
@@ -1619,26 +1657,47 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
         else config.get("source_url", "")
     )
 
-    # Add new history points from FRED
+    # Add new history points from the source
     new_points = 0
-    for point in fetched.get("history", []):
-        if point["date"] not in existing_dates:
-            # Only run anomaly detection on points newer than what we already
-            # have. Backfill points (e.g. StatCan returning 20yrs of CA when
-            # local history starts at 2016) come from the source's own
-            # authoritative archive — flagging real historical volatility as
-            # an "anomaly" just adds noise and trips CI.
-            if point["date"] > existing_latest_date:
-                hist_so_far = sorted(merged.get("history", []), key=lambda x: x["date"])
-                prior = [h for h in hist_so_far if h["date"] < point["date"]]
-                prev = prior[-1] if prior else None
-                detect_anomalies(code, point, prev, hist_so_far)
-            point.setdefault("source", actual_source)
-            point.setdefault("source_url", actual_source_url)
+    if fetched.get("history_replace"):
+        # AU (#106): the quarterly history is rebuilt wholesale from its
+        # authoritative source each run, scrubbing any points appended under a
+        # different cadence (e.g. monthly headline values that leaked in before
+        # this split). Stamp per-point provenance; skip anomaly detection — a
+        # full authoritative archive, like a backfill, isn't an "anomaly".
+        hist_source = fetched.get("history_source") or actual_source
+        hist_url = (
+            f"https://fred.stlouisfed.org/series/{fred_series_used}"
+            if hist_source == "FRED" and fred_series_used
+            else config.get("source_url", "")
+        )
+        rebuilt = []
+        for point in sorted(fetched.get("history", []), key=lambda x: x["date"]):
+            point.setdefault("source", hist_source)
+            point.setdefault("source_url", hist_url)
             point.setdefault("fetch_date", fetch_stamp)
-            merged.setdefault("history", []).append(point)
-            new_points += 1
-    
+            rebuilt.append(point)
+        merged["history"] = rebuilt
+        new_points = len(rebuilt)
+    else:
+        for point in fetched.get("history", []):
+            if point["date"] not in existing_dates:
+                # Only run anomaly detection on points newer than what we already
+                # have. Backfill points (e.g. StatCan returning 20yrs of CA when
+                # local history starts at 2016) come from the source's own
+                # authoritative archive — flagging real historical volatility as
+                # an "anomaly" just adds noise and trips CI.
+                if point["date"] > existing_latest_date:
+                    hist_so_far = sorted(merged.get("history", []), key=lambda x: x["date"])
+                    prior = [h for h in hist_so_far if h["date"] < point["date"]]
+                    prev = prior[-1] if prior else None
+                    detect_anomalies(code, point, prev, hist_so_far)
+                point.setdefault("source", actual_source)
+                point.setdefault("source_url", actual_source_url)
+                point.setdefault("fetch_date", fetch_stamp)
+                merged.setdefault("history", []).append(point)
+                new_points += 1
+
     # Sort history by date
     merged["history"] = sorted(merged.get("history", []), key=lambda x: x["date"])
     

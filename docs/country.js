@@ -108,8 +108,8 @@ const DATA_SOURCES = {
         { label: 'Target', value: 'ECB Monetary Policy Strategy', url: 'https://www.ecb.europa.eu/mopo/strategy/html/index.en.html' }
     ],
     AU: [
-        { label: 'CPI Data', value: 'Australian Bureau of Statistics via FRED', url: 'https://fred.stlouisfed.org/series/AUSCPIALLQINMEI' },
-        { label: 'Series ID', value: 'AUSCPIALLQINMEI (OECD, Quarterly)', url: 'https://fred.stlouisfed.org/series/AUSCPIALLQINMEI' },
+        { label: 'CPI Data (headline)', value: 'ABS Monthly CPI Indicator', url: 'https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/' },
+        { label: 'Historical series', value: 'AUSCPIALLQINMEI (OECD, Quarterly via FRED)', url: 'https://fred.stlouisfed.org/series/AUSCPIALLQINMEI' },
         { label: 'Forecasts', value: 'RBA Statement on Monetary Policy', url: 'https://www.rba.gov.au/publications/smp/' },
         { label: 'Target', value: 'Statement on Conduct of Monetary Policy', url: 'https://www.rba.gov.au/monetary-policy/framework/stmt-conduct-mp.html' }
     ],

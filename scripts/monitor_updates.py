@@ -138,8 +138,17 @@ class DataMonitor:
             
             # Fetch from FRED
             fred_latest = self.fetch_fred_latest(series_id)
-            
-            if fred_latest and fred_latest['date'] > current_date:
+
+            # A monthly-headline country (AU, #106) whose FRED series is the
+            # quarterly OECD relay must not have its monthly latest overwritten
+            # by a coarser quarterly point, nor that quarterly value appended to
+            # a monthly history. Skip the FRED auto-update on that cadence
+            # mismatch — the national source (update-data.yml) owns AU's data;
+            # the staleness check below still runs.
+            record_freq = (current_data[country_code].get('frequency') or '').lower()
+            cadence_mismatch = record_freq == 'monthly' and 'ALLQ' in series_id
+
+            if fred_latest and fred_latest['date'] > current_date and not cadence_mismatch:
                 # New data available
                 self.updates.append({
                     'type': 'CPI',
