@@ -1801,6 +1801,31 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
             merged["latest"] = fetched["latest"]
             merged["previous"] = new_prev or merged.get("previous")
             print(f"    → Updated latest: {fred_latest_date}")
+        elif fred_latest_date == existing_latest_date:
+            # Same reference period re-confirmed from source (#111). Stamp the
+            # headline's provenance so it always carries source/url/fetch_date
+            # (CLAUDE.md #3) even when the period hasn't advanced — otherwise a
+            # record whose latest sits unchanged between prints (e.g. AU's
+            # monthly headline) keeps a provenance-less value.
+            #
+            # We do NOT overwrite the value here: a same-period value never
+            # passes through detect_anomalies (that runs only on appended
+            # history points, and AU's monthly headline isn't appended to its
+            # quarterly history at all), so letting a corrupted re-fetch silently
+            # replace the headline would bypass the anomaly gate (CLAUDE.md #5).
+            # Only fill provenance when it's missing, so already-stamped records
+            # don't churn the file every run.
+            latest_rec = merged.get("latest")
+            if latest_rec is not None:
+                filled = False
+                for key, val in (("source", actual_source),
+                                 ("source_url", actual_source_url),
+                                 ("fetch_date", fetch_stamp)):
+                    if not latest_rec.get(key):
+                        latest_rec[key] = val
+                        filled = True
+                if filled:
+                    print(f"    → Stamped latest provenance: {fred_latest_date}")
         elif fred_latest_date < existing_latest_date:
             print(f"    → Kept manual data (FRED lags: {fred_latest_date} vs {existing_latest_date})")
     
