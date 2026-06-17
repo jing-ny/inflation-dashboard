@@ -1801,6 +1801,20 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
             merged["latest"] = fetched["latest"]
             merged["previous"] = new_prev or merged.get("previous")
             print(f"    → Updated latest: {fred_latest_date}")
+        elif fred_latest_date == existing_latest_date:
+            # Same reference period re-confirmed from source (#111). Refresh the
+            # headline's value and provenance so it always carries source/url/
+            # fetch_date (CLAUDE.md #3) even when the period hasn't advanced —
+            # otherwise a record whose latest sits unchanged between prints
+            # (e.g. AU's monthly headline) keeps a provenance-less value.
+            # Existing extra fields (e.g. provisional) are preserved.
+            refreshed = dict(merged.get("latest") or {})
+            refreshed["value"] = fetched["latest"].get("value", refreshed.get("value"))
+            refreshed["source"] = actual_source
+            refreshed["source_url"] = actual_source_url
+            refreshed["fetch_date"] = fetch_stamp
+            merged["latest"] = refreshed
+            print(f"    → Refreshed latest provenance: {fred_latest_date}")
         elif fred_latest_date < existing_latest_date:
             print(f"    → Kept manual data (FRED lags: {fred_latest_date} vs {existing_latest_date})")
     
