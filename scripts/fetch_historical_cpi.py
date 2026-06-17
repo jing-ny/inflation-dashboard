@@ -598,6 +598,73 @@ def fetch_abs_cpi_series() -> List[Dict]:
     return obs
 
 
+def fetch_abs_quarterly_yoy() -> List[Dict]:
+    """Fetch Australia's quarterly CPI as YoY % from the ABS Data API (#109).
+
+    AU's underlying historical series is quarterly, and ABS's own quarterly CPI
+    is current (FRED's OECD relay AUSCPIALLQINMEI lags ~5 quarters). Same keyless
+    dataflow as the monthly indicator (ABS,CPI,2.0.0) with FREQ=Q. The quarterly
+    flow exposes index numbers and QoQ change but NO ready YoY measure, so we
+    pull the All-groups index (INDEX=10001, TSEST=10 Original, REGION=50) and
+    compute YoY = this quarter / the same quarter a year earlier. Periods are
+    native "YYYY-Qn". Returns ascending [{"date": "YYYY-Qn", "value": float}].
+    """
+    import csv as _csv
+    import io as _io
+    url = ("https://data.api.abs.gov.au/rest/data/ABS,CPI,2.0.0/"
+           ".10001.10.50.Q?startPeriod=2014&format=csvfilewithlabels")
+    resp = requests.get(url, timeout=45, headers={"Accept": "text/csv"})
+    resp.raise_for_status()
+    rows = list(_csv.DictReader(_io.StringIO(resp.text)))
+    fields = list(rows[0].keys()) if rows else []
+    print(f"    [diag] ABS quarterly reachable, {len(rows)} rows")
+
+    def label_col(*needles):
+        cands = [f for f in fields if all(n in f.lower() for n in needles)]
+        for f in cands:           # prefer the human label, not the all-caps code col
+            if f != f.upper():
+                return f
+        return cands[0] if cands else None
+
+    def code_col(*needles):
+        for f in fields:
+            if all(n in f.lower() for n in needles):
+                return f
+        return None
+
+    measure_col = label_col("measure")
+    period_col = code_col("time_period") or code_col("time", "period")
+    value_col = code_col("obs_value") or code_col("observation", "value")
+
+    # Build the quarterly index series {"YYYY-Qn": index}.
+    index_by_q = {}
+    if measure_col and period_col and value_col:
+        for r in rows:
+            if "index number" not in (r.get(measure_col) or "").lower():
+                continue
+            period = (r.get(period_col) or "").strip()   # YYYY-Qn
+            if len(period) != 7 or "-Q" not in period:
+                continue
+            try:
+                index_by_q[period] = float(r.get(value_col))
+            except (TypeError, ValueError):
+                continue
+
+    out = []
+    for period in sorted(index_by_q):
+        year, quarter = period.split("-Q")
+        year_ago = f"{int(year) - 1}-Q{quarter}"
+        prev = index_by_q.get(year_ago)
+        if prev:
+            out.append({"date": period,
+                        "value": round((index_by_q[period] / prev - 1) * 100, 2)})
+    if out:
+        print(f"    [diag] ABS quarterly YoY: {len(out)} pts, latest {out[-1]}")
+    else:
+        print("    [diag] ABS quarterly: no YoY computed (index series empty?)")
+    return out
+
+
 _BROWSER_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
 _MONTH_NAMES = [None, "January", "February", "March", "April", "May", "June",
@@ -1331,12 +1398,13 @@ def fetch_country_data(code: str) -> Optional[Dict]:
                 else:
                     raise
         elif config.get("api") == "ABS":
-            # Australia (#106): the landing-page headline tracks the ABS monthly
-            # CPI indicator, but the underlying historical series stays the
-            # quarterly OECD CPI from FRED. Fetch BOTH and split them — monthly
-            # drives latest/previous (the headline), quarterly is the chart
-            # history — and flag history_replace so merge rebuilds (not appends)
-            # the quarterly series, scrubbing any monthly points appended before.
+            # Australia (#106/#109): the landing-page headline tracks the ABS
+            # monthly CPI indicator; the underlying historical series stays
+            # quarterly. BOTH come from ABS (the source of truth) — monthly
+            # drives latest/previous (the headline), the quarterly series is the
+            # chart history — and history_replace makes merge rebuild (not
+            # append) the quarterly series, scrubbing any monthly points that
+            # leaked in before. FRED's quarterly relay is a fallback only.
             monthly_yoy = None
             try:
                 raw_data = fetch_abs_cpi_series()  # monthly, already YoY (#50)
@@ -1347,16 +1415,26 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             except Exception as e:
                 print(f"(ABS monthly failed: {e})...", end=" ")
 
+            # Quarterly history: ABS quarterly (current) → FRED relay (fallback).
             quarterly_history = []
-            if config.get("fred_series"):
-                try:
-                    quarterly_history = calculate_yoy_from_index(
-                        fetch_fred_series(config["fred_series"]), "quarterly")
-                except Exception as e:
-                    print(f"(FRED quarterly history failed: {e})...", end=" ")
+            history_source = None
+            try:
+                quarterly_history = fetch_abs_quarterly_yoy()  # native YYYY-Qn (#109)
+                if not quarterly_history:
+                    raise ValueError("No quarterly YoY rows from ABS")
+                history_source = "ABS"
+            except Exception as e:
+                print(f"(ABS quarterly failed: {e}; trying FRED)...", end=" ")
+                if config.get("fred_series"):
+                    try:
+                        quarterly_history = calculate_yoy_from_index(
+                            fetch_fred_series(config["fred_series"]), "quarterly")
+                        history_source = "FRED" if quarterly_history else None
+                    except Exception as e2:
+                        print(f"(FRED quarterly history failed: {e2})...", end=" ")
 
             if not monthly_yoy and not quarterly_history:
-                raise ValueError("Both ABS monthly and FRED quarterly failed for AU")
+                raise ValueError("Both ABS and FRED quarterly failed for AU")
 
             # latest/previous come from ABS monthly. If ABS is down we return
             # latest=None so merge KEEPS the existing monthly headline rather
@@ -1368,21 +1446,22 @@ def fetch_country_data(code: str) -> Optional[Dict]:
                         else None)
             print(f"✅ ABS monthly latest "
                   f"{latest['date'] if latest else 'n/a (ABS down)'}, "
-                  f"{len(quarterly_history)} quarterly history pts")
+                  f"{len(quarterly_history)} quarterly history pts "
+                  f"({history_source or 'none'})")
             return {
-                # Quarterly history drives the chart. When FRED quarterly is
-                # down we return an EMPTY history (NOT the monthly series): with
-                # history_replace False, merge appends nothing and the existing
-                # quarterly history is preserved — never polluted with monthly
-                # points (the leak this change exists to scrub).
+                # Quarterly history drives the chart. When BOTH quarterly sources
+                # are down we return an EMPTY history (NOT the monthly series):
+                # with history_replace False, merge appends nothing and the
+                # existing quarterly history is preserved — never polluted with
+                # monthly points (the leak this change exists to scrub).
                 "history": quarterly_history,
                 "latest": latest,
                 "previous": previous,
-                "fetched_from": config["source"] if monthly_yoy else "FRED",
+                "fetched_from": config["source"] if monthly_yoy else (history_source or "FRED"),
                 "fred_series_used": config.get("fred_series"),
                 # Rebuild the quarterly history wholesale only when we have it.
                 "history_replace": bool(quarterly_history),
-                "history_source": "FRED",
+                "history_source": history_source,
             }
         elif config.get("api") == "SingStat":
             # Direct SingStat TableBuilder — monthly CPI All-Items, already YoY. #52
