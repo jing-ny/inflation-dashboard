@@ -3886,7 +3886,10 @@
     "last_updated": "2026-04-22",
     "latest": {
       "date": "2026-04",
-      "value": 4.2
+      "value": 4.2,
+      "source": "ABS",
+      "source_url": "https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/",
+      "fetch_date": "2026-06-17"
     },
     "previous": {
       "date": "2026-03",
