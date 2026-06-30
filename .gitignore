@@ -29,3 +29,7 @@ docs/data/historical_cpi_backup_*.json
 # Node
 node_modules/
 data_backup_*/
+
+.claude/settings.local.json
+*.zip
+.claude/
