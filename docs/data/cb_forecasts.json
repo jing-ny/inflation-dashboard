@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "last_updated": "July 2026",
+    "last_updated": "August 2026",
     "notes": "Central bank inflation forecasts and policy rates",
     "context": "The Iran war (Mar 2026) has sharply divided the inflation outlook. The ECB and Fed both revised 2026 inflation up (ECB: 1.9%→2.6%, Fed: 2.5%→2.7%) citing energy supply disruption via the Strait of Hormuz. Oil briefly hit $120/bbl. Meanwhile, the RBA hiked rates after Australian inflation surprised to the upside, while most other central banks held steady. IMF pre-conflict projections (Jan 2026 WEO) now look optimistic — the April 2026 WEO will likely revise upward. JP Morgan expects 'disparate outcomes' across regions: US inflation accelerating above 3%, Europe moderating to 2%, Asia subdued.",
     "imf_baseline": "IMF WEO January 2026 Update (pre-conflict)"
@@ -201,13 +201,13 @@
       "flag": "🇯🇵",
       "source": "BoJ",
       "source_full": "Bank of Japan - Outlook for Economic Activity and Prices",
-      "source_url": "https://www.boj.or.jp/en/mopo/outlook/gor2604b.pdf",
-      "publication_date": "April 2026",
+      "source_url": "https://www.boj.or.jp/en/mopo/outlook/gor2607b.pdf",
+      "publication_date": "July 2026",
       "forecast_type": "Median Policy Board forecast (core CPI ex-fresh food)",
       "note": "BoJ held rate at 0.75% (8-1 vote). CPI expected to dip below 2% temporarily before rising on energy costs. Will continue raising rates if outlook holds.",
       "projections": {
-        "2026": 2.8,
-        "2027": 2.3,
+        "2026": 2.5,
+        "2027": 2.4,
         "2028": 2.0
       },
       "key_quote": "CPI to dip below 2% temporarily; upward pressure from energy prices ahead",
