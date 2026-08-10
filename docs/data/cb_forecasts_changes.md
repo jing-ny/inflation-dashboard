@@ -1,6 +1,6 @@
 # Central Bank Forecast Changes
 
-**Generated:** 2026-08-06 12:06 UTC
+**Generated:** 2026-08-10 11:14 UTC
 
 **Auto-merged (5):** JP, EA, AU, CA, SG
 
