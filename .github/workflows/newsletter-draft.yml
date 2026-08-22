@@ -39,6 +39,9 @@ jobs:
       - name: Generate newsletter draft
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Optional repo variable — set it to pin a different model without
+          # touching the script (e.g. when a model ID is retired).
+          NEWSLETTER_MODEL: ${{ vars.NEWSLETTER_MODEL }}
         run: |
           CMD="python scripts/generate_newsletter.py"
           if [ "${{ inputs.dry_run }}" = "true" ]; then
