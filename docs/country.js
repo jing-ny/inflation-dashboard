@@ -56,11 +56,6 @@ const TARGET_INFO = {
         quote: 'The Bank will achieve the price stability target of 2 percent in terms of the year-on-year rate of change in the consumer price index (CPI) at the earliest possible time.',
         quoteSource: 'Bank of Japan Price Stability Target'
     },
-    IN: {
-        description: 'The Reserve Bank of India targets 4% CPI inflation with a ±2 percentage point tolerance band (2-6%). The flexible inflation targeting framework was adopted in 2016. India experienced record-low inflation below 2% in late 2025 due to falling food prices.',
-        quote: 'The primary objective of monetary policy is to maintain price stability while keeping in mind the objective of growth. The inflation target is set at 4 per cent with a tolerance band of +/- 2 per cent.',
-        quoteSource: 'RBI Monetary Policy Framework'
-    },
     KR: {
         description: 'The Bank of Korea targets 2% CPI inflation. The inflation targeting framework was adopted in 1998 following the Asian financial crisis. Korea has maintained relatively stable inflation near target in recent years.',
         quote: 'The Bank of Korea sets the inflation target at 2% in terms of consumer price inflation.',

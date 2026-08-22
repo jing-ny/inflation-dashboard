@@ -216,25 +216,6 @@
         "last_change": "— Mar 2026 (hold)"
       }
     },
-    "IN": {
-      "flag": "🇮🇳",
-      "source": "RBI",
-      "source_full": "Reserve Bank of India - Monetary Policy Statement",
-      "source_url": "https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=62261",
-      "publication_date": "February 2026",
-      "forecast_type": "MPC projection (CPI)",
-      "note": "RBI held repo rate at 5.25% with neutral stance. FY2025-26 CPI revised to 2.1% (from 2.0%). New CPI base year 2024=100 from Feb 2026.",
-      "projections": {
-        "2025": 2.1,
-        "2026": 4.0,
-        "2027": 4.2
-      },
-      "key_quote": "FY26 inflation projection revised to 2.1%; neutral stance maintained",
-      "policy_rate": {
-        "rate": "5.25%",
-        "last_change": "— Feb 2026 (hold)"
-      }
-    },
     "KR": {
       "flag": "🇰🇷",
       "source": "BOK",

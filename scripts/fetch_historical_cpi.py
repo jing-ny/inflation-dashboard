@@ -23,8 +23,7 @@ Countries covered:
 - 🇿🇦 South Africa (FRED - OECD)
 - 🇯🇵 Japan (FRED - OECD)
 - 🇨🇳 China (FRED - OECD)
-- 🇮🇳 India (FRED - OECD)
-- 🇰🇷 South Korea (FRED - OECD)
+- 🇰🇷 South Korea (OECD SDMX)
 - 🇸🇬 Singapore (FRED - OECD)
 
 Usage:
@@ -44,6 +43,9 @@ Environment:
 """
 
 import os
+import re
+import io
+import csv
 import sys
 import json
 import argparse
@@ -200,26 +202,24 @@ COUNTRIES = {
         "frequency": "monthly",
         "data_type": "yoy",  # press release states the YoY rate directly
     },
-    "IN": {
-        "name": "India",
-        "flag": "🇮🇳",
-        "source": "MOSPI",
-        "source_url": "https://www.mospi.gov.in/",
-        "api": "MoSPI",  # primary national source (CPI press release PDF) (#57)
-        "fred_series": "INDCPIALLMINMEI",  # OECD index — fallback only
-        "frequency": "monthly",
-        "data_type": "yoy",  # press release states the YoY rate directly
-    },
     "KR": {
         "name": "South Korea",
         "flag": "🇰🇷",
-        "source": "KOSTAT",
-        "source_url": "https://kostat.go.kr/",
-        "fred_series": "KORCPALTT01IXNBM",  # COICOP 2018 index, monthly
-        "fred_series_alt": "KORCPIALLMINMEI",  # COICOP 1999 fallback (discontinued Nov 2023)
+        # OECD, not KOSTAT: this is the SDMX endpoint at the OECD, which
+        # republishes KOSTAT's headline. Labelled honestly so the dashboard's
+        # source pill and per-record provenance say where the number came
+        # from (CLAUDE.md #3), rather than crediting the national agency for a
+        # relay the way the old FRED-primary row did.
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "api": "OECD",  # primary: OECD SDMX, keyless and current (#58)
+        "oecd_ref_area": "KOR",
+        "oecd_start": "2016-01",  # matches the stored history's start
+        "fred_series": "KORCPALTT01IXNBM",  # COICOP 2018 index — fallback only, dead since 2023-10
+        "fred_series_alt": "KORCPIALLMINMEI",  # COICOP 1999 — dead since 2023-11
         "frequency": "monthly",
-        "data_type": "index",
-        "notes": "Primary: COICOP 2018 index. Fallback: COICOP 1999 (discontinued Nov 2023).",
+        "data_type": "yoy",  # OECD GY is already a YoY rate
+        "notes": "Primary: OECD SDMX headline CPI YoY (republishes KOSTAT). Both FRED relays stopped in late 2023 and are fallback only.",
     },
     "SG": {
         "name": "Singapore",
@@ -241,7 +241,10 @@ COUNTRIES = {
 }
 
 # Display order for output
-DISPLAY_ORDER = ['US', 'EA', 'UK', 'CA', 'AU', 'NZ', 'ZA', 'JP', 'CN', 'IN', 'KR', 'SG']
+# IN removed 2026-08-22 (#118): MoSPI is unreachable from GitHub runners and
+# the FRED fallback died in 2025-02. Restore by reverting that commit once a
+# runner-reachable source lands.
+DISPLAY_ORDER = ['US', 'EA', 'UK', 'CA', 'AU', 'NZ', 'ZA', 'JP', 'CN', 'KR', 'SG']
 
 
 # -----------------------------------------------------------------------------
@@ -411,6 +414,64 @@ def fetch_statcan_series(vector_id: int, latest_n: int = 240) -> List[Dict]:
         observations.append({"date": ref, "value": value})
 
     observations.sort(key=lambda x: x["date"])
+    return observations
+
+
+def fetch_oecd_cpi_series(ref_area: str, start_period: str = "2016-01") -> List[Dict]:
+    """Fetch headline CPI YoY (%) for one country from the OECD SDMX API.
+
+    Used for KR (#58). FRED's OECD *relay* is dead for Korea — both
+    KORCPALTT01IXNBM (COICOP 2018) and KORCPIALLMINMEI (COICOP 1999) stop at
+    late 2023 — but OECD's own SDMX endpoint carries the series through the
+    current month. Keyless, so no new repo secret.
+
+    Series key dimensions:
+        {REF_AREA}.M.N.CPI.PA._T.N.GY
+        M   monthly          CPI  headline consumer price index
+        N   not adjusted     PA   percent per annum
+        _T  all expenditure  GY   growth vs same period previous year
+
+    GY is already a YoY rate, so the caller must NOT run
+    calculate_yoy_from_index() over it.
+
+    This reproduces the national headline: OECD reports Korea 2026-04 at
+    2.57%, matching the 2.6% KOSTAT published for that month (#58). It is
+    still a relay, not KOSTAT direct — the KOSIS-API half of #58 stays open.
+    """
+    url = (
+        "https://sdmx.oecd.org/public/rest/data/"
+        "OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0/"
+        f"{ref_area}.M.N.CPI.PA._T.N.GY"
+    )
+    resp = requests.get(
+        url,
+        params={"startPeriod": start_period},
+        headers={"Accept": "application/vnd.sdmx.data+csv; version=1.0.0"},
+        timeout=60,
+    )
+    resp.raise_for_status()
+
+    reader = csv.DictReader(io.StringIO(resp.text))
+    observations = []
+    for row in reader:
+        period = (row.get("TIME_PERIOD") or "").strip()
+        raw = (row.get("OBS_VALUE") or "").strip()
+        # Only monthly points: the dataflow can also serve annual/quarterly
+        # rows if the key is ever loosened, and a "2026" or "2026-Q2" period
+        # would sort into the monthly series and corrupt latest/previous.
+        if not re.fullmatch(r"\d{4}-\d{2}", period) or not raw:
+            continue
+        try:
+            observations.append({"date": period, "value": float(raw)})
+        except ValueError:
+            continue
+
+    if not observations:
+        raise RuntimeError(f"OECD SDMX returned no monthly rows for {ref_area}")
+
+    observations.sort(key=lambda x: x["date"])
+    print(f"  \u2139\ufe0f  OECD SDMX {ref_area}: {len(observations)} pts, "
+          f"{observations[0]['date']} \u2192 {observations[-1]['date']}")
     return observations
 
 
@@ -764,6 +825,13 @@ def fetch_statssa_cpi_series() -> List[Dict]:
 
 def fetch_mospi_cpi_series() -> List[Dict]:
     """India headline CPI (YoY %) from the MoSPI CPI press release PDF (#57).
+
+    CURRENTLY UNWIRED. India was dropped from the dashboard on 2026-08-22
+    (#118) because mospi.gov.in refuses GitHub Actions runner IPs — every
+    candidate URL fails the TLS handshake from Azure while serving fine from
+    a consumer connection, the same failure mode as IBGE/Brazil (#54). This
+    function is kept intact so restoring India is re-adding the COUNTRIES
+    entry, not rewriting the scraper.
 
     MoSPI publishes a monthly "CPI Press Release of <Month> <Year>" PDF under
     /uploads/PressRelease/. We walk back to the latest release and parse the
@@ -1483,6 +1551,23 @@ def fetch_country_data(code: str) -> Optional[Dict]:
                                    for obs in raw_data]
                     else:
                         yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
+                else:
+                    raise
+        elif config.get("api") == "OECD":
+            # OECD SDMX direct — already YoY. #58
+            try:
+                raw_data = fetch_oecd_cpi_series(
+                    config["oecd_ref_area"], config.get("oecd_start", "2016-01"))
+                if not raw_data:
+                    raise ValueError("No data returned from OECD SDMX")
+                yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)}
+                           for obs in raw_data]
+            except Exception as e:
+                if config.get("fred_series"):
+                    print(f"(OECD SDMX failed: {e}; falling back to FRED)...", end=" ")
+                    via_fred = True
+                    raw_data = fetch_fred_series(config["fred_series"])
+                    yoy_data = calculate_yoy_from_index(raw_data, config.get("frequency", "monthly"))
                 else:
                     raise
         elif config.get("api") == "StatCan":

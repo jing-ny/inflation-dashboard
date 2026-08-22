@@ -25,7 +25,6 @@ FRED_SERIES = {
     'JP': 'JPNCPIALLMINMEI',       # COICOP 1999 index (alt: FPCPITOTLZGJPN)
     'KR': 'KORCPIALLMINMEI',       # COICOP 1999 - discontinued Nov 2023, monitor anyway
     'SG': 'FPCPITOTLZGSGP',        # World Bank annual (OECD series broken)
-    'IN': 'INDCPIALLMINMEI',
     'CN': 'CHNCPIALLMINMEI',
     'VE': 'FPCPITOTLZGVEN'
 }
@@ -42,7 +41,6 @@ CB_MEETINGS = {
     'JP': {'bank': 'BoJ', 'frequency': 8, 'months': [1, 3, 4, 6, 7, 9, 10, 12]},
     'KR': {'bank': 'BOK', 'frequency': 8, 'months': [1, 2, 4, 5, 7, 8, 10, 11]},
     'SG': {'bank': 'MAS', 'frequency': 2, 'months': [4, 10]},
-    'IN': {'bank': 'RBI', 'frequency': 6, 'months': [2, 4, 6, 8, 10, 12]},
 }
 
 # IMF WEO release months

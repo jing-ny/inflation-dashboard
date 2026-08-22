@@ -141,6 +141,12 @@ jobs:
             echo "ℹ️ No new data - nothing to update" >> $GITHUB_STEP_SUMMARY
           fi
 
+      # Runs last on purpose: the data commit and the notification above have
+      # already happened, so a red series turns the run red (and fires the
+      # failure alert) without blocking a good refresh from landing.
+      - name: Freshness gate
+        run: python scripts/check_freshness.py
+
       - name: Send failure alert email
         if: failure()
         env:

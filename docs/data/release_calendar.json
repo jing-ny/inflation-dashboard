@@ -69,12 +69,6 @@
     "typical_lag_days": 23,
     "calendar_url": "https://www.singstat.gov.sg/"
   },
-  "IN": {
-    "agency": "MoSPI",
-    "cadence": "monthly",
-    "typical_lag_days": 12,
-    "calendar_url": "https://www.mospi.gov.in/"
-  },
   "CN": {
     "agency": "NBS",
     "cadence": "monthly",

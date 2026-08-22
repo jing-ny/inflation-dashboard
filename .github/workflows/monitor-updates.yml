@@ -73,3 +73,17 @@ jobs:
           python scripts/send_notification.py \
             --status "${{ steps.monitor.outcome }}" \
             --changes "${{ steps.changes.outputs.has_changes }}"
+
+      # The monitor step carries continue-on-error so a transient failure can't
+      # block the data commit — which also meant a genuinely failing monitor
+      # never turned the run red. Re-assert both here, after the notification
+      # has gone out: a red-tier series, or a monitor that actually errored,
+      # fails the job (CLAUDE.md #4/#5).
+      - name: Freshness gate
+        run: |
+          if [ "${{ steps.monitor.outcome }}" = "failure" ]; then
+            echo "::error::monitor_updates.py exited non-zero (see the step above)"
+            python scripts/check_freshness.py --warn-only || true
+            exit 1
+          fi
+          python scripts/check_freshness.py
