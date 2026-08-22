@@ -134,8 +134,8 @@ CPI data releases follow a predictable monthly pattern:
 ```
 ~1st:  KR          ~15th: UK
 ~9th:  CN          ~17th: CA, EA
-~12th: IN          ~19th: ZA, JP
-~13th: US          ~23rd: SG
+~13th: US          ~19th: ZA, JP
+                   ~23rd: SG
                    ~28th: AU
 Quarterly: NZ (mid-month of Jan/Apr/Jul/Oct)
 ```

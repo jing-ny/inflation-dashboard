@@ -126,15 +126,9 @@ const DATA_SOURCES = {
         { label: 'Forecasts', value: 'BoJ Outlook for Economic Activity and Prices', url: 'https://www.boj.or.jp/en/mopo/outlook/' },
         { label: 'Target', value: 'BoJ Price Stability Target', url: 'https://www.boj.or.jp/en/mopo/outline/index.htm' }
     ],
-    IN: [
-        { label: 'CPI Data', value: 'Ministry of Statistics and Programme Implementation', url: 'https://www.mospi.gov.in/' },
-        { label: 'FRED Series', value: 'INDCPIALLMINMEI', url: 'https://fred.stlouisfed.org/series/INDCPIALLMINMEI' },
-        { label: 'Forecasts', value: 'RBI Monetary Policy Statement', url: 'https://www.rbi.org.in/Scripts/PublicationsView.aspx' },
-        { label: 'Target', value: 'RBI Monetary Policy Framework', url: 'https://www.rbi.org.in/' }
-    ],
     KR: [
-        { label: 'CPI Data', value: 'Statistics Korea (KOSTAT)', url: 'https://kostat.go.kr/en/' },
-        { label: 'FRED Series', value: 'KORCPIALLMINMEI', url: 'https://fred.stlouisfed.org/series/KORCPIALLMINMEI' },
+        { label: 'CPI Data', value: 'Statistics Korea (KOSTAT), via OECD SDMX', url: 'https://kostat.go.kr/en/' },
+        { label: 'Series', value: 'OECD SDMX KOR.M.N.CPI.PA._T.N.GY', url: 'https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY' },
         { label: 'Forecasts', value: 'Bank of Korea Economic Outlook', url: 'https://www.bok.or.kr/eng/main/main.do' },
         { label: 'Target', value: 'Bank of Korea Monetary Policy', url: 'https://www.bok.or.kr/eng/main/main.do' }
     ],

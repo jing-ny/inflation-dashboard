@@ -86,7 +86,13 @@ def evaluate(data: dict, today: datetime = None) -> list:
         ) else "monthly"
         green_max, amber_max = CPI_STALE_THRESHOLDS[cadence]
 
-        days_old = max(0, (today - ref).days)
+        days_old = (today - ref).days
+        # A reference period in the future is a broken record, not fresh data —
+        # clamping it to 0 would paint it GREEN and let the gate wave it through
+        # (Codex review, PR #119).
+        if days_old < 0:
+            rows.append((code, latest, days_old, cadence, "RED"))
+            continue
         if days_old > amber_max:
             tier = "RED"
         elif days_old > green_max:

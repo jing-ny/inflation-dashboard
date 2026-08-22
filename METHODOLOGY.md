@@ -203,7 +203,7 @@ Failure-path emails (`if: failure()`) are tracked in [#28](https://github.com/ji
 
 ### Manual Updates Required
 
-- **Central bank forecasts:** Mostly automated (9/12) — see PROJECT_PLAN.md "Scraper status". The remaining banks (CN, IN, KR) are updated after MPC meetings, with PBoC an explicit non-goal.
+- **Central bank forecasts:** Mostly automated (9/11) — see PROJECT_PLAN.md "Scraper status". The remaining banks (CN, KR) are updated after MPC meetings, with PBoC an explicit non-goal.
 - **IMF forecasts:** April and October — `fetch_imf_forecasts.py` pulls the latest WEO.
 - **CPI freshness:** All CPI ingestion is automated (direct agency APIs/press releases, FRED as fallback). Per CLAUDE.md #1 there is no manual-entry path: when a source lags or breaks, the value stays visibly stale (freshness pills, release calendar) until the fetcher is fixed.
 
@@ -247,7 +247,7 @@ docs/data/                        # Single source of truth
     └── imf_forecast_history.json # IMF forecast revision history
 
 scripts/                          # Data collection scripts
-├── fetch_historical_cpi.py       # FRED API fetcher (all 12 countries)
+├── fetch_historical_cpi.py       # CPI fetcher (all 11 countries)
 ├── fetch_imf_forecasts.py        # IMF API fetcher
 ├── auto_scrape_cb_forecasts.py   # CB publication scraper (6 banks)
 ├── monitor_updates.py            # Automated checker
