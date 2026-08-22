@@ -36,8 +36,14 @@ DRAFTS_DIR = os.path.join(os.path.dirname(__file__), "..", "docs", "drafts")
 CB_FORECASTS_FILE = os.path.join(DATA_DIR, "cb_forecasts.json")
 IMF_FORECASTS_FILE = os.path.join(DATA_DIR, "imf_forecasts.json")
 
-MODEL = "claude-sonnet-4-20250514"
-MAX_TOKENS = 1024
+# Model IDs get retired. Keep this overridable from the workflow env so a
+# retirement can be patched without a code change (see 2026-07/08 outage:
+# claude-sonnet-4-20250514 started 404ing and the monthly cron failed twice).
+MODEL = os.environ.get("NEWSLETTER_MODEL") or "claude-opus-5"
+# Thinking is on by default on this model tier and its tokens count against
+# max_tokens, so this ceiling is much higher than the ~550-token draft needs.
+# It is a cap, not a spend — only what is generated is billed.
+MAX_TOKENS = 16000
 
 
 def load_json_safe(path: str) -> dict:
@@ -131,7 +137,22 @@ def generate_draft(prompt: str) -> str:
         max_tokens=MAX_TOKENS,
         messages=[{"role": "user", "content": prompt}],
     )
-    return message.content[0].text
+
+    # A refusal comes back as HTTP 200, not an exception — fail loudly rather
+    # than committing an empty draft.
+    if message.stop_reason == "refusal":
+        detail = getattr(message.stop_details, "explanation", None) or "no explanation"
+        raise RuntimeError(f"{MODEL} refused the request: {detail}")
+    if message.stop_reason == "max_tokens":
+        raise RuntimeError(
+            f"Draft truncated at max_tokens={MAX_TOKENS}; raise the ceiling."
+        )
+
+    # content is a list of blocks (thinking, text, ...) — take only the text.
+    text = "".join(b.text for b in message.content if b.type == "text").strip()
+    if not text:
+        raise RuntimeError(f"{MODEL} returned no text block (stop_reason={message.stop_reason})")
+    return text
 
 
 def main():
