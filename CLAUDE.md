@@ -55,6 +55,28 @@ Do not commit directly to `main`, do not self-merge, and do not merge a PR on th
 
 Claude may create the issue, the branch, and the PR, and may push follow-up commits to that PR's branch in response to review — but the **merge** is the maintainer's action, not Claude's.
 
+**"You told me to" is not an exception either.** A direct instruction — "fix it", "update it",
+"just do it", "go ahead", "yes" — authorizes the *work*. It does not authorize a different
+*delivery path*. Every one of those means **open a PR that does it**. The maintainer asking for
+something is the normal case this rule was written for, not an escape from it. If they want a
+direct commit, they will say so in those words; do not infer it from urgency, brevity, or a
+second request.
+
+**Scope is every tracked file, not just code.** Drafts, generated output, data JSON, docs,
+workflows, and this file all take a PR. The examples above are code-shaped for brevity, not
+because prose is exempt — a hand-edit to a newsletter draft is a change to this repo.
+
+**If you commit to `main` anyway, say so in the same reply.** Name the SHA and what it touched.
+Do not let the maintainer find it in the log later. A disclosed mistake is recoverable; a quiet
+one costs them the ability to trust the rest of the session's reporting.
+
+**The one carve-out: scheduled automation.** `update-data.yml`, `monitor-updates.yml`,
+`auto-scrape-cb-forecasts.yml`, `newsletter-draft.yml`, and `weekly-alert.yml` push to `main` as
+`github-actions[bot]`. That is pre-approved — the maintainer approved it when they merged the
+workflow that does it. The carve-out is for **the bot running merged workflow code**, and nothing
+else. Claude running the same script locally and pushing the result is an ordinary change and
+takes a PR; so does changing what those workflows commit.
+
 ### 7. Every PR gets an independent Codex review before merge
 
 Before any PR is merged, run an **independent code review with Codex** (the OpenAI Codex CLI, via the `/codex` skill) over the PR's diff and post its findings on the PR. This is a deliberately *independent* second opinion — separate from Claude, which authored the change, and from the maintainer's own review (#6). It must not be skipped on the grounds that Claude "already reviewed" the diff; the whole point is a different model's eyes.
