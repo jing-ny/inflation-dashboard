@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "last_updated": "2026-08-20",
+    "last_updated": "2026-08-22",
     "source": "Official national statistical agencies"
   },
   "US": {
@@ -8341,501 +8341,27 @@
     "source_url": "https://www.stats.gov.cn/english/",
     "fred_series": "CHNCPIALLMINMEI"
   },
-  "IN": {
-    "code": "IN",
-    "name": "India",
-    "flag": "\ud83c\uddee\ud83c\uddf3",
-    "target": 4.0,
-    "frequency": "monthly",
-    "source": "MOSPI",
-    "last_updated": "2026-04-22",
-    "latest": {
-      "date": "2026-04",
-      "value": 3.48,
-      "source": "MOSPI",
-      "source_url": "https://www.mospi.gov.in/",
-      "fetch_date": "2026-06-22"
-    },
-    "previous": {
-      "date": "2026-02",
-      "value": 3.21
-    },
-    "history": [
-      {
-        "date": "2016-01",
-        "value": 5.91
-      },
-      {
-        "date": "2016-02",
-        "value": 5.53
-      },
-      {
-        "date": "2016-03",
-        "value": 5.51
-      },
-      {
-        "date": "2016-04",
-        "value": 5.86
-      },
-      {
-        "date": "2016-05",
-        "value": 6.59
-      },
-      {
-        "date": "2016-06",
-        "value": 6.13
-      },
-      {
-        "date": "2016-07",
-        "value": 6.46
-      },
-      {
-        "date": "2016-08",
-        "value": 5.3
-      },
-      {
-        "date": "2016-09",
-        "value": 4.14
-      },
-      {
-        "date": "2016-10",
-        "value": 3.35
-      },
-      {
-        "date": "2016-11",
-        "value": 2.59
-      },
-      {
-        "date": "2016-12",
-        "value": 2.23
-      },
-      {
-        "date": "2017-01",
-        "value": 1.86
-      },
-      {
-        "date": "2017-02",
-        "value": 2.62
-      },
-      {
-        "date": "2017-03",
-        "value": 2.61
-      },
-      {
-        "date": "2017-04",
-        "value": 2.21
-      },
-      {
-        "date": "2017-05",
-        "value": 1.09
-      },
-      {
-        "date": "2017-06",
-        "value": 1.08
-      },
-      {
-        "date": "2017-07",
-        "value": 1.79
-      },
-      {
-        "date": "2017-08",
-        "value": 2.52
-      },
-      {
-        "date": "2017-09",
-        "value": 2.89
-      },
-      {
-        "date": "2017-10",
-        "value": 3.24
-      },
-      {
-        "date": "2017-11",
-        "value": 3.97
-      },
-      {
-        "date": "2017-12",
-        "value": 4.0
-      },
-      {
-        "date": "2018-01",
-        "value": 5.11
-      },
-      {
-        "date": "2018-02",
-        "value": 4.74
-      },
-      {
-        "date": "2018-03",
-        "value": 4.36
-      },
-      {
-        "date": "2018-04",
-        "value": 3.97
-      },
-      {
-        "date": "2018-05",
-        "value": 3.96
-      },
-      {
-        "date": "2018-06",
-        "value": 3.93
-      },
-      {
-        "date": "2018-07",
-        "value": 5.61
-      },
-      {
-        "date": "2018-08",
-        "value": 5.61
-      },
-      {
-        "date": "2018-09",
-        "value": 5.61
-      },
-      {
-        "date": "2018-10",
-        "value": 5.23
-      },
-      {
-        "date": "2018-11",
-        "value": 4.86
-      },
-      {
-        "date": "2018-12",
-        "value": 5.24
-      },
-      {
-        "date": "2019-01",
-        "value": 6.6
-      },
-      {
-        "date": "2019-02",
-        "value": 6.97
-      },
-      {
-        "date": "2019-03",
-        "value": 7.67
-      },
-      {
-        "date": "2019-04",
-        "value": 8.33
-      },
-      {
-        "date": "2019-05",
-        "value": 8.65
-      },
-      {
-        "date": "2019-06",
-        "value": 8.59
-      },
-      {
-        "date": "2019-07",
-        "value": 5.98
-      },
-      {
-        "date": "2019-08",
-        "value": 6.31
-      },
-      {
-        "date": "2019-09",
-        "value": 6.98
-      },
-      {
-        "date": "2019-10",
-        "value": 7.62
-      },
-      {
-        "date": "2019-11",
-        "value": 8.61
-      },
-      {
-        "date": "2019-12",
-        "value": 9.63
-      },
-      {
-        "date": "2020-01",
-        "value": 7.49
-      },
-      {
-        "date": "2020-02",
-        "value": 6.84
-      },
-      {
-        "date": "2020-03",
-        "value": 5.5
-      },
-      {
-        "date": "2020-04",
-        "value": 5.45
-      },
-      {
-        "date": "2020-05",
-        "value": 5.1
-      },
-      {
-        "date": "2020-06",
-        "value": 5.06
-      },
-      {
-        "date": "2020-07",
-        "value": 5.33
-      },
-      {
-        "date": "2020-08",
-        "value": 5.63
-      },
-      {
-        "date": "2020-09",
-        "value": 5.64
-      },
-      {
-        "date": "2020-10",
-        "value": 5.9
-      },
-      {
-        "date": "2020-11",
-        "value": 5.28
-      },
-      {
-        "date": "2020-12",
-        "value": 3.69
-      },
-      {
-        "date": "2021-01",
-        "value": 3.16
-      },
-      {
-        "date": "2021-02",
-        "value": 4.49
-      },
-      {
-        "date": "2021-03",
-        "value": 5.67
-      },
-      {
-        "date": "2021-04",
-        "value": 5.14
-      },
-      {
-        "date": "2021-05",
-        "value": 5.26
-      },
-      {
-        "date": "2021-06",
-        "value": 5.58
-      },
-      {
-        "date": "2021-07",
-        "value": 5.26
-      },
-      {
-        "date": "2021-08",
-        "value": 4.81
-      },
-      {
-        "date": "2021-09",
-        "value": 4.4
-      },
-      {
-        "date": "2021-10",
-        "value": 4.52
-      },
-      {
-        "date": "2021-11",
-        "value": 4.84
-      },
-      {
-        "date": "2021-12",
-        "value": 5.56
-      },
-      {
-        "date": "2022-01",
-        "value": 5.84
-      },
-      {
-        "date": "2022-02",
-        "value": 5.04
-      },
-      {
-        "date": "2022-03",
-        "value": 5.35
-      },
-      {
-        "date": "2022-04",
-        "value": 6.33
-      },
-      {
-        "date": "2022-05",
-        "value": 6.97
-      },
-      {
-        "date": "2022-06",
-        "value": 6.16
-      },
-      {
-        "date": "2022-07",
-        "value": 5.78
-      },
-      {
-        "date": "2022-08",
-        "value": 5.85
-      },
-      {
-        "date": "2022-09",
-        "value": 6.49
-      },
-      {
-        "date": "2022-10",
-        "value": 6.08
-      },
-      {
-        "date": "2022-11",
-        "value": 5.41
-      },
-      {
-        "date": "2022-12",
-        "value": 5.5
-      },
-      {
-        "date": "2023-01",
-        "value": 6.16
-      },
-      {
-        "date": "2023-02",
-        "value": 6.16
-      },
-      {
-        "date": "2023-03",
-        "value": 5.79
-      },
-      {
-        "date": "2023-04",
-        "value": 5.09
-      },
-      {
-        "date": "2023-05",
-        "value": 4.42
-      },
-      {
-        "date": "2023-06",
-        "value": 5.57
-      },
-      {
-        "date": "2023-07",
-        "value": 7.54
-      },
-      {
-        "date": "2023-08",
-        "value": 6.91
-      },
-      {
-        "date": "2023-09",
-        "value": 4.72
-      },
-      {
-        "date": "2023-10",
-        "value": 4.45
-      },
-      {
-        "date": "2023-11",
-        "value": 4.98
-      },
-      {
-        "date": "2023-12",
-        "value": 4.91
-      },
-      {
-        "date": "2024-01",
-        "value": 4.59
-      },
-      {
-        "date": "2024-02",
-        "value": 4.9
-      },
-      {
-        "date": "2024-03",
-        "value": 4.2
-      },
-      {
-        "date": "2024-04",
-        "value": 3.87
-      },
-      {
-        "date": "2024-05",
-        "value": 3.86
-      },
-      {
-        "date": "2024-06",
-        "value": 3.67
-      },
-      {
-        "date": "2024-07",
-        "value": 2.15
-      },
-      {
-        "date": "2024-08",
-        "value": 2.44
-      },
-      {
-        "date": "2024-09",
-        "value": 4.22
-      },
-      {
-        "date": "2024-10",
-        "value": 4.41
-      },
-      {
-        "date": "2024-11",
-        "value": 3.88
-      },
-      {
-        "date": "2024-12",
-        "value": 3.53
-      },
-      {
-        "date": "2025-01",
-        "value": 3.1
-      },
-      {
-        "date": "2025-02",
-        "value": 2.59
-      },
-      {
-        "date": "2025-03",
-        "value": 2.95
-      },
-      {
-        "date": "2026-02",
-        "value": 3.21
-      },
-      {
-        "date": "2026-03",
-        "value": 3.4
-      },
-      {
-        "date": "2026-04",
-        "value": 3.48
-      }
-    ],
-    "source_url": "https://www.mospi.gov.in/",
-    "fred_series": "INDCPIALLMINMEI"
-  },
   "KR": {
     "code": "KR",
     "name": "South Korea",
     "flag": "\ud83c\uddf0\ud83c\uddf7",
     "target": 2.0,
     "frequency": "monthly",
-    "source": "KOSTAT",
+    "source": "OECD",
     "last_updated": "2026-04-22",
     "latest": {
-      "date": "2026-03",
-      "value": 2.2
+      "date": "2026-07",
+      "value": 2.79,
+      "source": "OECD",
+      "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+      "fetch_date": "2026-08-22"
     },
     "previous": {
-      "date": "2026-02",
-      "value": 2.0
+      "date": "2026-06",
+      "value": 3.16,
+      "source": "OECD",
+      "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+      "fetch_date": "2026-08-22"
     },
     "history": [
       {
@@ -9219,16 +8745,226 @@
         "value": 3.34
       },
       {
+        "date": "2023-12",
+        "value": 3.18,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2024-01",
+        "value": 2.82,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2024-02",
+        "value": 3.13,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2024-03",
+        "value": 3.1,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2024-04",
+        "value": 2.92,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2024-05",
+        "value": 2.67,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2024-06",
+        "value": 2.41,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2024-07",
+        "value": 2.55,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2024-08",
+        "value": 2.01,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2024-09",
+        "value": 1.6,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2024-10",
+        "value": 1.25,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2024-11",
+        "value": 1.53,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2024-12",
+        "value": 1.93,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2025-01",
+        "value": 2.24,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2025-02",
+        "value": 2.02,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2025-03",
+        "value": 2.05,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2025-04",
+        "value": 2.08,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2025-05",
+        "value": 1.9,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2025-06",
+        "value": 2.17,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2025-07",
+        "value": 2.09,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2025-08",
+        "value": 1.67,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2025-09",
+        "value": 2.1,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2025-10",
+        "value": 2.38,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2025-11",
+        "value": 2.45,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2025-12",
+        "value": 2.31,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2026-01",
+        "value": 2.01,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
         "date": "2026-02",
         "value": 2.0
       },
       {
         "date": "2026-03",
         "value": 2.2
+      },
+      {
+        "date": "2026-04",
+        "value": 2.57,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2026-05",
+        "value": 3.14,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2026-06",
+        "value": 3.16,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
+      },
+      {
+        "date": "2026-07",
+        "value": 2.79,
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
+        "fetch_date": "2026-08-22"
       }
     ],
     "notes": "Primary: COICOP 2018 index. Fallback: COICOP 1999 (discontinued Nov 2023). Manual supplement recommended for latest data.",
-    "source_url": "https://kostat.go.kr/",
+    "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=KOR.M.N.CPI.PA._T.N.GY",
     "fred_series": "KORCPALTT01IXNBM"
   },
   "SG": {

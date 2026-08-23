@@ -7,6 +7,26 @@ All notable changes to the Inflation Dashboard project are documented here.
 ## [Unreleased]
 
 ### Added
+- **Freshness gate fails the build on red-tier stale series (#116, CLAUDE.md #4/#5).**
+  `scripts/check_freshness.py` reads the committed dataset and exits non-zero if any published
+  country is past its cadence's red threshold. `monitor_updates.py` already detected this and
+  emailed about it, but it exits 0 for `STALE_DATA` and its workflow step carries
+  `continue-on-error: true`, so KR (172 days) and IN (141 days) produced green runs for months.
+  The gate is offline and runs last in `update-data.yml` and `monitor-updates.yml` — after the
+  commit and the notification — so a good refresh still lands before the run goes red.
+  Thresholds are imported from `monitor_updates`, not re-declared, so the gate, the email
+  monitor, and `docs/freshness.js` cannot drift apart.
+
+### Changed
+- **South Korea sourced from OECD SDMX instead of FRED (#58).** Both FRED relays were dead —
+  `KORCPALTT01IXNBM` (COICOP 2018) stops at 2023-10 and `KORCPIALLMINMEI` (COICOP 1999) at
+  2023-11 — freezing KR for ~2.5 years behind two curated points. OECD's own SDMX endpoint
+  (`KOR.M.N.CPI.PA._T.N.GY`) is keyless and current: KR moves 2026-03 → **2026-07** and the
+  26-month hole from 2024-01 to 2026-01 is backfilled (97 → 127 points, no gaps). It reproduces
+  the national headline — OECD's 2026-04 of 2.57% matches the 2.6% KOSTAT published — but it is
+  still a relay, so the KOSIS-API half of #58 stays open. The row is labelled `OECD`, not
+  `KOSTAT`, so provenance names where the number actually came from (CLAUDE.md #3).
+
 - **Record-level provenance on history points (#83, CLAUDE.md #3).** Every CPI point appended
   by `fetch_historical_cpi.py` (and by `monitor_updates.py`'s FRED path) now carries `source`,
   `source_url`, and `fetch_date` (with FRED fallbacks labeled as FRED, not the national agency). Histories are mixed-source after the #50–#57 migrations, so per-country
@@ -14,6 +34,14 @@ All notable changes to the Inflation Dashboard project are documented here.
   points are left untouched — no fabricated provenance.
 
 ### Removed
+- **India dropped from the dashboard until a runner-reachable source lands (#118, CLAUDE.md #4).**
+  Both paths are dead: `mospi.gov.in` fails the TLS handshake from GitHub's Azure runners on
+  every candidate URL (it verifies cleanly from a consumer connection — the IBGE/Brazil failure
+  mode from #54, not a certificate problem), and the FRED fallback `INDCPIALLMINMEI` stops at
+  2025-02. With both down the fetcher preserved the stored value and exited clean, publishing a
+  four-month-old number. Removed following the VE precedent (d4f1d9b); 12 → 11 economies.
+  `fetch_mospi_cpi_series()` is left in place and unwired so restoring India is re-adding the
+  `COUNTRIES` entry, not rewriting the scraper.
 - **Manual CPI/forecast entry tools deleted (#84, CLAUDE.md #1).** `update_cpi.py`,
   `batch_update_cpi.py`, `update.sh`, `CPI_UPDATE_GUIDE.md`, and the dormant manual-supplement
   path (`scripts/patch_cpi_supplements.py` + `docs/data/cpi_supplements.json`, unreferenced by

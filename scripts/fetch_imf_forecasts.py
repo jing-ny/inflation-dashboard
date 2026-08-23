@@ -45,7 +45,6 @@ COUNTRY_MAPPING = {
     "ZA": "ZAF",
     "JP": "JPN",
     "CN": "CHN",
-    "IN": "IND",
     "KR": "KOR",
     "SG": "SGP",
 }
@@ -61,7 +60,6 @@ COUNTRY_NAMES = {
     "ZA": "South Africa",
     "JP": "Japan",
     "CN": "China",
-    "IN": "India",
     "KR": "South Korea",
     "SG": "Singapore",
 }

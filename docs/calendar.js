@@ -17,7 +17,7 @@
 const CAL_COUNTRY_PAGES = {
     US: 'us.html', EA: 'ea.html', UK: 'uk.html', AU: 'au.html',
     CA: 'ca.html', NZ: 'nz.html', ZA: 'za.html', JP: 'jp.html',
-    KR: 'kr.html', SG: 'sg.html', IN: 'in.html', CN: 'cn.html'
+    KR: 'kr.html', SG: 'sg.html', CN: 'cn.html'
 };
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',

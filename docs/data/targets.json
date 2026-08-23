@@ -76,12 +76,6 @@
     "display": "~2%",
     "source_url": "https://www.mas.gov.sg/monetary-policy"
   },
-  "IN": {
-    "value": 4.0,
-    "range": [2, 6],
-    "display": "2-6%",
-    "source_url": "https://www.rbi.org.in/"
-  },
   "CN": {
     "value": 3.0,
     "range": null,

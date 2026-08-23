@@ -38,7 +38,7 @@ It aggregates official inflation statistics and central bank projections in one 
 
 ## Coverage
 
-This dashboard tracks headline consumer price inflation (year-over-year) across 12 economies:
+This dashboard tracks headline consumer price inflation (year-over-year) across 11 economies:
 
 | Economy | Inflation Measure | Source | Central Bank |
 |---------|-------------------|--------|--------------|
@@ -52,7 +52,6 @@ This dashboard tracks headline consumer price inflation (year-over-year) across 
 | 🇯🇵 Japan | CPI (YoY) | Statistics Bureau | Bank of Japan |
 | 🇰🇷 South Korea | CPI (YoY) | KOSTAT | Bank of Korea |
 | 🇸🇬 Singapore | CPI (YoY) | DOS | MAS |
-| 🇮🇳 India | CPI (YoY) | MOSPI | RBI |
 | 🇨🇳 China | CPI (YoY) | NBS | PBOC |
 
 ---
@@ -92,7 +91,7 @@ All data is stored in `docs/data/` as the single source of truth:
 
 ```
 docs/data/
-├── historical_cpi.json       # CPI history for all 12 countries
+├── historical_cpi.json       # CPI history for all 11 countries
 ├── cb_forecasts.json         # Central bank inflation forecasts
 ├── imf_forecasts.json        # IMF WEO projections
 └── history/                  # Forecast revision tracking
@@ -135,8 +134,8 @@ CPI data releases follow a predictable monthly pattern:
 ```
 ~1st:  KR          ~15th: UK
 ~9th:  CN          ~17th: CA, EA
-~12th: IN          ~19th: ZA, JP
-~13th: US          ~23rd: SG
+~13th: US          ~19th: ZA, JP
+                   ~23rd: SG
                    ~28th: AU
 Quarterly: NZ (mid-month of Jan/Apr/Jul/Oct)
 ```

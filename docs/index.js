@@ -7,7 +7,7 @@
 const COUNTRY_PAGES = {
     US: 'us.html', EA: 'ea.html', UK: 'uk.html', AU: 'au.html',
     CA: 'ca.html', NZ: 'nz.html', ZA: 'za.html', JP: 'jp.html',
-    KR: 'kr.html', SG: 'sg.html', IN: 'in.html', CN: 'cn.html'
+    KR: 'kr.html', SG: 'sg.html', CN: 'cn.html'
 };
 
 // Inflation targets — single source of truth is data/targets.json (#82).
@@ -28,7 +28,7 @@ function loadTargets() {
 }
 
 // Display order - Japan added before China
-const DISPLAY_ORDER = ['US', 'EA', 'UK', 'CA', 'AU', 'NZ', 'ZA', 'JP', 'KR', 'SG', 'IN', 'CN'];
+const DISPLAY_ORDER = ['US', 'EA', 'UK', 'CA', 'AU', 'NZ', 'ZA', 'JP', 'KR', 'SG', 'CN'];
 
 /**
  * Load and render the current inflation table
