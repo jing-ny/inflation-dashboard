@@ -58,24 +58,47 @@ Claude may create the issue, the branch, and the PR, and may push follow-up comm
 **"You told me to" is not an exception either.** A direct instruction — "fix it", "update it",
 "just do it", "go ahead", "yes" — authorizes the *work*. It does not authorize a different
 *delivery path*. Every one of those means **open a PR that does it**. The maintainer asking for
-something is the normal case this rule was written for, not an escape from it. If they want a
-direct commit, they will say so in those words; do not infer it from urgency, brevity, or a
-second request.
+something is the normal case this rule was written for, not an escape from it.
 
-**Scope is every tracked file, not just code.** Drafts, generated output, data JSON, docs,
-workflows, and this file all take a PR. The examples above are code-shaped for brevity, not
-because prose is exempt — a hand-edit to a newsletter draft is a change to this repo.
+**Not even an explicit request to commit directly.** "Just push it to main", "skip the PR",
+"commit it directly" — Claude still opens a PR and says why. This rule binds Claude, not the
+maintainer: they can push to `main` themselves whenever they like, and that is the right way for
+that to happen. The only way to grant Claude that power is to change this rule — through a PR to
+this file, reviewed and merged like anything else. A rule the system can waive on request is not
+a rule.
+
+**Scope is every repository change** — adding, deleting, renaming, or modifying any file.
+Drafts, generated output, data JSON, docs, workflows, and this file all take a PR, and a new
+file is not exempt for being untracked until you add it. The examples above are code-shaped for
+brevity, not because prose is exempt: a hand-edit to a newsletter draft is a change to this repo.
 
 **If you commit to `main` anyway, say so in the same reply.** Name the SHA and what it touched.
 Do not let the maintainer find it in the log later. A disclosed mistake is recoverable; a quiet
 one costs them the ability to trust the rest of the session's reporting.
 
-**The one carve-out: scheduled automation.** `update-data.yml`, `monitor-updates.yml`,
-`auto-scrape-cb-forecasts.yml`, `newsletter-draft.yml`, and `weekly-alert.yml` push to `main` as
-`github-actions[bot]`. That is pre-approved — the maintainer approved it when they merged the
-workflow that does it. The carve-out is for **the bot running merged workflow code**, and nothing
-else. Claude running the same script locally and pushing the result is an ordinary change and
-takes a PR; so does changing what those workflows commit.
+**The one carve-out: workflow runs the maintainer did not have to ask for.** These five push to
+`main` as `github-actions[bot]`: `update-data.yml`, `monitor-updates.yml`,
+`auto-scrape-cb-forecasts.yml`, `newsletter-draft.yml`, `weekly-alert.yml`. Their pushes are
+pre-approved — approved when the maintainer merged the workflow that does them.
+
+The carve-out is scoped **by trigger, not by author**, because every one of these also accepts
+`workflow_dispatch`, and "the bot pushed it" would otherwise let Claude launder any change
+through a manual dispatch:
+
+- **Covered:** `schedule` runs, and `newsletter-draft.yml`'s automatic `push` trigger on
+  `docs/data/historical_cpi.json`. Nobody initiated these; they are the automation doing its job.
+- **NOT covered:** any run Claude starts. `gh workflow run` is Claude acting, and a dispatch that
+  writes to `main` needs the maintainer's go-ahead for that dispatch, plus disclosure of what it
+  committed. Prefer a `dry_run` input where the workflow offers one. Verifying a freshly merged
+  workflow is a legitimate reason to ask; it is not a reason to skip asking.
+
+Editing these workflows, the scripts they run, or which paths they commit is an ordinary change
+and takes a PR. Running one of their scripts locally and pushing the result is also an ordinary
+change and takes a PR — the carve-out covers the workflow running itself, not its code run by
+hand.
+
+The carve-out waives only #6's delivery path. Rules 1-5 apply to everything these workflows
+commit, exactly as they apply to a PR.
 
 ### 7. Every PR gets an independent Codex review before merge
 
