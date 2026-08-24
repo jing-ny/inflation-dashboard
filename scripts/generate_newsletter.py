@@ -45,6 +45,15 @@ MODEL = os.environ.get("NEWSLETTER_MODEL") or "claude-opus-5"
 MAX_TOKENS = 16000
 
 
+def preceding_period(period: str) -> str:
+    """The reference period immediately before `period` ("2026-01" -> "2025-12")."""
+    if "-Q" in period:
+        year, quarter = period.split("-Q")
+        return f"{int(year) - 1}-Q4" if quarter == "1" else f"{year}-Q{int(quarter) - 1}"
+    year, month = period.split("-")[:2]
+    return f"{int(year) - 1}-12" if month == "01" else f"{year}-{int(month) - 1:02d}"
+
+
 def compare_periods(data: dict) -> list:
     """Period-over-period change per country, read from the dataset itself.
 
@@ -94,7 +103,13 @@ def compare_periods(data: dict) -> list:
         dates = [h.get("date") for h in history]
         if previous.get("date") in dates:
             i = dates.index(previous["date"])
-            if i > 0 and isinstance(history[i - 1].get("value"), (int, float)):
+            expected = preceding_period(previous["date"])
+            # The entry before `previous` in history is only usable if it is
+            # genuinely the preceding period. NZ's stored history jumps
+            # 2025-Q1 -> 2025-Q4, so without this a small 2026-Q1 move would be
+            # judged a "reversal" against an observation three quarters old.
+            if (i > 0 and dates[i - 1] == expected
+                    and isinstance(history[i - 1].get("value"), (int, float))):
                 prior_delta = round(previous_yoy - history[i - 1]["value"], 2)
                 previous_direction = ChangeRules.get_direction(prior_delta)
 
@@ -187,6 +202,7 @@ def build_prompt(changes: list, cb_forecasts: dict, imf_forecasts: dict) -> str:
 - Describe older CPI readings by their specific period (e.g. "Japan's 1.3% in February") — never "held steady" or "current" when the data isn't the most recent month.
 - Every change you describe MUST come from the change list above, which compares each country's latest reference period against the immediately preceding one. Do not construct your own comparison against some other period and present it as the current move: if a country's `current_period` is 2026-07 and its `previous_period` is 2026-06, the move is that one. Quote `delta_pp` as given; do not compute a different delta.
 - Match direction to the sign of `delta_pp`. A negative delta fell, a positive delta rose, and a delta the change list marks non-material did not "move".
+- Only ever write a "pp" figure that is given to you — a `delta_pp` from the change list, or a pp figure quoted in the source notes. Do NOT compute your own pp gap between two numbers. Express a gap in the levels themselves ("the RBA's 3.3% against the IMF's 4.0%"), never as "a 0.7pp gap". A pp figure you calculated will be rejected and the draft discarded.
 
 ## CRITICAL data rules (these override style)
 - Do not cite any IMF figures other than the numbers in the "IMF WEO 2026 forecasts" block above. Do not recall figures from prior WEO editions, news articles, or pre-training. When you attribute an IMF number, it MUST come from the provided data.
@@ -206,6 +222,12 @@ NO_CHANGE_WORDS = (
 )
 
 # Short forms the model actually writes, beyond the dataset's `name` field.
+ADJECTIVAL = {
+    "CN": "Chinese", "JP": "Japanese", "KR": "Korean", "US": "American",
+    "UK": "British", "CA": "Canadian", "AU": "Australian", "SG": "Singaporean",
+    "NZ": "New Zealand", "ZA": "South African", "EA": "European",
+}
+
 COUNTRY_ALIASES = {
     "US": ("US", "U.S.", "United States", "America"),
     "EA": ("Euro Area", "Eurozone", "euro area"),
@@ -232,85 +254,193 @@ def _matches_at_precision(value: float, candidates) -> bool:
     return any(round(c, decimals) == value for c in candidates)
 
 
+# A percentage or pp figure as the model writes it. Captures an optional sign so
+# "-0.6%" is not read as a positive 0.6, and rejects a thousands separator
+# outright rather than silently parsing "1,000pp" as "000pp".
+FIGURE_RE = r"(?<![\d,.])([+-]?\d+(?:\.\d+)?)\s*(%|pp\b|percentage points)"
+
+
+def _figures(text: str, unit: str, signed_only: bool = False) -> list:
+    """Figures in `text` carrying `unit` ("%" or "pp").
+
+    signed_only keeps just the ones written with an explicit + or -. That
+    distinction matters: "down 0.37pp" carries its direction in the word, not
+    the number, so treating an unsigned positive as "written as an increase"
+    would reject correct copy.
+    """
+    out = []
+    for raw, found in re.findall(FIGURE_RE, text, flags=re.IGNORECASE):
+        is_pp = found.lower() in ("pp", "percentage points")
+        if (unit == "pp") != is_pp:
+            continue
+        if signed_only and raw[0] not in "+-":
+            continue
+        out.append(float(raw))
+    return out
+
+
+def _number_pattern(value: float) -> str:
+    """Regex alternation matching how the model may write `value`.
+
+    0.5 is written "0.5" or "0.50"; without both, a check keyed on one spelling
+    silently misses the other (this is why "rose 0.50pp" first slipped past a
+    magnitude built with :g).
+    """
+    forms = {f"{value:g}", f"{value:.2f}"}
+    # The left guard matters: without it the pattern for 5.0 matches the tail of
+    # "2.5%", which reported a South Africa claim from a sentence about the BOK.
+    return "(?<![\\d.])(?:" + "|".join(
+        re.escape(f) for f in sorted(forms, key=len, reverse=True)) + ")"
+
+
 def check_figures(draft: str, prompt: str, changes: list) -> list:
     """Every % and pp figure in the draft must trace back to the input.
 
-    Two separate rules, because they fail differently:
+    Two rules, because they fail differently:
 
     - `%` levels are checked against every number in the prompt. Loose by
-      construction (the prompt holds hundreds of numbers) — this is a
-      hallucination guard, not a precision instrument.
-    - `pp` deltas are checked against the computed change list ONLY. This is the
-      sharp one: it is exactly what caught 2026-08-23's invented "0.59pp gain",
-      a delta measured against a period the change list never offered.
+      construction and KNOWN not to attach a level to the country it is claimed
+      for — "China CPI was 2.93%" passes because 2.93 is the Euro Area's value.
+      Establishing that attribution needs to parse the sentence, which is the
+      fragile thing this checker exists to avoid. It is a hallucination guard,
+      not a precision instrument.
+    - `pp` deltas are checked against the computed change list plus pp figures
+      that literally appear in the source text. This is the sharp one: it caught
+      2026-08-23's invented "0.59pp gain", a delta measured against a period the
+      change list never offered.
     """
     problems = []
     # build_prompt emits with ensure_ascii=False on purpose: escaped source text
     # ("3.1\\u20133.6%") makes this extraction read 20133.6 as one number and lose
     # the 3.6, which flagged a correctly-sourced BoE scenario figure as invented.
     prompt_numbers = [float(m) for m in re.findall(r"-?\d+(?:\.\d+)?", prompt)]
-    deltas = [round(abs(c.delta_pp), 2) for c in changes]
 
-    for raw in re.findall(r"(\d+(?:\.\d+)?)\s*%", draft):
-        if not _matches_at_precision(float(raw), prompt_numbers):
-            problems.append(f"figure {raw}% appears in the draft but in none of the source data")
+    # Deliberately NOT every number in the prompt: a CPI *level* of 3.1 must not
+    # license a *delta* of 3.1pp. Only our computed changes, and pp figures the
+    # source itself quotes (the IMF note carries its own revisions, "US +0.8pp").
+    signed_deltas = [round(c.delta_pp, 2) for c in changes]
+    allowed_pp = {abs(d) for d in signed_deltas} | {abs(f) for f in _figures(prompt, "pp")}
 
-    for raw in re.findall(r"(\d+(?:\.\d+)?)\s*pp", draft):
-        # A pp figure is legitimate if it is one of our computed CPI deltas, or
-        # if it came from the source data — the IMF note quotes its own revision
-        # magnitudes in pp ("US +0.8pp"), which are not period-over-period CPI
-        # changes and must not be flagged as invented.
-        if _matches_at_precision(float(raw), deltas):
+    for value in _figures(draft, "%"):
+        if not _matches_at_precision(abs(value), [abs(n) for n in prompt_numbers]):
+            problems.append(f"figure {value}% appears in the draft but in none of the source data")
+
+    for value in _figures(draft, "pp"):
+        if not _matches_at_precision(abs(value), allowed_pp):
+            allowed = ", ".join(f"{d:.2f}" for d in sorted(allowed_pp, reverse=True))
+            problems.append(
+                f"delta {value}pp is neither a period-over-period change we computed "
+                f"nor a pp figure the source quotes (allowed: {allowed}) — it is "
+                f"either invented, measured against a period we never supplied, or "
+                f"a gap the model computed itself, which the prompt forbids"
+            )
             continue
-        if _matches_at_precision(float(raw), prompt_numbers):
+    # An EXPLICIT sign must agree with the change it names. Unsigned figures are
+    # left to check_direction_words, because the direction lives in the verb.
+    source_pp = _figures(prompt, "pp")
+    for value in _figures(draft, "pp", signed_only=True):
+        if _matches_at_precision(abs(value), [abs(f) for f in source_pp]):
             continue
-        allowed = ", ".join(f"{d:.2f}" for d in sorted(set(deltas), reverse=True))
-        problems.append(
-            f"delta {raw}pp is neither a period-over-period change we computed "
-            f"(allowed: {allowed}) nor a figure in the source data — it is "
-            f"measured against some period we never handed the model"
-        )
+        if not any(_matches_at_precision(value, [d]) for d in signed_deltas):
+            problems.append(
+                f"delta {value:+}pp is written with that sign but no change of that "
+                f"size moved in that direction"
+            )
     return problems
+
+
+UP_WORDS = ("rose", "rise", "risen", "rising", "climbed", "gained", "up",
+            "higher", "accelerated", "increased", "jumped")
+DOWN_WORDS = ("fell", "fall", "fallen", "falling", "eased", "easing", "declined",
+              "down", "lower", "dropped", "slowed", "cooled", "decreased")
+
+
+def check_direction_words(draft: str, changes: list) -> list:
+    """A direction word next to a country's own delta must match that delta's sign.
+
+    "China CPI rose 0.50pp" is false when CN fell 0.50pp — the magnitude is
+    right, so check_figures waves it through; the verb is what is wrong. Same
+    proximity rule as check_no_change_claims: within 25 characters, no other
+    figure and no sentence boundary in between.
+    """
+    problems = []
+    ups, downs = "|".join(UP_WORDS), "|".join(DOWN_WORDS)
+
+    for change in changes:
+        if change.direction == "stable":
+            continue
+        magnitude = _number_pattern(abs(change.delta_pp))
+        wrong = ups if change.delta_pp < 0 else downs
+        said = "an increase" if change.delta_pp < 0 else "a decrease"
+        for pattern in (rf"\b(?:{wrong})\b[^0-9.]{{0,25}}{magnitude}\s*pp",
+                        rf"{magnitude}\s*pp[^0-9.]{{0,25}}\b(?:{wrong})\b"):
+            match = re.search(pattern, draft, flags=re.IGNORECASE)
+            if match:
+                problems.append(
+                    f"{change.code}'s {abs(change.delta_pp):g}pp change is described as "
+                    f"{said} ({match.group(0).strip()!r}), but "
+                    f"{change.previous_period} -> {change.current_period} moved "
+                    f"{change.delta_pp:+.2f}pp"
+                )
+                break
+    return problems
+
+
+# Words that assert a level did not move.
+NO_CHANGE_WORDS = (
+    "unchanged", "flat", "steady", "stable", "held", "holding", "holds",
+    "no change", "sat at", "sits at", "remained", "remains",
+)
 
 
 def check_no_change_claims(draft: str, changes: list) -> list:
     """Flag "unchanged" asserted about a country whose latest print did move.
 
-    Scoped tightly on purpose: the no-change word must follow the country's own
-    headline figure within a short window with no other figure in between. That
-    catches 2026-08-22's "China's July CPI sat at 0.5%, unchanged" without
-    firing on a legitimate line like "China was 0.5% in July, with the 1Y LPR
-    unchanged at 3.00%", where the word belongs to a different number.
+    Scoped by proximity to the country's OWN headline figure, in either word
+    order, within 25 characters, with no other figure and no sentence boundary
+    in between — `[^0-9.]{0,25}` does that work. It
+    fires on "China's July CPI sat at 0.5%, unchanged" and on "Australia CPI was
+    unchanged at 3.8%", and stays quiet on "China was 0.5% in July, with the 1Y
+    LPR unchanged at 3.00%", where the word belongs to a different number.
+
+    Applies to every country the project's own DIRECTION_THRESHOLD_PP calls a
+    move, not only material ones: a 0.2pp fall described as "unchanged" is still
+    a false statement about the data.
     """
     problems = []
-    window = 25
+    words = "|".join(re.escape(w) for w in NO_CHANGE_WORDS)
 
     for change in changes:
-        if not change.is_material:
+        if change.direction == "stable":
             continue
-        names = set(COUNTRY_ALIASES.get(change.code, ())) | {change.name}
-        if not any(n in draft for n in names):
+        aliases = set(COUNTRY_ALIASES.get(change.code, ())) | {change.name}
+        aliases |= {ADJECTIVAL.get(change.code, "")} - {""}
+        if not any(a.lower() in draft.lower() for a in aliases):
             continue
 
-        value = f"{change.current_yoy:g}"
-        for match in re.finditer(re.escape(value) + r"\s*%", draft):
-            tail = draft[match.end():match.end() + window].lower()
-            # Another figure inside the window means the word is about that one.
-            if re.search(r"\d", tail):
-                continue
-            hit = next((w for w in NO_CHANGE_WORDS if w in tail), None)
-            if hit:
+        value = _number_pattern(change.current_yoy)
+        patterns = (
+            rf"(?:{words})[^0-9.]{{0,25}}{value}\s*%",   # "unchanged at 3.8%"
+            rf"{value}\s*%[^0-9.]{{0,25}}(?:{words})",   # "0.5%, unchanged"
+        )
+        for pattern in patterns:
+            match = re.search(pattern, draft, flags=re.IGNORECASE)
+            if match:
                 problems.append(
-                    f"{change.code} described as '{hit}' right after its {value}% "
-                    f"headline, but {change.previous_period} -> {change.current_period} "
-                    f"moved {change.delta_pp:+.2f}pp"
+                    f"{change.code} described as unmoved near its {change.current_yoy:g}% "
+                    f"headline ({match.group(0).strip()!r}), but "
+                    f"{change.previous_period} -> {change.current_period} moved "
+                    f"{change.delta_pp:+.2f}pp"
                 )
+                break
     return problems
 
 
 def verify_draft(draft: str, prompt: str, changes: list) -> list:
     """All mechanical checks. Empty list means the draft is consistent."""
-    return check_figures(draft, prompt, changes) + check_no_change_claims(draft, changes)
+    return (check_figures(draft, prompt, changes)
+            + check_no_change_claims(draft, changes)
+            + check_direction_words(draft, changes))
 
 
 def generate_draft(prompt: str) -> str:

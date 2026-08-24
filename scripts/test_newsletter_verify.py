@@ -28,7 +28,9 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from generate_newsletter import build_prompt, compare_periods, verify_draft
+from generate_newsletter import (
+    _figures, build_prompt, check_no_change_claims, compare_periods, verify_draft,
+)
 
 FAILURES = []
 
@@ -117,6 +119,46 @@ def main() -> int:
     check("correct description of KR passes",
           not verify_draft("Korea eased to 2.79% in July, down 0.37pp from "
                            "June's 3.16%.", prompt, changes))
+
+    print("\nverify_draft — counterexamples from the Codex review of #122")
+    check("sign disagreement: 'rose 0.50pp' when CN fell 0.50pp",
+          bool(verify_draft("China CPI rose 0.50pp in July.", prompt, changes)))
+    check("a CPI level does not license a delta of the same size (3.1pp)",
+          bool(verify_draft("China CPI rose 3.1pp in July.", prompt, changes)))
+    check("'held at' is caught like 'unchanged'",
+          bool(verify_draft("China CPI held at 0.5% in July.", prompt, changes)))
+    check("adjectival country name is caught",
+          bool(verify_draft("Chinese CPI was 0.5%, unchanged.", prompt, changes)))
+    check("no-change word BEFORE the figure is caught",
+          bool(verify_draft("US CPI was unchanged at 3.36%.", prompt, changes)))
+    check("a self-computed pp gap is rejected (prompt forbids it)",
+          bool(verify_draft("The BoE sees 3.35% against the IMF, a 0.15pp gap.",
+                            prompt, changes)))
+    check("negative percent is read as negative, not positive",
+          _figures("Growth was -0.6%.", "%") == [-0.6],
+          f"got {_figures('Growth was -0.6%.', '%')}")
+    check("thousands separator is not silently truncated to 000pp",
+          _figures("A 1,000pp move.", "pp") == [],
+          f"got {_figures('A 1,000pp move.', 'pp')}")
+    check("'percentage points' spelled out is checked too",
+          bool(verify_draft("China rose 3.1 percentage points.", prompt, changes)))
+    check("uppercase PP is checked too",
+          bool(verify_draft("China rose 3.1PP.", prompt, changes)))
+
+    print("\nverify_draft — false positives found while fixing the review findings")
+    # The real regression: ZA's 5.0 headline matched the tail of "2.5%" in a
+    # sentence about the BOK. Tested on the check itself so the figure rule
+    # (which would reject an unsourced 10.5%) does not mask the result.
+    check("a country's figure does not match inside a longer number",
+          not check_no_change_claims("Policy rates sit at 10.5%, unchanged.", changes),
+          str(check_no_change_claims("Policy rates sit at 10.5%, unchanged.", changes)))
+    check("proximity window does not cross a sentence boundary",
+          not verify_draft("China printed 0.5% in July. Steady policy followed.",
+                           prompt, changes))
+    check("'down 0.37pp' is not read as an increase for lacking a + sign",
+          not verify_draft("Korea, down 0.37pp on the month.", prompt, changes))
+    check("an explicit wrong sign is still caught",
+          bool(verify_draft("Korea moved +0.37pp on the month.", prompt, changes)))
 
     print()
     if FAILURES:
