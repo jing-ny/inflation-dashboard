@@ -55,6 +55,60 @@ Do not commit directly to `main`, do not self-merge, and do not merge a PR on th
 
 Claude may create the issue, the branch, and the PR, and may push follow-up commits to that PR's branch in response to review — but the **merge** is the maintainer's action, not Claude's.
 
+**"You told me to" is not an exception either.** A direct instruction — "fix it", "update it",
+"just do it", "go ahead", "yes" — authorizes the *work*. It does not authorize a different
+*delivery path*. Every one of those means **open a PR that does it**. The maintainer asking for
+something is the normal case this rule was written for, not an escape from it.
+
+**Not even an explicit request to commit directly.** "Just push it to main", "skip the PR",
+"commit it directly" — Claude still opens a PR and says why. This rule binds Claude, not the
+maintainer: they can push to `main` themselves whenever they like, and that is the right way for
+that to happen. The only way to grant Claude that power is to change this rule — through a PR to
+this file, reviewed and merged like anything else. A rule the system can waive on request is not
+a rule.
+
+**Scope is every repository change** — adding, deleting, renaming, or modifying any file.
+Drafts, generated output, data JSON, docs, workflows, and this file all take a PR, and a new
+file is not exempt for being untracked until you add it. The examples above are code-shaped for
+brevity, not because prose is exempt: a hand-edit to a newsletter draft is a change to this repo.
+
+**If you commit to `main` anyway, say so in the same reply.** Name the SHA and what it touched.
+Do not let the maintainer find it in the log later. A disclosed mistake is recoverable; a quiet
+one costs them the ability to trust the rest of the session's reporting.
+
+**The one carve-out: pushes from triggers nobody fired.** These five push to `main` as
+`github-actions[bot]`: `update-data.yml`, `monitor-updates.yml`, `auto-scrape-cb-forecasts.yml`,
+`newsletter-draft.yml`, `weekly-alert.yml`. **Pushes from their covered automatic triggers** are
+pre-approved — approved when the maintainer merged the workflow that does them.
+
+The carve-out is scoped **by trigger, not by author**. Every one of these also accepts
+`workflow_dispatch`, so "the bot pushed it" would otherwise let Claude launder any change through
+a manual dispatch:
+
+- **Covered:** the first attempt of a `schedule` run, and of `newsletter-draft.yml`'s automatic
+  `push` trigger on `docs/data/historical_cpi.json`. Nobody fired these; the automation did its
+  job on its own clock.
+- **NOT covered: any `workflow_dispatch` run, and any manual re-run, no matter who approves it.**
+  `gh run rerun` keeps the original `schedule` event on the run — it is still a human or an agent
+  pressing the button, so it is not covered. There is no approval that makes a dispatched write
+  to `main` acceptable, for the same reason there is no approval that makes a direct commit
+  acceptable: the exemption belongs to the trigger, and a dispatch does not have it.
+
+So **Claude never dispatches a run that can write to `main`.** Dispatching with a `dry_run` input
+that suppresses the write is fine — it writes nothing, so there is nothing to exempt. For a run
+that would commit, ask the maintainer to dispatch it. Verifying a freshly merged workflow is a
+good reason to ask; it is not a reason to press the button yourself. Note that
+`monitor-updates.yml` has no dry-run input at all, and `update-data.yml` and
+`auto-scrape-cb-forecasts.yml` default `dry_run` to false.
+
+Editing these workflows, the scripts they run, or which paths they commit is an ordinary change
+and takes a PR. Running one of their scripts locally and pushing the result is also an ordinary
+change and takes a PR — the carve-out covers the workflow running itself, not its code run by
+hand.
+
+The carve-out waives only #6's delivery path. Rules 1-5 apply to everything these workflows
+commit, exactly as they apply to a PR.
+
 ### 7. Every PR gets an independent Codex review before merge
 
 Before any PR is merged, run an **independent code review with Codex** (the OpenAI Codex CLI, via the `/codex` skill) over the PR's diff and post its findings on the PR. This is a deliberately *independent* second opinion — separate from Claude, which authored the change, and from the maintainer's own review (#6). It must not be skipped on the grounds that Claude "already reviewed" the diff; the whole point is a different model's eyes.
