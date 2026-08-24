@@ -15,6 +15,7 @@ Usage:
 import argparse
 import json
 import os
+import re
 import sys
 from dataclasses import asdict
 from datetime import datetime
@@ -24,10 +25,8 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from send_weekly_alert import (
     load_current_data,
-    create_current_snapshot,
-    load_snapshots,
-    get_previous_snapshot,
-    compare_snapshots,
+    ChangeRules,
+    CountryChange,
     DASHBOARD_URL,
 )
 
@@ -44,6 +43,77 @@ MODEL = os.environ.get("NEWSLETTER_MODEL") or "claude-opus-5"
 # max_tokens, so this ceiling is much higher than the ~550-token draft needs.
 # It is a cap, not a spend — only what is generated is billed.
 MAX_TOKENS = 16000
+
+
+def compare_periods(data: dict) -> list:
+    """Period-over-period change per country, read from the dataset itself.
+
+    This deliberately does NOT use send_weekly_alert.compare_snapshots (#117).
+    That helper diffs the current weekly snapshot against the previous weekly
+    snapshot, which is the right semantics for a weekly alert and the wrong
+    semantics for a monthly newsletter — the comparison window becomes whatever
+    the last snapshot happened to be, so a real month-over-month move lands
+    inside or outside it by luck of fetch timing.
+
+    Two observed failures, both published-quality wrong:
+
+      2026-08-22  China 1.0 -> 0.5 (-0.5pp, the largest move in the data) was
+                  reported as "unchanged", because the 08-17 snapshot already
+                  carried 0.5.
+      2026-08-23  Korea was reported as "up 0.59pp, the one real move", because
+                  the previous snapshot held 2.2 (2026-03) — the last value the
+                  dead FRED relay ever produced — while the dataset had just
+                  been backfilled to 2026-07. July was actually DOWN 0.37pp from
+                  June. A source repair read as an inflation move.
+
+    Each country's `latest` and `previous` are adjacent reference periods
+    maintained by the fetchers, so they give the true period-over-period change
+    regardless of when we fetched or how much history was backfilled.
+    """
+    changes = []
+
+    for code, record in data.items():
+        if code == "metadata" or not isinstance(record, dict):
+            continue
+        latest = record.get("latest") or {}
+        previous = record.get("previous") or {}
+        if latest.get("value") is None or previous.get("value") is None:
+            continue
+
+        current_yoy = latest["value"]
+        previous_yoy = previous["value"]
+        delta = round(current_yoy - previous_yoy, 2)
+        current_direction = ChangeRules.get_direction(delta)
+
+        # Prior direction, for the reversal rule: the step into `previous`.
+        # Looked up in history by date. AU stores a monthly latest/previous over
+        # a quarterly history, so the lookup misses and the reversal rule is a
+        # no-op there — same as compare_snapshots without two weeks of history.
+        previous_direction = "stable"
+        history = record.get("history") or []
+        dates = [h.get("date") for h in history]
+        if previous.get("date") in dates:
+            i = dates.index(previous["date"])
+            if i > 0 and isinstance(history[i - 1].get("value"), (int, float)):
+                prior_delta = round(previous_yoy - history[i - 1]["value"], 2)
+                previous_direction = ChangeRules.get_direction(prior_delta)
+
+        changes.append(CountryChange(
+            code=code,
+            name=record.get("name", code),
+            current_yoy=current_yoy,
+            previous_yoy=previous_yoy,
+            delta_pp=delta,
+            direction=current_direction,
+            direction_symbol=ChangeRules.get_direction_symbol(current_direction),
+            is_material=ChangeRules.is_material_change(
+                current_yoy, previous_yoy, current_direction, previous_direction),
+            current_period=latest.get("date", "?"),
+            previous_period=previous.get("date", "?"),
+        ))
+
+    changes.sort(key=lambda c: -abs(c.delta_pp))
+    return changes
 
 
 def load_json_safe(path: str) -> dict:
@@ -90,20 +160,20 @@ def build_prompt(changes: list, cb_forecasts: dict, imf_forecasts: dict) -> str:
 
 ## Data provided
 
-### Current CPI changes (vs. previous snapshot)
-{json.dumps(all_changes, indent=2)}
+### Current CPI changes (each country's latest reference period vs. the one before it)
+{json.dumps(all_changes, indent=2, ensure_ascii=False)}
 
 ### Material changes (>= 0.3pp or direction reversal)
-{json.dumps([asdict(c) for c in material], indent=2)}
+{json.dumps([asdict(c) for c in material], indent=2, ensure_ascii=False)}
 
 ### Central bank forecasts (selected fields)
-{json.dumps(cb_summary, indent=2)}
+{json.dumps(cb_summary, indent=2, ensure_ascii=False)}
 
 ### IMF WEO forecasts — vintage metadata
-{json.dumps(imf_meta, indent=2)}
+{json.dumps(imf_meta, indent=2, ensure_ascii=False)}
 
 ### IMF WEO 2026 forecasts (per country)
-{json.dumps(imf_summary, indent=2)}
+{json.dumps(imf_summary, indent=2, ensure_ascii=False)}
 
 ## Editorial voice
 - Open with a punchy, high-signal lead — a little narrative tension, professional and source-first, no hype.
@@ -115,6 +185,8 @@ def build_prompt(changes: list, cb_forecasts: dict, imf_forecasts: dict) -> str:
 - No filler, no generic macro commentary, no AI-slop phrasing. Cut on sight: "provided relief", "apparent comfort zone", "the standout remains", "warrants continued attention", "exactly matching", "first full WEO reflecting", and similar.
 - Do not overclaim. Avoid causal language ("driven by X", "due to Y", "reflecting Z") unless the causation is directly and unambiguously stated in the data notes above.
 - Describe older CPI readings by their specific period (e.g. "Japan's 1.3% in February") — never "held steady" or "current" when the data isn't the most recent month.
+- Every change you describe MUST come from the change list above, which compares each country's latest reference period against the immediately preceding one. Do not construct your own comparison against some other period and present it as the current move: if a country's `current_period` is 2026-07 and its `previous_period` is 2026-06, the move is that one. Quote `delta_pp` as given; do not compute a different delta.
+- Match direction to the sign of `delta_pp`. A negative delta fell, a positive delta rose, and a delta the change list marks non-material did not "move".
 
 ## CRITICAL data rules (these override style)
 - Do not cite any IMF figures other than the numbers in the "IMF WEO 2026 forecasts" block above. Do not recall figures from prior WEO editions, news articles, or pre-training. When you attribute an IMF number, it MUST come from the provided data.
@@ -125,6 +197,120 @@ def build_prompt(changes: list, cb_forecasts: dict, imf_forecasts: dict) -> str:
 - Valid Markdown, 300–400 words (prefer the lower end).
 - Do NOT add a title — the caller prepends one.
 - End with a compact pointer to the dashboard: {DASHBOARD_URL}"""
+
+
+# Words that assert a level did not move. Checked only in a tight window right
+# after a country's own headline figure — see check_no_change_claims.
+NO_CHANGE_WORDS = (
+    "unchanged", "flat", "steady", "stable", "held", "holding", "no change",
+)
+
+# Short forms the model actually writes, beyond the dataset's `name` field.
+COUNTRY_ALIASES = {
+    "US": ("US", "U.S.", "United States", "America"),
+    "EA": ("Euro Area", "Eurozone", "euro area"),
+    "UK": ("UK", "U.K.", "Britain", "United Kingdom"),
+    "KR": ("Korea", "South Korea"),
+    "CN": ("China",),
+    "JP": ("Japan",),
+    "IN": ("India",),
+    "CA": ("Canada",),
+    "AU": ("Australia",),
+    "NZ": ("New Zealand",),
+    "ZA": ("South Africa",),
+    "SG": ("Singapore",),
+}
+
+
+def _matches_at_precision(value: float, candidates) -> bool:
+    """True if any candidate rounds to `value` at `value`'s own precision.
+
+    Lets the model write 2.8 for a stored 2.79 without letting it write 2.9.
+    """
+    text = f"{value}"
+    decimals = len(text.split(".")[1]) if "." in text else 0
+    return any(round(c, decimals) == value for c in candidates)
+
+
+def check_figures(draft: str, prompt: str, changes: list) -> list:
+    """Every % and pp figure in the draft must trace back to the input.
+
+    Two separate rules, because they fail differently:
+
+    - `%` levels are checked against every number in the prompt. Loose by
+      construction (the prompt holds hundreds of numbers) — this is a
+      hallucination guard, not a precision instrument.
+    - `pp` deltas are checked against the computed change list ONLY. This is the
+      sharp one: it is exactly what caught 2026-08-23's invented "0.59pp gain",
+      a delta measured against a period the change list never offered.
+    """
+    problems = []
+    # build_prompt emits with ensure_ascii=False on purpose: escaped source text
+    # ("3.1\\u20133.6%") makes this extraction read 20133.6 as one number and lose
+    # the 3.6, which flagged a correctly-sourced BoE scenario figure as invented.
+    prompt_numbers = [float(m) for m in re.findall(r"-?\d+(?:\.\d+)?", prompt)]
+    deltas = [round(abs(c.delta_pp), 2) for c in changes]
+
+    for raw in re.findall(r"(\d+(?:\.\d+)?)\s*%", draft):
+        if not _matches_at_precision(float(raw), prompt_numbers):
+            problems.append(f"figure {raw}% appears in the draft but in none of the source data")
+
+    for raw in re.findall(r"(\d+(?:\.\d+)?)\s*pp", draft):
+        # A pp figure is legitimate if it is one of our computed CPI deltas, or
+        # if it came from the source data — the IMF note quotes its own revision
+        # magnitudes in pp ("US +0.8pp"), which are not period-over-period CPI
+        # changes and must not be flagged as invented.
+        if _matches_at_precision(float(raw), deltas):
+            continue
+        if _matches_at_precision(float(raw), prompt_numbers):
+            continue
+        allowed = ", ".join(f"{d:.2f}" for d in sorted(set(deltas), reverse=True))
+        problems.append(
+            f"delta {raw}pp is neither a period-over-period change we computed "
+            f"(allowed: {allowed}) nor a figure in the source data — it is "
+            f"measured against some period we never handed the model"
+        )
+    return problems
+
+
+def check_no_change_claims(draft: str, changes: list) -> list:
+    """Flag "unchanged" asserted about a country whose latest print did move.
+
+    Scoped tightly on purpose: the no-change word must follow the country's own
+    headline figure within a short window with no other figure in between. That
+    catches 2026-08-22's "China's July CPI sat at 0.5%, unchanged" without
+    firing on a legitimate line like "China was 0.5% in July, with the 1Y LPR
+    unchanged at 3.00%", where the word belongs to a different number.
+    """
+    problems = []
+    window = 25
+
+    for change in changes:
+        if not change.is_material:
+            continue
+        names = set(COUNTRY_ALIASES.get(change.code, ())) | {change.name}
+        if not any(n in draft for n in names):
+            continue
+
+        value = f"{change.current_yoy:g}"
+        for match in re.finditer(re.escape(value) + r"\s*%", draft):
+            tail = draft[match.end():match.end() + window].lower()
+            # Another figure inside the window means the word is about that one.
+            if re.search(r"\d", tail):
+                continue
+            hit = next((w for w in NO_CHANGE_WORDS if w in tail), None)
+            if hit:
+                problems.append(
+                    f"{change.code} described as '{hit}' right after its {value}% "
+                    f"headline, but {change.previous_period} -> {change.current_period} "
+                    f"moved {change.delta_pp:+.2f}pp"
+                )
+    return problems
+
+
+def verify_draft(draft: str, prompt: str, changes: list) -> list:
+    """All mechanical checks. Empty list means the draft is consistent."""
+    return check_figures(draft, prompt, changes) + check_no_change_claims(draft, changes)
 
 
 def generate_draft(prompt: str) -> str:
@@ -164,9 +350,11 @@ def main():
     # --- gather data ---
     print("Loading inflation data...")
     current_data = load_current_data()
-    snapshot = create_current_snapshot(current_data)
-    previous = get_previous_snapshot(load_snapshots())
-    changes = compare_snapshots(snapshot, previous)
+    changes = compare_periods(current_data)
+    for c in changes:
+        print(f"  {c.code}: {c.previous_period} {c.previous_yoy} -> "
+              f"{c.current_period} {c.current_yoy} ({c.delta_pp:+.2f}pp)"
+              f"{' MATERIAL' if c.is_material else ''}")
 
     cb_forecasts = load_json_safe(CB_FORECASTS_FILE)
     imf_forecasts = load_json_safe(IMF_FORECASTS_FILE)
@@ -183,6 +371,21 @@ def main():
     # --- call API ---
     print(f"Calling {MODEL}...")
     body = generate_draft(prompt)
+
+    # --- verify before anything is written or emailed (#117) ---
+    # A draft that misstates the data is worse than no draft: it reads as a
+    # finished editorial judgement. Fail the run instead of committing it. The
+    # rejected text is printed so the failure alert's run log carries it.
+    problems = verify_draft(body, prompt, changes)
+    if problems:
+        print("\n=== REJECTED DRAFT ===\n" + body + "\n=== END ===\n")
+        for problem in problems:
+            print(f"  ✗ {problem}")
+        raise SystemExit(
+            f"Draft failed {len(problems)} consistency check(s) against the source "
+            f"data; nothing written. See the rejected text above."
+        )
+    print("Draft passed consistency checks.")
 
     # --- assemble output ---
     today = datetime.now().strftime("%Y-%m-%d")

@@ -6,6 +6,31 @@ All notable changes to the Inflation Dashboard project are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- **Newsletter compares reference periods, not weekly snapshots, and drafts are verified before
+  they land (#117).** `generate_newsletter.py` used `compare_snapshots()`, which diffs the current
+  weekly snapshot against the previous one — right for a weekly alert, wrong for a monthly piece,
+  because the comparison window became whatever the last snapshot happened to be. It shipped two
+  wrong drafts: 2026-08-22 called China "unchanged" while it was moving 1.0 → 0.5 (the largest
+  change in the data, caught by the 08-17 snapshot already carrying 0.5), and 2026-08-23 led with
+  Korea "up 0.59pp, the one real move" when that delta was the #58 source migration backfilling
+  30 months — July was actually *down* 0.37pp from June. A data repair read as an inflation move.
+  `compare_periods()` now reads each country's `latest` and `previous` (adjacent reference periods
+  the fetchers maintain) so the window is immune to fetch timing and to backfills. `compare_snapshots`
+  is untouched; the weekly alert keeps its own semantics.
+- **A draft that misstates the data no longer gets written or emailed (#117).** `verify_draft()`
+  runs two mechanical checks before anything is committed: every `%` figure must trace to a number
+  in the prompt, and every `pp` delta must be either a computed period-over-period change or a
+  figure from the source (the IMF note quotes its own revisions in pp). Plus a narrowly scoped
+  check for "unchanged" asserted right after the headline figure of a country that moved. On
+  failure the run exits non-zero and prints the rejected text, so the existing failure alert fires
+  and nothing lands. `scripts/test_newsletter_verify.py` pins both historical failures as
+  regressions and runs in the workflow before the API call.
+- **Prompt no longer feeds the model escaped unicode.** `build_prompt` used `json.dumps` at its
+  default `ensure_ascii=True`, so a source note reading `3.1–3.6%` reached the model as
+  `3.1\u20133.6%`. It also broke figure extraction, which read `20133.6` as one number and
+  flagged a correctly-sourced BoE scenario figure as invented.
+
 ### Added
 - **Freshness gate fails the build on red-tier stale series (#116, CLAUDE.md #4/#5).**
   `scripts/check_freshness.py` reads the committed dataset and exits non-zero if any published
