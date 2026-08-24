@@ -141,6 +141,21 @@ def load_json_safe(path: str) -> dict:
         return {}
 
 
+def source_blob(changes: list, cb_forecasts: dict, imf_forecasts: dict) -> str:
+    """Just the data handed to the model — no instructions.
+
+    verify_draft must not read the rendered prompt: the instructions carry
+    numbers of their own ("300-400 words", the 0.3pp materiality threshold, and
+    the 0.7pp example in the rule forbidding self-computed gaps). Harvesting
+    those as source figures let the instruction text license exactly the copy it
+    forbids (Codex review, PR #122).
+    """
+    return json.dumps(
+        {"changes": [asdict(c) for c in changes],
+         "cb": cb_forecasts, "imf": imf_forecasts},
+        indent=2, ensure_ascii=False, default=str)
+
+
 def build_prompt(changes: list, cb_forecasts: dict, imf_forecasts: dict) -> str:
     """Build the prompt for the Claude API."""
     material = [c for c in changes if c.is_material]
@@ -293,41 +308,48 @@ def _number_pattern(value: float) -> str:
         re.escape(f) for f in sorted(forms, key=len, reverse=True)) + ")"
 
 
-def check_figures(draft: str, prompt: str, changes: list) -> list:
-    """Every % and pp figure in the draft must trace back to the input.
+def _was_signed(draft: str, value: float) -> bool:
+    """True if `value` appears in `draft` written with an explicit + or -."""
+    return any(abs(v) == abs(value) for v in _figures(draft, "pp", signed_only=True))
 
-    Two rules, because they fail differently:
 
-    - `%` levels are checked against every number in the prompt. Loose by
-      construction and KNOWN not to attach a level to the country it is claimed
-      for — "China CPI was 2.93%" passes because 2.93 is the Euro Area's value.
-      Establishing that attribution needs to parse the sentence, which is the
-      fragile thing this checker exists to avoid. It is a hallucination guard,
-      not a precision instrument.
-    - `pp` deltas are checked against the computed change list plus pp figures
-      that literally appear in the source text. This is the sharp one: it caught
-      2026-08-23's invented "0.59pp gain", a delta measured against a period the
-      change list never offered.
+def check_figures(draft: str, source: str, changes: list) -> list:
+    """Every % and pp figure in the draft must trace back to the source data.
+
+    `source` is the data blob, never the rendered prompt — see source_blob.
+
+    Known limit, stated rather than implied: the `%` rule does not attach a
+    level to the country it is claimed for. "China CPI was 2.93%" passes because
+    2.93 is the Euro Area's value. Establishing that attribution means parsing
+    the sentence, the fragile thing this checker exists to avoid. It is a
+    hallucination guard, not a precision instrument. The `pp` rule is the sharp
+    one: it catches a delta measured against a period we never supplied.
     """
     problems = []
-    # build_prompt emits with ensure_ascii=False on purpose: escaped source text
-    # ("3.1\\u20133.6%") makes this extraction read 20133.6 as one number and lose
-    # the 3.6, which flagged a correctly-sourced BoE scenario figure as invented.
-    prompt_numbers = [float(m) for m in re.findall(r"-?\d+(?:\.\d+)?", prompt)]
 
-    # Deliberately NOT every number in the prompt: a CPI *level* of 3.1 must not
-    # license a *delta* of 3.1pp. Only our computed changes, and pp figures the
-    # source itself quotes (the IMF note carries its own revisions, "US +0.8pp").
+    # A thousands separator makes a figure unparseable by FIGURE_RE, and an
+    # unparseable figure is an UNCHECKED figure, not a safe one. Reject it.
+    for raw in re.findall(r"\d[\d,]*\d\s*(?:%|pp\b|percentage points)", draft,
+                          flags=re.IGNORECASE):
+        if "," in raw:
+            problems.append(
+                f"figure {raw.strip()!r} uses a thousands separator, so it cannot "
+                f"be checked — and no CPI figure needs one"
+            )
+
+    source_numbers = [float(m) for m in re.findall(r"-?\d+(?:\.\d+)?", source)]
     signed_deltas = [round(c.delta_pp, 2) for c in changes]
-    allowed_pp = {abs(d) for d in signed_deltas} | {abs(f) for f in _figures(prompt, "pp")}
+    source_pp = _figures(source, "pp")          # signed, e.g. the IMF's "+0.8pp"
+    magnitudes = {abs(d) for d in signed_deltas} | {abs(f) for f in source_pp}
 
     for value in _figures(draft, "%"):
-        if not _matches_at_precision(abs(value), [abs(n) for n in prompt_numbers]):
-            problems.append(f"figure {value}% appears in the draft but in none of the source data")
+        if not _matches_at_precision(value, source_numbers):
+            problems.append(
+                f"figure {value}% appears in the draft but in none of the source data")
 
     for value in _figures(draft, "pp"):
-        if not _matches_at_precision(abs(value), allowed_pp):
-            allowed = ", ".join(f"{d:.2f}" for d in sorted(allowed_pp, reverse=True))
+        if not _matches_at_precision(abs(value), magnitudes):
+            allowed = ", ".join(f"{d:.2f}" for d in sorted(magnitudes, reverse=True))
             problems.append(
                 f"delta {value}pp is neither a period-over-period change we computed "
                 f"nor a pp figure the source quotes (allowed: {allowed}) — it is "
@@ -335,15 +357,12 @@ def check_figures(draft: str, prompt: str, changes: list) -> list:
                 f"a gap the model computed itself, which the prompt forbids"
             )
             continue
-    # An EXPLICIT sign must agree with the change it names. Unsigned figures are
-    # left to check_direction_words, because the direction lives in the verb.
-    source_pp = _figures(prompt, "pp")
-    for value in _figures(draft, "pp", signed_only=True):
-        if _matches_at_precision(abs(value), [abs(f) for f in source_pp]):
-            continue
-        if not any(_matches_at_precision(value, [d]) for d in signed_deltas):
+        # An explicit sign must name something that actually moved that way. A
+        # supplied +0.8pp must not license a written -0.8pp.
+        if _was_signed(draft, value) and not any(
+                _matches_at_precision(value, [c]) for c in signed_deltas + source_pp):
             problems.append(
-                f"delta {value:+}pp is written with that sign but no change of that "
+                f"delta {value:+}pp is written with that sign but nothing of that "
                 f"size moved in that direction"
             )
     return problems
@@ -387,9 +406,12 @@ def check_direction_words(draft: str, changes: list) -> list:
 
 
 # Words that assert a level did not move.
+# Only unambiguous assertions. "remains"/"stable" were dropped after review:
+# in "fell 0.5pp to 0.5%, where it remains below target" the word modifies
+# "below target", not the level, and proximity cannot tell the difference.
 NO_CHANGE_WORDS = (
-    "unchanged", "flat", "steady", "stable", "held", "holding", "holds",
-    "no change", "sat at", "sits at", "remained", "remains",
+    "unchanged", "flat", "no change", "held at", "holds at", "sat at",
+    "sits at", "steady at",
 )
 
 
@@ -436,11 +458,30 @@ def check_no_change_claims(draft: str, changes: list) -> list:
     return problems
 
 
-def verify_draft(draft: str, prompt: str, changes: list) -> list:
-    """All mechanical checks. Empty list means the draft is consistent."""
-    return (check_figures(draft, prompt, changes)
-            + check_no_change_claims(draft, changes)
-            + check_direction_words(draft, changes))
+def verify_draft(draft: str, source: str, changes: list) -> tuple:
+    """Returns (blocking, advisory).
+
+    The split is the point, not a detail. This gates a scheduled monthly job, so
+    a false positive silently stops the newsletter — which makes severity a
+    design decision, not formatting:
+
+    - BLOCKING: the figure checks. Mechanically decidable. A pp delta either is
+      one we computed (or one the source quotes) or it is not, and no sentence
+      has to be understood to know which. This is what catches 2026-08-23.
+    - ADVISORY: the prose heuristics. Deciding whether "unchanged" modifies the
+      CPI level or the phrase after it, or whether "rose" refers to this
+      country's print or to a forecast revision in the same clause, needs
+      parsing. Two review rounds produced a fresh false positive for every fix,
+      so they report instead of blocking. A wrong warning costs a line in the
+      log; a wrong rejection costs the month's newsletter.
+
+    The 2026-08-22 "unchanged" failure is prevented upstream by compare_periods,
+    which hands the model CN at -0.50pp marked material, rather than by these
+    heuristics catching the sentence after the fact.
+    """
+    blocking = check_figures(draft, source, changes)
+    advisory = check_no_change_claims(draft, changes) + check_direction_words(draft, changes)
+    return blocking, advisory
 
 
 def generate_draft(prompt: str) -> str:
@@ -490,6 +531,7 @@ def main():
     imf_forecasts = load_json_safe(IMF_FORECASTS_FILE)
 
     prompt = build_prompt(changes, cb_forecasts, imf_forecasts)
+    source = source_blob(changes, cb_forecasts, imf_forecasts)
 
     # --- dry run ---
     if args.dry_run:
@@ -506,16 +548,19 @@ def main():
     # A draft that misstates the data is worse than no draft: it reads as a
     # finished editorial judgement. Fail the run instead of committing it. The
     # rejected text is printed so the failure alert's run log carries it.
-    problems = verify_draft(body, prompt, changes)
-    if problems:
+    blocking, advisory = verify_draft(body, source, changes)
+    for warning in advisory:
+        print(f"  ! advisory: {warning}")
+    if blocking:
         print("\n=== REJECTED DRAFT ===\n" + body + "\n=== END ===\n")
-        for problem in problems:
+        for problem in blocking:
             print(f"  ✗ {problem}")
         raise SystemExit(
-            f"Draft failed {len(problems)} consistency check(s) against the source "
+            f"Draft failed {len(blocking)} consistency check(s) against the source "
             f"data; nothing written. See the rejected text above."
         )
-    print("Draft passed consistency checks.")
+    print(f"Draft passed the blocking checks"
+          f"{f'; {len(advisory)} advisory warning(s) above' if advisory else ''}.")
 
     # --- assemble output ---
     today = datetime.now().strftime("%Y-%m-%d")

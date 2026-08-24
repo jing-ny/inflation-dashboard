@@ -19,13 +19,20 @@ All notable changes to the Inflation Dashboard project are documented here.
   the fetchers maintain) so the window is immune to fetch timing and to backfills. `compare_snapshots`
   is untouched; the weekly alert keeps its own semantics.
 - **A draft that misstates the data no longer gets written or emailed (#117).** `verify_draft()`
-  runs two mechanical checks before anything is committed: every `%` figure must trace to a number
-  in the prompt, and every `pp` delta must be either a computed period-over-period change or a
-  figure from the source (the IMF note quotes its own revisions in pp). Plus a narrowly scoped
-  check for "unchanged" asserted right after the headline figure of a country that moved. On
-  failure the run exits non-zero and prints the rejected text, so the existing failure alert fires
-  and nothing lands. `scripts/test_newsletter_verify.py` pins both historical failures as
-  regressions and runs in the workflow before the API call.
+  runs before anything is committed and separates two severities, because this gates a scheduled
+  monthly job and a false positive would silently stop the newsletter. **Blocking:** every `%`
+  figure must trace to a number in the source data, and every `pp` delta must be either a computed
+  period-over-period change or a pp figure the source quotes (the IMF note carries its own
+  revisions) with any written sign matching a real move; a thousands separator is rejected rather
+  than skipped unchecked. These are mechanically decidable — no sentence has to be understood.
+  **Advisory:** the prose heuristics ("unchanged" next to a country's headline figure, a direction
+  word disagreeing with its delta) report but do not block, because deciding what a word modifies
+  needs parsing. On a blocking failure the run exits non-zero and prints the rejected text, so the
+  existing failure alert fires and nothing lands. Figures are checked against a data-only blob,
+  never the rendered prompt — the instructions carry numbers of their own, and harvesting those let
+  the instruction text license the copy it forbids. `scripts/test_newsletter_verify.py` pins 24
+  cases, including every counterexample from two rounds of review, and runs in the workflow before
+  the API call.
 - **Prompt no longer feeds the model escaped unicode.** `build_prompt` used `json.dumps` at its
   default `ensure_ascii=True`, so a source note reading `3.1–3.6%` reached the model as
   `3.1\u20133.6%`. It also broke figure extraction, which read `20133.6` as one number and

@@ -29,8 +29,17 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from generate_newsletter import (
-    _figures, build_prompt, check_no_change_claims, compare_periods, verify_draft,
+    _figures, check_no_change_claims, compare_periods, source_blob, verify_draft,
 )
+
+
+def blocking(draft, source, changes):
+    """Only the blocking half — advisory warnings never stop the job."""
+    return verify_draft(draft, source, changes)[0]
+
+
+def advisory(draft, source, changes):
+    return verify_draft(draft, source, changes)[1]
 
 FAILURES = []
 
@@ -71,7 +80,14 @@ def fixture():
         },
     }
     changes = compare_periods(data)
-    cb = {"forecasts": {"UK": {
+    cb = {"forecasts": {
+        # CN carries a policy rate because a test sentence quotes it: "the 1Y
+        # LPR unchanged at 3.00%" must reach check_no_change_claims, not be
+        # rejected by the figure rule for an unsourced 3.00.
+        "CN": {"source": "IMF", "publication_date": "April 2026",
+               "projections": {"2026": 1.2}, "policy_rate": {"rate": "3.00%"},
+               "note": "PBoC publishes no standardized forecast."},
+        "UK": {
         "source": "BoE", "publication_date": "April 2026",
         "projections": {"2026": 3.35}, "policy_rate": {"rate": "3.75%"},
         # En-dash on purpose: escaped as – this used to be read as the
@@ -81,11 +97,11 @@ def fixture():
     imf = {"version": "April 2026", "retrieved": "2026-08-17",
            "note": "Broad upside revisions (US +0.8pp, AU/NZ +1.0pp).",
            "countries": {"CN": {"name": "China", "forecasts": {"2026": 1.2}}}}
-    return changes, build_prompt(changes, cb, imf)
+    return changes, source_blob(changes, cb, imf)
 
 
 def main() -> int:
-    changes, prompt = fixture()
+    changes, source = fixture()
     by_code = {c.code: c for c in changes}
 
     print("\ncompare_periods — adjacent reference periods, not snapshots")
@@ -98,42 +114,42 @@ def main() -> int:
           (by_code["KR"].previous_period, by_code["KR"].current_period) == ("2026-06", "2026-07"))
 
     print("\nverify_draft — the two drafts that shipped wrong")
-    check("2026-08-22: 'unchanged' on a country that moved is caught",
-          bool(verify_draft("China's July CPI sat at 0.5%, unchanged, against "
-                            "an IMF 2026 forecast of 1.2%.", prompt, changes)))
+    check("2026-08-22: 'unchanged' on a country that moved is caught (advisory)",
+          bool(advisory("China's July CPI sat at 0.5%, unchanged, against "
+                        "an IMF 2026 forecast of 1.2%.", source, changes)))
     check("2026-08-23: a delta from a period we never supplied is caught",
-          bool(verify_draft("Korea rose to 2.79% in July, up from 2.2% in "
-                            "March — a 0.59pp gain.", prompt, changes)))
+          bool(blocking("Korea rose to 2.79% in July, up from 2.2% in "
+                            "March — a 0.59pp gain.", source, changes)))
 
     print("\nverify_draft — must stay quiet on correct copy")
     check("real delta passes",
-          not verify_draft("US CPI eased to 3.36% in July from 3.53% "
-                           "(-0.17pp).", prompt, changes))
+          not blocking("US CPI eased to 3.36% in July from 3.53% "
+                           "(-0.17pp).", source, changes))
     check("'unchanged' about a different number nearby passes",
-          not verify_draft("China was 0.5% in July, with the 1Y LPR unchanged "
-                           "at 3.00% for ten months.", prompt, changes))
+          not blocking("China was 0.5% in July, with the 1Y LPR unchanged "
+                           "at 3.00% for ten months.", source, changes))
     check("pp figure sourced from the IMF note passes",
-          not verify_draft("The WEO revised the US up 0.8pp.", prompt, changes))
+          not blocking("The WEO revised the US up 0.8pp.", source, changes))
     check("BoE scenario figure behind an en-dash passes",
-          not verify_draft("BoE scenarios span 3.1-3.6% this year.", prompt, changes))
+          not blocking("BoE scenarios span 3.1-3.6% this year.", source, changes))
     check("correct description of KR passes",
-          not verify_draft("Korea eased to 2.79% in July, down 0.37pp from "
-                           "June's 3.16%.", prompt, changes))
+          not blocking("Korea eased to 2.79% in July, down 0.37pp from "
+                           "June's 3.16%.", source, changes))
 
     print("\nverify_draft — counterexamples from the Codex review of #122")
-    check("sign disagreement: 'rose 0.50pp' when CN fell 0.50pp",
-          bool(verify_draft("China CPI rose 0.50pp in July.", prompt, changes)))
+    check("sign disagreement: 'rose 0.50pp' when CN fell 0.50pp (advisory)",
+          bool(advisory("China CPI rose 0.50pp in July.", source, changes)))
     check("a CPI level does not license a delta of the same size (3.1pp)",
-          bool(verify_draft("China CPI rose 3.1pp in July.", prompt, changes)))
-    check("'held at' is caught like 'unchanged'",
-          bool(verify_draft("China CPI held at 0.5% in July.", prompt, changes)))
-    check("adjectival country name is caught",
-          bool(verify_draft("Chinese CPI was 0.5%, unchanged.", prompt, changes)))
-    check("no-change word BEFORE the figure is caught",
-          bool(verify_draft("US CPI was unchanged at 3.36%.", prompt, changes)))
-    check("a self-computed pp gap is rejected (prompt forbids it)",
-          bool(verify_draft("The BoE sees 3.35% against the IMF, a 0.15pp gap.",
-                            prompt, changes)))
+          bool(blocking("China CPI rose 3.1pp in July.", source, changes)))
+    check("'held at' is caught like 'unchanged' (advisory)",
+          bool(advisory("China CPI held at 0.5% in July.", source, changes)))
+    check("adjectival country name is caught (advisory)",
+          bool(advisory("Chinese CPI was 0.5%, unchanged.", source, changes)))
+    check("no-change word BEFORE the figure is caught (advisory)",
+          bool(advisory("US CPI was unchanged at 3.36%.", source, changes)))
+    check("a self-computed pp gap is rejected (source forbids it)",
+          bool(blocking("The BoE sees 3.35% against the IMF, a 0.15pp gap.",
+                            source, changes)))
     check("negative percent is read as negative, not positive",
           _figures("Growth was -0.6%.", "%") == [-0.6],
           f"got {_figures('Growth was -0.6%.', '%')}")
@@ -141,9 +157,9 @@ def main() -> int:
           _figures("A 1,000pp move.", "pp") == [],
           f"got {_figures('A 1,000pp move.', 'pp')}")
     check("'percentage points' spelled out is checked too",
-          bool(verify_draft("China rose 3.1 percentage points.", prompt, changes)))
+          bool(blocking("China rose 3.1 percentage points.", source, changes)))
     check("uppercase PP is checked too",
-          bool(verify_draft("China rose 3.1PP.", prompt, changes)))
+          bool(blocking("China rose 3.1PP.", source, changes)))
 
     print("\nverify_draft — false positives found while fixing the review findings")
     # The real regression: ZA's 5.0 headline matched the tail of "2.5%" in a
@@ -153,12 +169,19 @@ def main() -> int:
           not check_no_change_claims("Policy rates sit at 10.5%, unchanged.", changes),
           str(check_no_change_claims("Policy rates sit at 10.5%, unchanged.", changes)))
     check("proximity window does not cross a sentence boundary",
-          not verify_draft("China printed 0.5% in July. Steady policy followed.",
-                           prompt, changes))
+          not blocking("China printed 0.5% in July. Steady policy followed.",
+                           source, changes))
     check("'down 0.37pp' is not read as an increase for lacking a + sign",
-          not verify_draft("Korea, down 0.37pp on the month.", prompt, changes))
+          not blocking("Korea, down 0.37pp on the month.", source, changes))
     check("an explicit wrong sign is still caught",
-          bool(verify_draft("Korea moved +0.37pp on the month.", prompt, changes)))
+          bool(blocking("Korea moved +0.37pp on the month.", source, changes)))
+
+    check("prompt instruction text cannot license a figure",
+          bool(blocking("The RBA's 3.3% is 0.7pp above the IMF's 4.0%.", source, changes)))
+    check("thousands separator is rejected, not skipped",
+          bool(blocking("China CPI jumped 1,000pp.", source, changes)))
+    check("a supplied +0.8pp does not license a written -0.8pp",
+          bool(blocking("The WEO revised the US -0.8pp.", source, changes)))
 
     print()
     if FAILURES:
