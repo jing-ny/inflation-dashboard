@@ -36,6 +36,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install anthropic requests python-dotenv
 
+      # Cheap and offline — runs before the API call so a broken verifier is
+      # caught without spending a generation.
+      - name: Verifier regression tests
+        run: python scripts/test_newsletter_verify.py
+
       - name: Generate newsletter draft
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
