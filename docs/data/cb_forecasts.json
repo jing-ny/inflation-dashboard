@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "last_updated": "August 2026",
+    "last_updated": "September 2026",
     "notes": "Central bank inflation forecasts and policy rates",
     "context": "The Iran war (Mar 2026) has sharply divided the inflation outlook. The ECB and Fed both revised 2026 inflation up (ECB: 1.9%→2.6%, Fed: 2.5%→2.7%) citing energy supply disruption via the Strait of Hormuz. Oil briefly hit $120/bbl. Meanwhile, the RBA hiked rates after Australian inflation surprised to the upside, while most other central banks held steady. IMF pre-conflict projections (Jan 2026 WEO) now look optimistic — the April 2026 WEO will likely revise upward. JP Morgan expects 'disparate outcomes' across regions: US inflation accelerating above 3%, Europe moderating to 2%, Asia subdued.",
     "imf_baseline": "IMF WEO January 2026 Update (pre-conflict)"
@@ -237,14 +237,14 @@
       "flag": "🇸🇬",
       "source": "MAS",
       "source_full": "MAS Survey of Professional Forecasters",
-      "source_url": "https://www.mas.gov.sg/-/media/mas-media-library/monetary-policy/mas-survey-of-professional-forecasters/2026/survey-writeup-jun-2026-web.pdf",
-      "publication_date": "June 2026",
+      "source_url": "https://www.mas.gov.sg/-/media/mas-media-library/monetary-policy/mas-survey-of-professional-forecasters/2026/survey-writeup-sep-2026-web.pdf",
+      "publication_date": "September 2026",
       "forecast_type": "SPF median forecast (CPI)",
       "note": "MAS uses exchange rate policy, not interest rates. Core inflation forecast 0.5-1.5% for 2026. Next MAS policy review in April 2026.",
       "projections": {
         "2025": 0.9,
         "2026": 1.5,
-        "2027": 2.1
+        "2027": 2.0
       },
       "key_quote": "Core inflation to remain subdued",
       "policy_rate": {
