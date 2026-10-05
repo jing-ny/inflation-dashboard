@@ -2601,5 +2601,88 @@
         "data_date": "2026-09-28"
       }
     }
+  },
+  {
+    "week_start": "2026-10-05",
+    "created_at": "2026-10-05T13:19:54.101306",
+    "countries": {
+      "US": {
+        "code": "US",
+        "name": "United States",
+        "yoy_inflation": 3.4,
+        "reference_period": "2026-08",
+        "data_date": "2026-10-05"
+      },
+      "EA": {
+        "code": "EA",
+        "name": "Euro Area",
+        "yoy_inflation": 3.23,
+        "reference_period": "2026-08",
+        "data_date": "2026-10-05"
+      },
+      "UK": {
+        "code": "UK",
+        "name": "United Kingdom",
+        "yoy_inflation": 3.1,
+        "reference_period": "2026-08",
+        "data_date": "2026-10-05"
+      },
+      "CA": {
+        "code": "CA",
+        "name": "Canada",
+        "yoy_inflation": 3.03,
+        "reference_period": "2026-08",
+        "data_date": "2026-10-05"
+      },
+      "AU": {
+        "code": "AU",
+        "name": "Australia",
+        "yoy_inflation": 4.0,
+        "reference_period": "2026-08",
+        "data_date": "2026-10-05"
+      },
+      "NZ": {
+        "code": "NZ",
+        "name": "New Zealand",
+        "yoy_inflation": 3.1,
+        "reference_period": "2026-Q1",
+        "data_date": "2026-10-05"
+      },
+      "ZA": {
+        "code": "ZA",
+        "name": "South Africa",
+        "yoy_inflation": 4.4,
+        "reference_period": "2026-08",
+        "data_date": "2026-10-05"
+      },
+      "JP": {
+        "code": "JP",
+        "name": "Japan",
+        "yoy_inflation": 2.0,
+        "reference_period": "2026-08",
+        "data_date": "2026-10-05"
+      },
+      "CN": {
+        "code": "CN",
+        "name": "China",
+        "yoy_inflation": 0.8,
+        "reference_period": "2026-08",
+        "data_date": "2026-10-05"
+      },
+      "KR": {
+        "code": "KR",
+        "name": "South Korea",
+        "yoy_inflation": 3.09,
+        "reference_period": "2026-08",
+        "data_date": "2026-10-05"
+      },
+      "SG": {
+        "code": "SG",
+        "name": "Singapore",
+        "yoy_inflation": 2.3,
+        "reference_period": "2026-08",
+        "data_date": "2026-10-05"
+      }
+    }
   }
 ]
