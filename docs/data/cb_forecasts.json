@@ -257,7 +257,7 @@
       "source": "IMF",
       "source_full": "IMF World Economic Outlook",
       "source_url": "https://www.imf.org/en/publications/weo/issues/2026/04/14/world-economic-outlook-april-2026",
-      "publication_date": "April 2026",
+      "publication_date": "October 2026",
       "forecast_type": "IMF staff projection (CPI)",
       "note": "PBoC publishes no standardized inflation forecast, so this row tracks the IMF World Economic Outlook (auto-updated each April & October). 1Y LPR held at 3.00% for 10 consecutive months.",
       "projections": {
@@ -275,7 +275,7 @@
       },
       "scraper_status": "imf_sourced",
       "scraper_status_reason": "PBoC publishes no standardized forecast; row tracks IMF WEO (auto-updated each April & October)",
-      "source_date": "2026-09-28"
+      "source_date": "2026-10-05"
     }
   }
 }
