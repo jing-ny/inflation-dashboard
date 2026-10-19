@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "last_updated": "2026-10-15",
+    "last_updated": "2026-10-19",
     "source": "Official national statistical agencies"
   },
   "US": {
@@ -598,18 +598,18 @@
     "source": "Eurostat",
     "last_updated": "2026-04-22",
     "latest": {
+      "date": "2026-09",
+      "value": 3.75,
+      "source": "FRED",
+      "source_url": "https://fred.stlouisfed.org/series/CP0000EZ19M086NEST",
+      "fetch_date": "2026-10-19"
+    },
+    "previous": {
       "date": "2026-08",
       "value": 3.23,
       "source": "FRED",
       "source_url": "https://fred.stlouisfed.org/series/CP0000EZ19M086NEST",
       "fetch_date": "2026-09-17"
-    },
-    "previous": {
-      "date": "2026-07",
-      "value": 2.93,
-      "source": "FRED",
-      "source_url": "https://fred.stlouisfed.org/series/CP0000EZ19M086NEST",
-      "fetch_date": "2026-08-20"
     },
     "history": [
       {
@@ -1181,6 +1181,13 @@
         "source": "FRED",
         "source_url": "https://fred.stlouisfed.org/series/CP0000EZ19M086NEST",
         "fetch_date": "2026-09-17"
+      },
+      {
+        "date": "2026-09",
+        "value": 3.75,
+        "source": "FRED",
+        "source_url": "https://fred.stlouisfed.org/series/CP0000EZ19M086NEST",
+        "fetch_date": "2026-10-19"
       }
     ],
     "source_url": "https://ec.europa.eu/eurostat/",
