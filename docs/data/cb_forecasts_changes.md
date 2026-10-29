@@ -1,11 +1,23 @@
 # Central Bank Forecast Changes
 
-**Generated:** 2026-10-26 10:20 UTC
+**Generated:** 2026-10-29 10:13 UTC
 
-**Auto-merged (6):** US, JP, EA, AU, CA, SG
+**Auto-merged (5):** US, JP, EA, AU, SG
 
-_All scraped values match the curated forecasts — nothing to review._
+**Blocked, written to draft (1):** CA (step 1.10pp exceeds 1.0pp)
 
-## No Changes Detected
+### Bank of Canada (CA)
+- **Source:** [Monetary Policy Report](https://www.bankofcanada.ca/publications/mpr/mpr-2026-10-28/projections/)
+- **Metric:** CPI Inflation
+- **Publication:** 2026-10-28
+- **Projections:**
+  - 2025: **2.1%**
+  - 2026: **2.9%**
+  - 2027: **3.1%**
+  - 2028: **2.2%**
 
-Extracted values match the curated forecasts.
+## Changes Detected
+
+- **Bank of Canada** 2026: 2.5% → 2.9%
+- **Bank of Canada** 2027: 2.0% → 3.1%
+- **Bank of Canada** 2028: 2.1% → 2.2%

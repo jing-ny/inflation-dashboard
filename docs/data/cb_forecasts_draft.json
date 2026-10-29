@@ -1,0 +1,159 @@
+{
+  "_metadata": {
+    "generated": "2026-10-29T10:13:35.703477",
+    "status": "DRAFT - REVIEW REQUIRED",
+    "note": "Auto-extracted values may be incorrect. Verify against source URLs.",
+    "blocked_countries": [
+      {
+        "country": "CA",
+        "reason": "step 1.10pp exceeds 1.0pp"
+      }
+    ]
+  },
+  "forecasts": [
+    {
+      "bank": "Federal Reserve",
+      "country": "US",
+      "metric": "PCE Inflation (Median FOMC projection)",
+      "source": "Fed Summary of Economic Projections",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomcprojtabl20260916.htm",
+      "source_date": "2026-09-16",
+      "projections": [
+        {
+          "year": "2026",
+          "value": 3.7
+        },
+        {
+          "year": "2027",
+          "value": 2.3
+        },
+        {
+          "year": "2028",
+          "value": 2.1
+        },
+        {
+          "year": "2029",
+          "value": 2.0
+        }
+      ]
+    },
+    {
+      "bank": "Bank of Japan",
+      "country": "JP",
+      "metric": "CPI excluding fresh food (Median Policy Board projection, fiscal year)",
+      "source": "BoJ Outlook for Economic Activity and Prices",
+      "source_url": "https://www.boj.or.jp/en/mopo/outlook/gor2607b.pdf",
+      "source_date": "2026-07-01",
+      "projections": [
+        {
+          "year": "2026",
+          "value": 2.5
+        },
+        {
+          "year": "2027",
+          "value": 2.4
+        },
+        {
+          "year": "2028",
+          "value": 2.0
+        }
+      ]
+    },
+    {
+      "bank": "European Central Bank",
+      "country": "EA",
+      "metric": "HICP Inflation (Baseline)",
+      "source": "ECB Staff Projections",
+      "source_url": "https://www.ecb.europa.eu/press/projections/html/ecb.projections202609_ecbstaff~8e340fc69d.en.html",
+      "projections": [
+        {
+          "year": "2025",
+          "value": 2.1
+        },
+        {
+          "year": "2026",
+          "value": 3.0
+        },
+        {
+          "year": "2027",
+          "value": 2.5
+        },
+        {
+          "year": "2028",
+          "value": 2.1
+        }
+      ],
+      "source_date": "2026-09-01"
+    },
+    {
+      "bank": "Reserve Bank of Australia",
+      "country": "AU",
+      "metric": "Trimmed mean inflation",
+      "source": "Statement on Monetary Policy",
+      "source_url": "https://www.rba.gov.au/publications/smp/2026/aug/overview.html",
+      "projections": [
+        {
+          "year": "2026",
+          "value": 3.3
+        },
+        {
+          "year": "2027",
+          "value": 2.6
+        },
+        {
+          "year": "2028",
+          "value": 2.4
+        }
+      ],
+      "source_date": "2026-08-01"
+    },
+    {
+      "bank": "Bank of Canada",
+      "country": "CA",
+      "metric": "CPI Inflation",
+      "source": "Monetary Policy Report",
+      "source_url": "https://www.bankofcanada.ca/publications/mpr/mpr-2026-10-28/projections/",
+      "projections": [
+        {
+          "year": "2025",
+          "value": 2.1
+        },
+        {
+          "year": "2026",
+          "value": 2.9
+        },
+        {
+          "year": "2027",
+          "value": 3.1
+        },
+        {
+          "year": "2028",
+          "value": 2.2
+        }
+      ],
+      "source_date": "2026-10-28"
+    },
+    {
+      "bank": "Monetary Authority of Singapore",
+      "country": "SG",
+      "metric": "CPI-All Items inflation (SPF median forecast)",
+      "source": "MAS Survey of Professional Forecasters",
+      "source_url": "https://www.mas.gov.sg/-/media/mas-media-library/monetary-policy/mas-survey-of-professional-forecasters/2026/survey-writeup-sep-2026-web.pdf",
+      "source_date": "2026-09-01",
+      "projections": [
+        {
+          "year": "2025",
+          "value": 0.9
+        },
+        {
+          "year": "2026",
+          "value": 1.5
+        },
+        {
+          "year": "2027",
+          "value": 2.0
+        }
+      ]
+    }
+  ]
+}
