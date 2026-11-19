@@ -1,12 +1,12 @@
 {
   "metadata": {
-    "last_updated": "2026-11-16",
+    "last_updated": "2026-11-19",
     "source": "Official national statistical agencies"
   },
   "US": {
     "code": "US",
     "name": "United States",
-    "flag": "🇺🇸",
+    "flag": "\ud83c\uddfa\ud83c\uddf8",
     "target": 2.0,
     "frequency": "monthly",
     "source": "BLS",
@@ -592,24 +592,24 @@
   "EA": {
     "code": "EA",
     "name": "Euro Area",
-    "flag": "🇪🇺",
+    "flag": "\ud83c\uddea\ud83c\uddfa",
     "target": 2.0,
     "frequency": "monthly",
     "source": "Eurostat",
     "last_updated": "2026-04-22",
     "latest": {
+      "date": "2026-10",
+      "value": 4.01,
+      "source": "FRED",
+      "source_url": "https://fred.stlouisfed.org/series/CP0000EZ19M086NEST",
+      "fetch_date": "2026-11-19"
+    },
+    "previous": {
       "date": "2026-09",
       "value": 3.75,
       "source": "FRED",
       "source_url": "https://fred.stlouisfed.org/series/CP0000EZ19M086NEST",
       "fetch_date": "2026-10-19"
-    },
-    "previous": {
-      "date": "2026-08",
-      "value": 3.23,
-      "source": "FRED",
-      "source_url": "https://fred.stlouisfed.org/series/CP0000EZ19M086NEST",
-      "fetch_date": "2026-09-17"
     },
     "history": [
       {
@@ -1188,6 +1188,13 @@
         "source": "FRED",
         "source_url": "https://fred.stlouisfed.org/series/CP0000EZ19M086NEST",
         "fetch_date": "2026-10-19"
+      },
+      {
+        "date": "2026-10",
+        "value": 4.01,
+        "source": "FRED",
+        "source_url": "https://fred.stlouisfed.org/series/CP0000EZ19M086NEST",
+        "fetch_date": "2026-11-19"
       }
     ],
     "source_url": "https://ec.europa.eu/eurostat/",
@@ -1196,7 +1203,7 @@
   "UK": {
     "code": "UK",
     "name": "United Kingdom",
-    "flag": "🇬🇧",
+    "flag": "\ud83c\uddec\ud83c\udde7",
     "target": 2.0,
     "frequency": "monthly",
     "source": "ONS",
@@ -3050,7 +3057,7 @@
   "CA": {
     "code": "CA",
     "name": "Canada",
-    "flag": "🇨🇦",
+    "flag": "\ud83c\udde8\ud83c\udde6",
     "target": 2.0,
     "frequency": "monthly",
     "source": "Statistics Canada",
@@ -4028,7 +4035,7 @@
   "AU": {
     "code": "AU",
     "name": "Australia",
-    "flag": "🇦🇺",
+    "flag": "\ud83c\udde6\ud83c\uddfa",
     "target": 2.5,
     "frequency": "monthly",
     "source": "ABS",
@@ -4385,7 +4392,7 @@
   "NZ": {
     "code": "NZ",
     "name": "New Zealand",
-    "flag": "🇳🇿",
+    "flag": "\ud83c\uddf3\ud83c\uddff",
     "target": 2.0,
     "frequency": "quarterly",
     "source": "Stats NZ",
@@ -4710,7 +4717,7 @@
   "ZA": {
     "code": "ZA",
     "name": "South Africa",
-    "flag": "🇿🇦",
+    "flag": "\ud83c\uddff\ud83c\udde6",
     "target": 3.0,
     "frequency": "monthly",
     "source": "Stats SA",
@@ -5225,7 +5232,7 @@
   "JP": {
     "code": "JP",
     "name": "Japan",
-    "flag": "🇯🇵",
+    "flag": "\ud83c\uddef\ud83c\uddf5",
     "target": 2.0,
     "frequency": "monthly",
     "source": "MIC",
@@ -7944,7 +7951,7 @@
   "CN": {
     "code": "CN",
     "name": "China",
-    "flag": "🇨🇳",
+    "flag": "\ud83c\udde8\ud83c\uddf3",
     "target": 3.0,
     "frequency": "monthly",
     "source": "NBS",
@@ -8477,7 +8484,7 @@
   "KR": {
     "code": "KR",
     "name": "South Korea",
-    "flag": "🇰🇷",
+    "flag": "\ud83c\uddf0\ud83c\uddf7",
     "target": 2.0,
     "frequency": "monthly",
     "source": "OECD",
@@ -9124,7 +9131,7 @@
   "SG": {
     "code": "SG",
     "name": "Singapore",
-    "flag": "🇸🇬",
+    "flag": "\ud83c\uddf8\ud83c\uddec",
     "target": 2.0,
     "frequency": "monthly",
     "source": "SingStat",
