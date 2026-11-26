@@ -7,6 +7,20 @@ All notable changes to the Inflation Dashboard project are documented here.
 ## [Unreleased]
 
 ### Fixed
+- **NZ CPI moves to OECD SDMX; the series was stuck at 2026-Q1 (#123).** FRED's `NZLCPIALLQINMEI`
+  relay stopped updating, so NZ sat 270 days old — the only red series on the freshness gate —
+  while Stats NZ had already published 2026-Q2 (4.1%) and Q3 (3.7%). NZ now reads OECD's SDMX
+  endpoint quarterly (`NZL.Q.N.CPI.PA._T.N.GY`), the same keyless endpoint KR already reads
+  monthly from GitHub runners. `fetch_oecd_cpi_series()` takes a `freq` (`M` default, `Q`) and
+  keeps only rows of that shape. A successful OECD fetch rebuilds NZ's history wholesale (as AU
+  does from ABS), which scrubs the month-shaped duplicates (`2024-01`, `2024-04`, …) that had
+  leaked into a quarterly series and fills the 2025-Q2/Q3 gaps. FRED stays as the fallback and
+  never triggers a rebuild. Source label and per-record provenance now say OECD (CLAUDE.md #3).
+- **A rebuilt history no longer skips the anomaly gate for new periods.** The `history_replace`
+  path (AU, now NZ) stamped every point without calling `detect_anomalies`, so a new quarter that
+  arrived through it was never checked. Periods newer than the stored history now go through the
+  gate like any appended point (CLAUDE.md #5); the backfilled archive still doesn't.
+  `scripts/test_oecd_nz.py` covers both, offline.
 - **Newsletter compares reference periods, not weekly snapshots, and drafts are verified before
   they land (#117).** `generate_newsletter.py` used `compare_snapshots()`, which diffs the current
   weekly snapshot against the previous one — right for a weekly alert, wrong for a monthly piece,

@@ -56,7 +56,7 @@ This keeps real staleness visible (CLAUDE.md #4) without false positives on curr
 | 🇬🇧 United Kingdom | FRED (GBRCPIALLMINMEI) | [ONS](https://www.ons.gov.uk/economy/inflationandpriceindices) | Monthly |
 | 🇨🇦 Canada | FRED (CANCPIALLMINMEI) | [StatCan](https://www.statcan.gc.ca/) | Monthly |
 | 🇦🇺 Australia | FRED (AUSCPIALLQINMEI) | [ABS](https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/) | Monthly* |
-| 🇳🇿 New Zealand | FRED (NZLCPIALLQINMEI) | [Stats NZ](https://www.stats.govt.nz/indicators/consumers-price-index-cpi/) | Quarterly |
+| 🇳🇿 New Zealand | OECD SDMX (`NZL.Q.N.CPI.PA._T.N.GY`) | [Stats NZ](https://www.stats.govt.nz/indicators/consumers-price-index-cpi/) via OECD | Quarterly |
 | 🇿🇦 South Africa | FRED (ZAFCPIALLMINMEI) | [Stats SA](https://www.statssa.gov.za/) | Monthly |
 | 🇯🇵 Japan | FRED (JPNCPALTT01IXNBM) | [MIC](https://www.stat.go.jp/english/data/cpi/) | Monthly |
 | 🇨🇳 China | FRED (CHNCPIALLMINMEI) | [NBS](https://www.stats.gov.cn/english/) | Monthly |
