@@ -1743,6 +1743,15 @@ def load_existing_data() -> Dict:
 
 
 STEP_THRESHOLD_PP = 1.0  # YoY inflation rarely shifts >1pp month-over-month
+# Fetch paths that read the headline out of press-release text or a PDF. The
+# "exactly matches prior-year same period" check exists for these: the BR/MX
+# miscapture stored the prior-year figure quoted in IBGE/INEGI comparison text
+# as the current reading. Structured, period-keyed series (BLS, ECB, ONS,
+# StatCan, ABS, OECD, e-Stat, SingStat, FRED) have no comparison text to
+# confuse, and a real repeat of last year's rate does happen (UK Oct 2025 and
+# Oct 2026 were both 3.6%), so there the check only blocks good data. The
+# step check still applies to every source.
+TEXT_PARSED_APIS = {"StatsSA", "NBS"}
 ANOMALY_LOG: List[Dict] = []
 
 
@@ -1797,15 +1806,20 @@ def _rebuild_covers(incoming: List[Dict], stored_same: List[Dict]) -> bool:
             and len(incoming) >= len(stored_same))
 
 
-def detect_anomalies(code: str, new_point: Dict, prev_point: Optional[Dict], history: List[Dict]):
-    """Append to ANOMALY_LOG if the new point looks suspicious."""
+def detect_anomalies(code: str, new_point: Dict, prev_point: Optional[Dict], history: List[Dict],
+                     check_prior_year: bool = True):
+    """Append to ANOMALY_LOG if the new point looks suspicious.
+
+    check_prior_year: run the exact prior-year match (a text-miscapture check);
+    the caller turns it off for structured, period-keyed sources.
+    """
     date, value = new_point['date'], new_point['value']
     prev_value = prev_point['value'] if prev_point and isinstance(prev_point.get('value'), (int, float)) else None
     prior_year = _prior_year_value(history, date)
     reasons = []
     if prev_value is not None and abs(value - prev_value) > STEP_THRESHOLD_PP:
         reasons.append(f"step {value - prev_value:+.2f}pp > {STEP_THRESHOLD_PP}pp ({prev_value}% → {value}%)")
-    if prior_year is not None and abs(value - prior_year) < 0.01:
+    if check_prior_year and prior_year is not None and abs(value - prior_year) < 0.01:
         reasons.append(f"exactly matches prior-year same-period ({prior_year}%) — possible comparison-text miscapture")
     if reasons:
         _log_anomaly(code, date, value, prev_value, prior_year, reasons)
@@ -1873,6 +1887,8 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
     # provenance for data fetched before this was recorded.
     fetch_stamp = datetime.now().strftime("%Y-%m-%d")
     actual_source = fetched.get("fetched_from") or config["source"]
+    # Only text/PDF-parsed values can carry the prior-year miscapture.
+    text_parsed = config.get("api") in TEXT_PARSED_APIS and actual_source != "FRED"
     fred_series_used = fetched.get("fred_series_used") or config.get("fred_series")
     actual_source_url = (
         f"https://fred.stlouisfed.org/series/{fred_series_used}"
@@ -1919,7 +1935,7 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
             # stored one, so leaked/mis-shaped old points can't skew it.
             if cutoff and point["date"] > cutoff:
                 prev = rebuilt[-1] if rebuilt else None
-                detect_anomalies(code, point, prev, rebuilt)
+                detect_anomalies(code, point, prev, rebuilt, check_prior_year=text_parsed)
             # A period we already hold that the source now reports very
             # differently is a revision worth a human look, not a silent
             # rewrite of the chart (CLAUDE.md #5).
@@ -1948,7 +1964,7 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
                     hist_so_far = sorted(merged.get("history", []), key=lambda x: x["date"])
                     prior = [h for h in hist_so_far if h["date"] < point["date"]]
                     prev = prior[-1] if prior else None
-                    detect_anomalies(code, point, prev, hist_so_far)
+                    detect_anomalies(code, point, prev, hist_so_far, check_prior_year=text_parsed)
                 point.setdefault("source", actual_source)
                 point.setdefault("source_url", actual_source_url)
                 point.setdefault("fetch_date", fetch_stamp)
