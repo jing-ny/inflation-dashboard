@@ -1201,7 +1201,10 @@ def merge_into_main(new_forecasts, dry_run=False):
     """Merge scraped forecasts directly into cb_forecasts.json.
 
     Preserves all curated fields (flag, note, key_quote, policy_rate, etc.);
-    only rewrites projections, source_url, and publication_date.
+    only rewrites projections, source_url, and publication_date. When the
+    publication changes, stamps ``commentary_date`` with the old one so the
+    dashboard can say the curated text is from an earlier report. Re-curating
+    the text means updating or deleting ``commentary_date`` by hand.
 
     Anomaly gate: if any year's delta exceeds MERGE_THRESHOLD_PP, that country
     is SKIPPED (not merged) and reported so a human can verify.
@@ -1250,7 +1253,19 @@ def merge_into_main(new_forecasts, dry_run=False):
         if fc.get("source_url"):
             entry["source_url"] = fc["source_url"]
         if fc.get("source_date"):
-            entry["publication_date"] = _normalise_publication_date(fc["source_date"])
+            new_pub = _normalise_publication_date(fc["source_date"])
+            old_pub = entry.get("publication_date")
+            # The curated key_quote / note describe the report they were written
+            # from. When a newer report's numbers replace the projections, that
+            # text no longer matches them (e.g. ZA's May quote "4.4% in 2026"
+            # beside November's 4.3). We can't write new commentary (CLAUDE.md
+            # #1), so pin the text to the report it came from and let the
+            # front end label it (CLAUDE.md #4). Set once: a later merge must
+            # not move the stamp forward over text nobody has re-curated.
+            if (old_pub and old_pub != new_pub and "commentary_date" not in entry
+                    and (entry.get("key_quote") or entry.get("note"))):
+                entry["commentary_date"] = old_pub
+            entry["publication_date"] = new_pub
         # Scenario-based sources (BoE, #10) carry a cross-scenario range and the
         # full per-scenario paths. Persist them and flip the row to "enabled"
         # (clear the disabled scraper_status), since the scraper now produces it.

@@ -188,3 +188,20 @@ function pendingReviewPill(delta, bank) {
     const label = delta != null ? `⚠ pending (Δ${delta.toFixed(1)}pp)` : '⚠ pending';
     return `<span class="freshness freshness-pending" title="${tip}">${label}</span>`;
 }
+
+/**
+ * Label curated central-bank commentary that predates the numbers beside it.
+ *
+ * The scraper replaces a row's projections with a newer report's figures but
+ * cannot rewrite the hand-written key_quote / note (CLAUDE.md #1). When that
+ * happens it stamps `commentary_date` with the report the text came from, and
+ * this returns a visible "(from the May 2026 report)" suffix so the reader can
+ * tell the text and the numbers apart (CLAUDE.md #4). Empty string otherwise.
+ */
+function commentaryLabel(forecast) {
+    const c = forecast && forecast.commentary_date;
+    if (!c || c === forecast.publication_date) return '';
+    const safe = String(c).replace(/[&<>"]/g, ch => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+    return ` <span class="commentary-date">(from the ${safe} report)</span>`;
+}

@@ -12,6 +12,13 @@ All notable changes to the Inflation Dashboard project are documented here.
   ZA's curated forecast stayed on the May 2026 report. The constant is restored with the path the
   curated ZA `source_url` already uses. A dry run found the November 2026 report and parsed
   2026 4.3, 2027 4.0, 2028 3.2, 2029 3.0, all inside the 1pp gate.
+- **Curated central-bank commentary is labelled when it is older than the numbers (#129).**
+  `merge_into_main` replaces a row's projections with the scraped report but keeps the hand-written
+  `key_quote` and `note`, so ZA would have shown May's "4.4% in 2026" beside November's 4.3. When
+  the publication changes, the merge now stamps `commentary_date` with the report the text came
+  from, and the outlook table and country pages show "(from the May 2026 report)" after it. The
+  stamp is set once; re-curating the text means updating or removing `commentary_date`.
+  `scripts/test_cb_commentary_date.py` covers it, offline.
 - **NZ CPI moves to OECD SDMX; the series was stuck at 2026-Q1 (#123).** FRED's `NZLCPIALLQINMEI`
   relay stopped updating, so NZ sat 270 days old — the only red series on the freshness gate —
   while Stats NZ had already published 2026-Q2 (4.1%) and Q3 (3.7%). NZ now reads OECD's SDMX
