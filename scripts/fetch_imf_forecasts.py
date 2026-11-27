@@ -186,6 +186,8 @@ def fetch_imf_forecasts() -> Dict:
     if existing.get("note"):
         note = existing["note"]
         result["note"] = note
+        # note_edition and note_sha are generated here, not curated: edit the
+        # note (and publication_url) and both are recomputed on the next run.
         # note_sha ties the stored edition to the note text it was worked out
         # for. If someone re-curates the note (and the page) without touching
         # note_edition, the hash no longer matches and the edition is worked
