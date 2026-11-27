@@ -690,3 +690,13 @@ a.freshness-paused:hover {
 .nav-back:hover {
     color: #111;
 }
+
+/* A newer month the source can't give an annual rate for (yoyGapNote) */
+.yoy-gap {
+    font-size: 0.7rem;
+    color: #92400e;
+    background: #fef3c7;
+    padding: 1px 5px;
+    border-radius: 4px;
+    margin-left: 4px;
+}

@@ -7,6 +7,13 @@ All notable changes to the Inflation Dashboard project are documented here.
 ## [Unreleased]
 
 ### Fixed
+- **US says why it stays on September 2026 (#132).** BLS has no October 2025 CPI, so it published
+  no 12-month change for October 2026 and `calculate_yoy_from_index()` dropped the month; the row
+  just looked late. `index_months_without_yoy()` now records each newer month that has an index but
+  no year-ago index as `yoy_unavailable` on the series, and the overview table and country page show
+  "Oct 2026: no annual rate" beside the latest date. No value is filled in (CLAUDE.md #1); the note
+  is replaced on every successful fetch, so it clears once November gets a rate.
+  `scripts/test_yoy_gap.py` (12 checks, offline).
 - **NZ CPI moves to OECD SDMX; the series was stuck at 2026-Q1 (#123).** FRED's `NZLCPIALLQINMEI`
   relay stopped updating, so NZ sat 270 days old — the only red series on the freshness gate —
   while Stats NZ had already published 2026-Q2 (4.1%) and Q3 (3.7%). NZ now reads OECD's SDMX
