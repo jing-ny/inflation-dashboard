@@ -1743,6 +1743,17 @@ def load_existing_data() -> Dict:
 
 
 STEP_THRESHOLD_PP = 1.0  # YoY inflation rarely shifts >1pp month-over-month
+# Fetch paths that return structured, period-keyed observations. The "exactly
+# matches prior-year same period" check exists for values read out of text:
+# the BR/MX miscapture stored the prior-year figure quoted in IBGE/INEGI
+# comparison text as the current reading. A series keyed by period has no
+# comparison text to confuse, and a real repeat of last year's rate does happen
+# (UK Oct 2025 and Oct 2026 were both 3.6%), so for these the check only blocks
+# good data. Everything not listed here keeps the check, so a new or restored
+# fetcher (e.g. MoSPI's PDF) is checked by default. A point flagged
+# "provisional" (EA's Eurostat flash, scraped from the HTML release) keeps it
+# too, even on a structured row. The step check applies to every source.
+STRUCTURED_APIS = {"BLS", "ECB", "ONS", "StatCan", "ABS", "OECD", "eStat", "SingStat"}
 ANOMALY_LOG: List[Dict] = []
 
 
@@ -1797,15 +1808,20 @@ def _rebuild_covers(incoming: List[Dict], stored_same: List[Dict]) -> bool:
             and len(incoming) >= len(stored_same))
 
 
-def detect_anomalies(code: str, new_point: Dict, prev_point: Optional[Dict], history: List[Dict]):
-    """Append to ANOMALY_LOG if the new point looks suspicious."""
+def detect_anomalies(code: str, new_point: Dict, prev_point: Optional[Dict], history: List[Dict],
+                     check_prior_year: bool = True):
+    """Append to ANOMALY_LOG if the new point looks suspicious.
+
+    check_prior_year: run the exact prior-year match (a text-miscapture check);
+    the caller turns it off for structured, period-keyed sources.
+    """
     date, value = new_point['date'], new_point['value']
     prev_value = prev_point['value'] if prev_point and isinstance(prev_point.get('value'), (int, float)) else None
     prior_year = _prior_year_value(history, date)
     reasons = []
     if prev_value is not None and abs(value - prev_value) > STEP_THRESHOLD_PP:
         reasons.append(f"step {value - prev_value:+.2f}pp > {STEP_THRESHOLD_PP}pp ({prev_value}% → {value}%)")
-    if prior_year is not None and abs(value - prior_year) < 0.01:
+    if check_prior_year and prior_year is not None and abs(value - prior_year) < 0.01:
         reasons.append(f"exactly matches prior-year same-period ({prior_year}%) — possible comparison-text miscapture")
     if reasons:
         _log_anomaly(code, date, value, prev_value, prior_year, reasons)
@@ -1873,6 +1889,9 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
     # provenance for data fetched before this was recorded.
     fetch_stamp = datetime.now().strftime("%Y-%m-%d")
     actual_source = fetched.get("fetched_from") or config["source"]
+    # Rows from a structured API (or the FRED fallback) skip the prior-year
+    # match; text-parsed rows and provisional points keep it.
+    structured_row = config.get("api") in STRUCTURED_APIS or actual_source == "FRED"
     fred_series_used = fetched.get("fred_series_used") or config.get("fred_series")
     actual_source_url = (
         f"https://fred.stlouisfed.org/series/{fred_series_used}"
@@ -1919,7 +1938,8 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
             # stored one, so leaked/mis-shaped old points can't skew it.
             if cutoff and point["date"] > cutoff:
                 prev = rebuilt[-1] if rebuilt else None
-                detect_anomalies(code, point, prev, rebuilt)
+                detect_anomalies(code, point, prev, rebuilt,
+                                 check_prior_year=not structured_row or bool(point.get("provisional")))
             # A period we already hold that the source now reports very
             # differently is a revision worth a human look, not a silent
             # rewrite of the chart (CLAUDE.md #5).
@@ -1948,7 +1968,8 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
                     hist_so_far = sorted(merged.get("history", []), key=lambda x: x["date"])
                     prior = [h for h in hist_so_far if h["date"] < point["date"]]
                     prev = prior[-1] if prior else None
-                    detect_anomalies(code, point, prev, hist_so_far)
+                    detect_anomalies(code, point, prev, hist_so_far,
+                                     check_prior_year=not structured_row or bool(point.get("provisional")))
                 point.setdefault("source", actual_source)
                 point.setdefault("source_url", actual_source_url)
                 point.setdefault("fetch_date", fetch_stamp)
