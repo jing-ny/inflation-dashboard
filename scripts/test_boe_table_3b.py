@@ -127,6 +127,13 @@ split[k:k] = ["Table 3.B (continued)"]
 years, paths, central = cb._parse_boe_table_3b(split)
 check("'Table 3.B (continued)' header doesn't cut the table",
       "Weaker demand scenario" in paths and central == "Central projection")
+years, paths, central = cb._parse_boe_table_3b(APR_2026_SHAPE + PROSE_AFTER)
+check("April table followed by a 'Central projection' prose heading still parses",
+      sorted(paths) == ["A", "B", "C"] and central is None)
+years, paths, central = cb._parse_boe_table_3b(
+    ["Table 3.B: Summary of outputs of the central projection and scenarios (a)"]
+    + no_central_row[1:] + ["Contents"] + APR_2026_SHAPE)
+check("an unreadable region doesn't stop the search", sorted(paths) == ["A", "B", "C"])
 years, paths, central = cb._parse_boe_table_3b(
     NOV_2026 + ["Table 3.C: Something else", "Scenario Z", "CPI inflation (a) 9.0 9.0 9.0 9.0"])
 check("the next table is not read", "Z" not in paths)

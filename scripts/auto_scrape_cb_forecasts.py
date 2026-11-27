@@ -393,15 +393,20 @@ def _parse_boe_table_3b(lines):
                 break
         if not years:
             continue
-        paths, current, labels = {}, None, set()
+        # rows[name]: table rows ("GDP (c) 2.2 …") seen under each block label.
+        # A label with none under it is a prose heading, not a table block.
+        paths, current, block, rows = {}, None, None, {}
         for l in region:
             bm = _BOE_BLOCK_RE.match(l)
             if bm:
                 label = bm.group(1).strip()
-                labels.add(label)
+                block = label
+                rows.setdefault(label, 0)
                 sm = re.match(r'Scenario\s+([A-Z])\b', label)
                 current = sm.group(1) if sm else label
                 continue
+            if block and re.search(r'\([a-z]\)\s+-?\d+\.\d', l):
+                rows[block] += 1
             cm = _BOE_CPI_RE.match(l)
             if cm and current:
                 nums = re.findall(r'-?\d+\.\d+', _BOE_PAREN_RE.sub(' ', cm.group(1)))
@@ -411,14 +416,14 @@ def _parse_boe_table_3b(lines):
                     if vals:
                         paths[current] = vals
                 current = None
-        if "Central projection" in labels and "Central projection" not in paths:
-            # The table has a central projection but its CPI row didn't parse
-            # (wrapped or reformatted). Falling back to a range over the
-            # scenarios alone would publish the wrong thing, so read nothing
-            # and keep the curated entry.
+        if rows.get("Central projection") and "Central projection" not in paths:
+            # The table has a central-projection block but its CPI row didn't
+            # parse (wrapped or reformatted). Falling back to a range over the
+            # scenarios alone would publish the wrong thing, so skip this
+            # region; if no other region reads, the curated entry stays.
             print("  ⚠️  BoE Table 3.B: central projection found but its CPI row "
                   "didn't parse — not falling back to the scenarios")
-            return [], {}, None
+            continue
         central = "Central projection" if "Central projection" in paths else None
         if central or len(paths) >= 2:
             return years, paths, central

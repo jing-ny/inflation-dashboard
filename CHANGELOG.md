@@ -17,7 +17,7 @@ All notable changes to the Inflation Dashboard project are documented here.
   If the table shows a central projection but its CPI row can't be read, nothing is merged rather
   than falling back to a range over the scenarios alone. The merge logs a change of forecast basis
   (here Q2 scenario midpoints → Q4 central projection), since the 1pp gate compared the two.
-  `scripts/test_boe_table_3b.py` (20 checks, offline) uses the November table text itself.
+  `scripts/test_boe_table_3b.py` (22 checks, offline) uses the November table text itself.
 - **NZ CPI moves to OECD SDMX; the series was stuck at 2026-Q1 (#123).** FRED's `NZLCPIALLQINMEI`
   relay stopped updating, so NZ sat 270 days old — the only red series on the freshness gate —
   while Stats NZ had already published 2026-Q2 (4.1%) and Q3 (3.7%). NZ now reads OECD's SDMX
