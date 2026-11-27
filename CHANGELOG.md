@@ -19,6 +19,15 @@ All notable changes to the Inflation Dashboard project are documented here.
   from, and the outlook table and country pages show "(from the May 2026 report)" after it. The
   stamp is set once; re-curating the text means updating or removing `commentary_date`.
   `scripts/test_cb_commentary_date.py` covers it, offline.
+- **The prior-year anomaly check no longer blocks real data from structured APIs (#125).** The
+  2026-11-23 run fetched UK 2026-10 = 3.6% from ONS. That matched Oct 2025 exactly, so the run
+  exited 2 and committed nothing (UK, ZA, JP and SG updates lost), and every later run would have
+  done the same. ONS's release confirms 3.6%. The exact prior-year match exists for the BR/MX
+  press-release miscapture, so it is now skipped only for structured, period-keyed APIs
+  (`STRUCTURED_APIS`: BLS, ECB, ONS, StatCan, ABS, OECD, e-Stat, SingStat) and the FRED fallback.
+  Text-parsed rows (Stats SA, NBS), EA's provisional Eurostat flash, and any fetcher not on the
+  list keep it. The step check still runs on every source, and no threshold changed.
+  `scripts/test_anomaly_scope.py` covers it, offline.
 - **NZ CPI moves to OECD SDMX; the series was stuck at 2026-Q1 (#123).** FRED's `NZLCPIALLQINMEI`
   relay stopped updating, so NZ sat 270 days old — the only red series on the freshness gate —
   while Stats NZ had already published 2026-Q2 (4.1%) and Q3 (3.7%). NZ now reads OECD's SDMX
