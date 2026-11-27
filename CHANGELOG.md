@@ -6,6 +6,9 @@ All notable changes to the Inflation Dashboard project are documented here.
 
 ## [Unreleased]
 
+### Changed
+- **Claude may merge a PR when the maintainer asks for that merge (#137).** CLAUDE.md #6 still requires an issue and a PR for every change and still bars direct commits and dispatched writes to `main`. Claude can now press Merge only when the maintainer's own message asks for that PR, CI is green with no conflicts, the rule 7 review is posted and dispositioned, and the PR doesn't touch `CLAUDE.md`.
+
 ### Fixed
 - **CB forecast auto-scrape runs again; it had scraped nothing since 2026-10-29 (#127).** The
   "recent draft" guard measured the draft's age from its mtime, which `actions/checkout` sets to
