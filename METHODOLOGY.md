@@ -100,7 +100,7 @@ As of February 2026, all CPI values are verified against official government sou
 
 CPI actuals are fetched per country by [`scripts/fetch_historical_cpi.py`](scripts/fetch_historical_cpi.py). Each country's config carries an `api` field that selects the fetch path; the script **merges** (never blindly overwrites) and **only advances a value when the source has a genuinely newer reading**, so a laggy source can't roll a country *backwards*.
 
-**Two classes of source:**
+**Three classes of source:**
 
 - **Direct primary/national API (fresh):** US → BLS, Euro Area → ECB, UK → ONS, Canada → StatCan, Australia → ABS (monthly CPI indicator, #50). These track the national release closely.
 - **OECD SDMX direct (quarterly for NZ):** New Zealand and Korea read the OECD's own SDMX API, which follows the national release closely.
