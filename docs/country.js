@@ -537,7 +537,7 @@ async function renderForecastTable(countryCode) {
             const scenYears = Array.from(new Set(
                 Object.values(scen).flatMap(p => Object.keys(p || {})))).sort();
             html += `
-                <p style="margin-top: 1rem; margin-bottom: 0.5rem; font-weight: 600;">Scenario projections (CPI inflation, %)</p>
+                <p style="margin-top: 1rem; margin-bottom: 0.5rem; font-weight: 600;">${cbForecast.central_scenario ? 'Central projection and scenarios' : 'Scenario projections'} (CPI inflation, %)</p>
                 <table class="forecast-table">
                     <thead><tr><th>Scenario</th>${scenYears.map(y => `<th>${y}</th>`).join('')}</tr></thead>
                     <tbody>

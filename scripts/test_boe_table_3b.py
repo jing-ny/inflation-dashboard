@@ -117,6 +117,19 @@ one = [l for l in NOV_2026 if "Adverse" not in l and "Weaker" not in l]
 one = one[:one.index("Bank Rate (i) 3.9 (3.9) 4.9 (4.2) 4.9 (4.1) 4.7") + 1]
 years, paths, central = cb._parse_boe_table_3b(one)
 check("central projection alone is enough", central == "Central projection" and len(paths) == 1)
+no_central_row = [l for l in NOV_2026 if l != "CPI inflation (b) 3.8 (3.2) 4.0 (2.1) 2.0 (1.9) 1.8"]
+years, paths, central = cb._parse_boe_table_3b(no_central_row)
+check("central label but no CPI row: nothing, not a scenario-only range",
+      not paths and central is None)
+split = list(NOV_2026)
+k = split.index("Weaker demand scenario")
+split[k:k] = ["Table 3.B (continued)"]
+years, paths, central = cb._parse_boe_table_3b(split)
+check("'Table 3.B (continued)' header doesn't cut the table",
+      "Weaker demand scenario" in paths and central == "Central projection")
+years, paths, central = cb._parse_boe_table_3b(
+    NOV_2026 + ["Table 3.C: Something else", "Scenario Z", "CPI inflation (a) 9.0 9.0 9.0 9.0"])
+check("the next table is not read", "Z" not in paths)
 
 
 def run_merge(entry, fc):

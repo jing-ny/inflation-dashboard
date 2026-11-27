@@ -315,7 +315,6 @@ def scrape_boe():
         # Bank's own headline number, not one we derive).
         result.update({
             "metric": "CPI inflation, Q4 four-quarter rate (MPC central projection)",
-            "source": "BoE Monetary Policy Report — Table 3.B, central projection",
             "central_scenario": central,
             "projections": [{"year": y, "value": paths[central][y]}
                             for y in years if y in paths[central]],
@@ -334,7 +333,6 @@ def scrape_boe():
                 midpoints.append({"year": y, "value": round((lo + hi) / 2, 2)})
         result.update({
             "metric": "CPI inflation (MPC scenario range)",
-            "source": "BoE Monetary Policy Report — Summary of scenarios (Table 3.B)",
             "projection_range": projection_range,
             "projections": midpoints,
         })
@@ -382,7 +380,9 @@ def _parse_boe_table_3b(lines):
             continue
         region = []
         for l in lines[i + 1:i + 90]:
-            if re.match(r'\s*Table \d', l):
+            # Stop at the next table, but not at this one's continuation
+            # header after a page break ("Table 3.B (continued)").
+            if re.match(r'\s*Table \d', l) and not re.match(r'\s*Table 3\.B\b', l):
                 break
             region.append(l)
         years = []
@@ -393,11 +393,12 @@ def _parse_boe_table_3b(lines):
                 break
         if not years:
             continue
-        paths, current = {}, None
+        paths, current, labels = {}, None, set()
         for l in region:
             bm = _BOE_BLOCK_RE.match(l)
             if bm:
                 label = bm.group(1).strip()
+                labels.add(label)
                 sm = re.match(r'Scenario\s+([A-Z])\b', label)
                 current = sm.group(1) if sm else label
                 continue
@@ -410,6 +411,14 @@ def _parse_boe_table_3b(lines):
                     if vals:
                         paths[current] = vals
                 current = None
+        if "Central projection" in labels and "Central projection" not in paths:
+            # The table has a central projection but its CPI row didn't parse
+            # (wrapped or reformatted). Falling back to a range over the
+            # scenarios alone would publish the wrong thing, so read nothing
+            # and keep the curated entry.
+            print("  ⚠️  BoE Table 3.B: central projection found but its CPI row "
+                  "didn't parse — not falling back to the scenarios")
+            return [], {}, None
         central = "Central projection" if "Central projection" in paths else None
         if central or len(paths) >= 2:
             return years, paths, central
@@ -1293,7 +1302,14 @@ def merge_into_main(new_forecasts, dry_run=False):
         # (clear the disabled scraper_status), since the scraper now produces it.
         if fc.get("scenarios"):
             entry["scenarios"] = fc["scenarios"]
-            entry["forecast_type"] = fc.get("metric", entry.get("forecast_type"))
+            new_type = fc.get("metric", entry.get("forecast_type"))
+            if new_type != entry.get("forecast_type"):
+                # The 1pp gate just compared figures on two different bases
+                # (e.g. April's Q2 scenario midpoints vs November's Q4 central
+                # projection), so say so in the run log for the human review.
+                print(f"  ℹ️  {country}: forecast basis changed: "
+                      f"{entry.get('forecast_type')!r} → {new_type!r}")
+            entry["forecast_type"] = new_type
             # A range is shown in place of the point projection, so it must
             # go when the source is back to a central projection, or the
             # page would keep showing April's band over November's numbers.
