@@ -305,6 +305,16 @@ def scrape_boe():
     # the data"). Anchored on the scenario table so we never pick up the
     # services/food/energy-contribution rows that share the prose.
     lines = text.splitlines()
+    # --- TEMPORARY DIAGNOSTIC (diag-boe branch, never merged) ---
+    for _i, _l in enumerate(lines):
+        if re.search(r'(Table\s+\d|CPI inflation|central projection|Projections? for|Summary of)', _l, re.I):
+            print(f"DIAG {_i:05d}: {_l[:160]}")
+    for _i, _l in enumerate(lines):
+        if re.search(r'CPI inflation', _l) and re.search(r'\d\.\d', _l):
+            print(f"CTX {_i:05d} ---")
+            for _j in range(max(0, _i - 12), min(len(lines), _i + 4)):
+                print(f"CTX {_j:05d}: {lines[_j][:160]}")
+    # --- END DIAGNOSTIC ---
 
     def _parse_scenarios(region):
         years = []
