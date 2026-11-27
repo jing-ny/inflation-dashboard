@@ -15,7 +15,7 @@ import json
 import os
 import sys
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -37,7 +37,7 @@ def write(tmp, body):
     return path
 
 
-now = datetime(2026, 11, 26, 10, 11)
+now = datetime(2026, 11, 26, 10, 11, tzinfo=timezone.utc)
 with tempfile.TemporaryDirectory() as tmp:
     # The real case: committed draft from Oct 29, file freshly checked out.
     p = write(tmp, {"_metadata": {"generated": "2026-10-29T10:13:35.703477"}})
@@ -50,8 +50,22 @@ with tempfile.TemporaryDirectory() as tmp:
     check("draft generated 3h ago still blocks", age is not None and age < 12, age)
 
     p = write(tmp, {"_metadata": {"generated": "2026-11-26T07:11:00+00:00"}})
-    age = s.draft_age_hours(p)
-    check("timezone-aware stamp is handled", age is not None, age)
+    age = s.draft_age_hours(p, now)
+    check("UTC stamp gives the right age", age is not None and abs(age - 3.0) < 1e-6, age)
+
+    p = write(tmp, {"_metadata": {"generated": "2026-11-26T16:11:00+09:00"}})
+    age = s.draft_age_hours(p, now)
+    check("stamp in another zone gives the right age", age is not None and abs(age - 3.0) < 1e-6, age)
+
+    p = write(tmp, {"_metadata": {"generated": "2026-11-26T07:11:00"}})
+    age = s.draft_age_hours(p, now)
+    check("old naive stamp is read as UTC", age is not None and abs(age - 3.0) < 1e-6, age)
+
+    age = s.draft_age_hours(p, datetime(2026, 11, 26, 10, 11))
+    check("naive now with naive stamp works", age is not None and abs(age - 3.0) < 1e-6, age)
+
+    p = write(tmp, {"_metadata": {"generated": "2026-11-27T10:11:00+00:00"}})
+    check("future stamp doesn't hold up the scrape", s.draft_age_hours(p, now) is None)
 
     for label, body in [("no _metadata", {"forecasts": []}),
                         ("bad stamp", {"_metadata": {"generated": "yesterday"}}),
@@ -63,10 +77,9 @@ with tempfile.TemporaryDirectory() as tmp:
     check("missing file: doesn't hold up the scrape",
           s.draft_age_hours(os.path.join(tmp, "nope.json"), now) is None)
 
-# The committed draft in the repo must not block a run today.
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-age = s.draft_age_hours(os.path.join(REPO, "docs/data/cb_forecasts_draft.json"), now)
-check("committed draft doesn't block a scheduled run", age is None or age >= 12, age)
+# The stamp the scraper writes must parse back, with an offset.
+stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+check("written stamp format round-trips", datetime.fromisoformat(stamp).tzinfo is not None, stamp)
 
 print()
 if FAILURES:

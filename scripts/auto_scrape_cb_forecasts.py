@@ -17,7 +17,7 @@ import argparse
 import json
 import re
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from urllib.request import urlopen, Request
 from urllib.error import URLError
@@ -1310,8 +1310,12 @@ def draft_age_hours(draft_path: str, now: Optional[datetime] = None) -> Optional
     Read from the draft's own _metadata.generated stamp, not the file's mtime:
     actions/checkout sets every file's mtime to the checkout time, so on a
     runner a committed draft always looked 0.0h old and every scheduled run
-    exited before scraping (stuck since the 2026-10-29 draft, #127). A draft
-    with no readable stamp doesn't hold up a scrape.
+    exited before scraping (stuck since the 2026-10-29 draft, #127).
+
+    Stamps written before this change are naive local time; they're read as
+    UTC, which is what the runners use. A draft that is missing, unreadable,
+    or stamped in the future (clock skew, another time zone) returns None and
+    doesn't hold up a scrape.
     """
     if not os.path.exists(draft_path):
         return None
@@ -1319,10 +1323,15 @@ def draft_age_hours(draft_path: str, now: Optional[datetime] = None) -> Optional
         with open(draft_path, encoding="utf-8") as fh:
             generated = json.load(fh).get("_metadata", {}).get("generated")
         stamp = datetime.fromisoformat(generated)
+        if stamp.tzinfo is None:
+            stamp = stamp.replace(tzinfo=timezone.utc)
+        now = now or datetime.now(timezone.utc)
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
+        age = (now - stamp).total_seconds() / 3600
     except (OSError, ValueError, TypeError, AttributeError):
         return None
-    now = now or datetime.now(stamp.tzinfo)
-    return (now - stamp).total_seconds() / 3600
+    return age if age >= 0 else None
 
 
 def main():
@@ -1344,6 +1353,9 @@ def main():
         age_hours = draft_age_hours(draft_path)
         if age_hours is not None and age_hours < 12:
             print(f"⚠️  Recent draft exists ({age_hours:.1f}h old). Use --force to re-scrape.")
+            # Say so in the Actions UI: a silent green skip hid #127 for a month.
+            print(f"::warning::Skipped scraping: a draft from {age_hours:.1f}h ago is "
+                  f"awaiting review (use force to re-scrape)")
             return
 
     # Select scrapers
@@ -1382,7 +1394,8 @@ def main():
     # Create draft JSON
     draft = {
         "_metadata": {
-            "generated": datetime.now().isoformat(),
+            # UTC with offset, so the age guard reads it right on any machine.
+            "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "status": "DRAFT - REVIEW REQUIRED",
             "note": "Auto-extracted values may be incorrect. Verify against source URLs."
         },
