@@ -22,6 +22,7 @@ No API key required.
 
 import os
 import json
+import re
 import requests
 from datetime import datetime
 from pathlib import Path
@@ -63,6 +64,21 @@ COUNTRY_NAMES = {
     "KR": "South Korea",
     "SG": "Singapore",
 }
+
+
+_MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July",
+                "August", "September", "October", "November", "December"]
+
+
+def _edition_from_url(url: Optional[str]) -> Optional[str]:
+    """'April 2026' from an IMF WEO edition URL (/weo/issues/2026/04/14/…).
+
+    None when the URL isn't an edition page (e.g. the DataMapper link).
+    """
+    m = re.search(r"/weo/issues/(\d{4})/(\d{2})/", url or "", re.IGNORECASE)
+    if not m or not 1 <= int(m.group(2)) <= 12:
+        return None
+    return f"{_MONTH_NAMES[int(m.group(2)) - 1]} {m.group(1)}"
 
 
 def fetch_imf_forecasts() -> Dict:
@@ -151,10 +167,25 @@ def fetch_imf_forecasts() -> Dict:
         "indicator_label": "Inflation rate, average consumer prices (% change)",
         "url": existing.get("url") or default_url,
     }
-    if existing.get("publication_url"):
-        result["publication_url"] = existing["publication_url"]
+    # The edition page and the context note are hand-curated for one WEO
+    # edition. When the data rolls to a new edition they don't follow, so the
+    # dashboard linked the April 2026 page while labelling the numbers October
+    # 2026 (and CN's Outlook row inherited that link as its source_url).
+    # Keep the page only while it matches this edition; otherwise fall back to
+    # the DataMapper URL, which always serves the current data (CLAUDE.md #3).
+    # Keep the note, but record which edition it was written for so the
+    # front end can say so (CLAUDE.md #4). Re-curating means updating both.
+    old_pub = existing.get("publication_url")
+    pub_edition = _edition_from_url(old_pub)
+    if old_pub and pub_edition in (None, weo_version):
+        result["publication_url"] = old_pub
+    elif old_pub:
+        print(f"  ⚠️  publication_url is the {pub_edition} WEO page but the data is "
+              f"{weo_version}; linking the DataMapper instead until it is updated")
     if existing.get("note"):
         result["note"] = existing["note"]
+        result["note_edition"] = (existing.get("note_edition") or pub_edition
+                                  or existing.get("version"))
     if existing.get("display_order"):
         result["display_order"] = existing["display_order"]
     result["countries"] = {}
