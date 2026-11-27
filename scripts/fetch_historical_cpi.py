@@ -1743,15 +1743,17 @@ def load_existing_data() -> Dict:
 
 
 STEP_THRESHOLD_PP = 1.0  # YoY inflation rarely shifts >1pp month-over-month
-# Fetch paths that read the headline out of press-release text or a PDF. The
-# "exactly matches prior-year same period" check exists for these: the BR/MX
-# miscapture stored the prior-year figure quoted in IBGE/INEGI comparison text
-# as the current reading. Structured, period-keyed series (BLS, ECB, ONS,
-# StatCan, ABS, OECD, e-Stat, SingStat, FRED) have no comparison text to
-# confuse, and a real repeat of last year's rate does happen (UK Oct 2025 and
-# Oct 2026 were both 3.6%), so there the check only blocks good data. The
-# step check still applies to every source.
-TEXT_PARSED_APIS = {"StatsSA", "NBS"}
+# Fetch paths that return structured, period-keyed observations. The "exactly
+# matches prior-year same period" check exists for values read out of text:
+# the BR/MX miscapture stored the prior-year figure quoted in IBGE/INEGI
+# comparison text as the current reading. A series keyed by period has no
+# comparison text to confuse, and a real repeat of last year's rate does happen
+# (UK Oct 2025 and Oct 2026 were both 3.6%), so for these the check only blocks
+# good data. Everything not listed here keeps the check, so a new or restored
+# fetcher (e.g. MoSPI's PDF) is checked by default. A point flagged
+# "provisional" (EA's Eurostat flash, scraped from the HTML release) keeps it
+# too, even on a structured row. The step check applies to every source.
+STRUCTURED_APIS = {"BLS", "ECB", "ONS", "StatCan", "ABS", "OECD", "eStat", "SingStat"}
 ANOMALY_LOG: List[Dict] = []
 
 
@@ -1887,8 +1889,9 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
     # provenance for data fetched before this was recorded.
     fetch_stamp = datetime.now().strftime("%Y-%m-%d")
     actual_source = fetched.get("fetched_from") or config["source"]
-    # Only text/PDF-parsed values can carry the prior-year miscapture.
-    text_parsed = config.get("api") in TEXT_PARSED_APIS and actual_source != "FRED"
+    # Rows from a structured API (or the FRED fallback) skip the prior-year
+    # match; text-parsed rows and provisional points keep it.
+    structured_row = config.get("api") in STRUCTURED_APIS or actual_source == "FRED"
     fred_series_used = fetched.get("fred_series_used") or config.get("fred_series")
     actual_source_url = (
         f"https://fred.stlouisfed.org/series/{fred_series_used}"
@@ -1935,7 +1938,8 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
             # stored one, so leaked/mis-shaped old points can't skew it.
             if cutoff and point["date"] > cutoff:
                 prev = rebuilt[-1] if rebuilt else None
-                detect_anomalies(code, point, prev, rebuilt, check_prior_year=text_parsed)
+                detect_anomalies(code, point, prev, rebuilt,
+                                 check_prior_year=not structured_row or bool(point.get("provisional")))
             # A period we already hold that the source now reports very
             # differently is a revision worth a human look, not a silent
             # rewrite of the chart (CLAUDE.md #5).
@@ -1964,7 +1968,8 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
                     hist_so_far = sorted(merged.get("history", []), key=lambda x: x["date"])
                     prior = [h for h in hist_so_far if h["date"] < point["date"]]
                     prev = prior[-1] if prior else None
-                    detect_anomalies(code, point, prev, hist_so_far, check_prior_year=text_parsed)
+                    detect_anomalies(code, point, prev, hist_so_far,
+                                     check_prior_year=not structured_row or bool(point.get("provisional")))
                 point.setdefault("source", actual_source)
                 point.setdefault("source_url", actual_source_url)
                 point.setdefault("fetch_date", fetch_stamp)

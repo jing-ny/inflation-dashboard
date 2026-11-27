@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Offline tests: the "exactly matches prior-year same period" anomaly check runs
-only for text/PDF-parsed sources (#125).
+Offline tests: the "exactly matches prior-year same period" anomaly check is
+skipped only for structured, period-keyed sources (#125).
 
 The 2026-11-23 update-data run fetched UK 2026-10 = 3.6% from the ONS API
 (d7g7). UK Oct 2025 was also 3.6%, so the prior-year check fired, the script
-exited 2 and nothing from that run was committed (UK, ZA, JP and SG updates
-lost). The check was added for the BR/MX miscapture, where press-release
-comparison text was stored as the current reading; a structured ONS series
-can't do that.
+exited 2 and nothing from that run was committed. The check exists for the
+BR/MX miscapture (press-release comparison text stored as the current
+reading), which a structured series can't produce.
 
 Pins:
   1. UK 2026-10 = 3.6% from ONS merges with no anomaly.
   2. The step check still fires for a structured source.
-  3. A StatsSA (PDF) value equal to last year's is still flagged.
-  4. A StatsSA row that actually came from the FRED fallback is not.
+  3. Text-parsed rows (Stats SA PDF, NBS release) keep the prior-year check.
+  4. EA's provisional Eurostat flash (scraped HTML) keeps it on an ECB row.
+  5. A text-parsed row that actually came from the FRED fallback skips it.
+  6. A fetcher not in STRUCTURED_APIS is checked by default.
+  7. The history_replace rebuild path follows the same rule.
 
 Self-contained: reads the committed docs/data/historical_cpi.json, writes
 nothing, makes no network calls.
@@ -42,55 +44,101 @@ def check(name, cond, detail=""):
 
 
 with open(f.DATA_FILE, encoding="utf-8") as fh:
-    existing = json.load(fh)
+    COMMITTED = json.load(fh)
 
 
-def merge(code, point, fetched_from):
+def next_month(date):
+    y, m = int(date[:4]), int(date[5:7])
+    return f"{y + (m == 12)}-{1 if m == 12 else m + 1:02d}"
+
+
+def setup(code, prior_value):
+    """Committed data, plus a prior-year point for the month after `code`'s
+    latest monthly point, so the prior-year match has something to hit."""
+    data = copy.deepcopy(COMMITTED)
+    months = [h["date"] for h in data[code]["history"] if "-Q" not in h["date"]]
+    new_date = next_month(max(months))
+    prior_date = f"{int(new_date[:4]) - 1}{new_date[4:]}"
+    hist = [h for h in data[code]["history"] if h["date"] != prior_date]
+    hist.append({"date": prior_date, "value": prior_value})
+    data[code]["history"] = hist
+    return data, new_date
+
+
+def reasons(code, point, fetched_from, data, **extra):
     f.ANOMALY_LOG.clear()
-    fetched = {
-        "history": [dict(point)],
-        "latest": dict(point),
-        "fetched_from": fetched_from,
-    }
-    # Keep the test about anomaly scope, not US supplementary refreshes.
-    f.merge_country_data(copy.deepcopy(existing), fetched, code)
-    return list(f.ANOMALY_LOG)
+    fetched = {"history": [dict(point)], "latest": dict(point), "fetched_from": fetched_from}
+    fetched.update(extra)
+    f.merge_country_data(data, fetched, code)
+    out = [r for a in f.ANOMALY_LOG for r in a["reasons"]]
+    f.ANOMALY_LOG.clear()
+    return out
 
 
-def prior_year(code, date):
-    return f._prior_year_value(existing[code]["history"], date)
+def has_prior_year(rs):
+    return any("prior-year" in r for r in rs)
 
 
-# 1. the real 2026-11-23 case
-uk_prior = prior_year("UK", "2026-10")
-check("fixture: UK 2025-10 is 3.6", uk_prior == 3.6, uk_prior)
-log = merge("UK", {"date": "2026-10", "value": 3.6}, "ONS")
-check("UK 2026-10 = 3.6 from ONS is not an anomaly", not log, log)
+# 1. the real 2026-11-23 case, on the committed data as it stands
+check("fixture: committed UK 2025-10 is 3.6",
+      f._prior_year_value(COMMITTED["UK"]["history"], "2026-10") == 3.6)
+rs = reasons("UK", {"date": "2026-10", "value": 3.6}, "ONS", copy.deepcopy(COMMITTED))
+check("UK 2026-10 = 3.6 from ONS is not an anomaly", not rs, rs)
 
-# 2. step check unaffected for structured sources
-log = merge("UK", {"date": "2026-10", "value": 5.0}, "ONS")
-check("step >1pp from ONS still flagged", any("step" in r for a in log for r in a["reasons"]), log)
+# 2. step check unaffected
+rs = reasons("UK", {"date": "2026-10", "value": 5.0}, "ONS", copy.deepcopy(COMMITTED))
+check("step >1pp from ONS still flagged", any("step" in r for r in rs), rs)
 
-# 3. text-parsed source keeps the prior-year check
-za_last = max(h["date"] for h in existing["ZA"]["history"] if "-Q" not in h["date"])
-y, m = za_last.split("-")
-nxt = f"{int(y) + (m == '12')}-{1 if m == '12' else int(m) + 1:02d}"
-za_prior = prior_year("ZA", nxt)
-if za_prior is None:
-    # The committed ZA history has gaps; plant last year's point so the
-    # check has something to match.
-    za_prior = 4.4
-    existing["ZA"]["history"].append({"date": f"{int(nxt[:4]) - 1}{nxt[4:]}", "value": za_prior})
-if True:
-    log = merge("ZA", {"date": nxt, "value": za_prior}, "Stats SA")
-    check("StatsSA value equal to prior year is flagged",
-          any("prior-year" in r for a in log for r in a["reasons"]), log)
-    # 4. ...unless it came from the FRED fallback
-    log = merge("ZA", {"date": nxt, "value": za_prior}, "FRED")
-    check("ZA via FRED fallback skips the prior-year check",
-          not any("prior-year" in r for a in log for r in a["reasons"]), log)
+# 3. text-parsed rows keep the check
+for code, label in [("ZA", "Stats SA"), ("CN", "NBS")]:
+    latest = [h for h in COMMITTED[code]["history"] if "-Q" not in h["date"]]
+    last_val = sorted(latest, key=lambda h: h["date"])[-1]["value"]
+    data, d = setup(code, last_val)  # equal to latest too, so no step reason
+    rs = reasons(code, {"date": d, "value": last_val}, COMMITTED[code].get("source", label), data)
+    check(f"{code} ({label}) value equal to prior year is flagged", has_prior_year(rs), rs)
 
+    # 5. ...unless the row actually came from the FRED fallback
+    data, d = setup(code, last_val)
+    rs = reasons(code, {"date": d, "value": last_val}, "FRED", data)
+    check(f"{code} via FRED fallback skips the prior-year check", not has_prior_year(rs), rs)
+
+# 4. EA flash: provisional point on a structured (ECB) row keeps the check
+ea_last = sorted((h for h in COMMITTED["EA"]["history"] if "-Q" not in h["date"]),
+                 key=lambda h: h["date"])[-1]["value"]
+data, d = setup("EA", ea_last)
+rs = reasons("EA", {"date": d, "value": ea_last, "provisional": True}, "ECB", data)
+check("EA provisional flash equal to prior year is flagged", has_prior_year(rs), rs)
+data, d = setup("EA", ea_last)
+rs = reasons("EA", {"date": d, "value": ea_last}, "ECB", data)
+check("EA final from the ECB API skips the prior-year check", not has_prior_year(rs), rs)
+
+# 6. fails closed: a fetcher not on the structured list is checked
+orig_api = f.COUNTRIES["UK"]["api"]
+f.COUNTRIES["UK"]["api"] = "SomeNewPDFScraper"
+try:
+    rs = reasons("UK", {"date": "2026-10", "value": 3.6}, "ONS", copy.deepcopy(COMMITTED))
+finally:
+    f.COUNTRIES["UK"]["api"] = orig_api
+check("unlisted fetcher keeps the prior-year check", has_prior_year(rs), rs)
+
+# 7. rebuild path (AU from ABS, structured): a new quarter equal to last year's
+au = copy.deepcopy(COMMITTED["AU"]["history"])
+au_q = sorted((h for h in au if "-Q" in h["date"]), key=lambda h: h["date"])
+y, q = au_q[-1]["date"].split("-Q")
+new_q = f"{int(y) + (q == '4')}-Q{1 if q == '4' else int(q) + 1}"
+prior_q = f"{int(new_q[:4]) - 1}-Q{new_q[-1]}"
+prior_val = next(h["value"] for h in au_q if h["date"] == prior_q)
+rebuilt = [{"date": h["date"], "value": h["value"]} for h in au_q]
+rebuilt.append({"date": new_q, "value": prior_val})
 f.ANOMALY_LOG.clear()
+f.merge_country_data(copy.deepcopy(COMMITTED), {
+    "history": rebuilt, "latest": COMMITTED["AU"]["latest"], "fetched_from": "ABS",
+    "history_replace": True, "history_source": "ABS"}, "AU")
+rs = [r for a in f.ANOMALY_LOG for r in a["reasons"] if a["date"] == new_q]
+check("AU rebuild: new quarter equal to prior year isn't a prior-year anomaly",
+      not has_prior_year(rs), rs)
+f.ANOMALY_LOG.clear()
+
 print()
 if FAILURES:
     print(f"{len(FAILURES)} failed: {', '.join(FAILURES)}")
