@@ -18,6 +18,7 @@ import json
 import re
 import os
 from datetime import datetime
+from typing import Optional
 from urllib.request import urlopen, Request
 from urllib.error import URLError
 import ssl
@@ -1303,6 +1304,27 @@ def parse_args():
     return parser.parse_args()
 
 
+def draft_age_hours(draft_path: str, now: Optional[datetime] = None) -> Optional[float]:
+    """Hours since the draft at draft_path was generated, or None if unknown.
+
+    Read from the draft's own _metadata.generated stamp, not the file's mtime:
+    actions/checkout sets every file's mtime to the checkout time, so on a
+    runner a committed draft always looked 0.0h old and every scheduled run
+    exited before scraping (stuck since the 2026-10-29 draft, #127). A draft
+    with no readable stamp doesn't hold up a scrape.
+    """
+    if not os.path.exists(draft_path):
+        return None
+    try:
+        with open(draft_path, encoding="utf-8") as fh:
+            generated = json.load(fh).get("_metadata", {}).get("generated")
+        stamp = datetime.fromisoformat(generated)
+    except (OSError, ValueError, TypeError, AttributeError):
+        return None
+    now = now or datetime.now(stamp.tzinfo)
+    return (now - stamp).total_seconds() / 3600
+
+
 def main():
     args = parse_args()
 
@@ -1318,10 +1340,9 @@ def main():
 
     # Check for existing draft unless --force
     draft_path = "docs/data/cb_forecasts_draft.json"
-    if not args.force and os.path.exists(draft_path):
-        mod_time = datetime.fromtimestamp(os.path.getmtime(draft_path))
-        age_hours = (datetime.now() - mod_time).total_seconds() / 3600
-        if age_hours < 12:
+    if not args.force:
+        age_hours = draft_age_hours(draft_path)
+        if age_hours is not None and age_hours < 12:
             print(f"⚠️  Recent draft exists ({age_hours:.1f}h old). Use --force to re-scrape.")
             return
 

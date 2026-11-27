@@ -7,6 +7,12 @@ All notable changes to the Inflation Dashboard project are documented here.
 ## [Unreleased]
 
 ### Fixed
+- **CB forecast auto-scrape runs again; it had scraped nothing since 2026-10-29 (#127).** The
+  "recent draft" guard measured the draft's age from its mtime, which `actions/checkout` sets to
+  the checkout time, so the committed draft always looked 0.0h old and every scheduled run exited
+  before scraping, while still showing as a success. The age now comes from the draft's own
+  `_metadata.generated` stamp (`draft_age_hours()`). `scripts/test_cb_draft_age.py` covers it,
+  offline.
 - **NZ CPI moves to OECD SDMX; the series was stuck at 2026-Q1 (#123).** FRED's `NZLCPIALLQINMEI`
   relay stopped updating, so NZ sat 270 days old — the only red series on the freshness gate —
   while Stats NZ had already published 2026-Q2 (4.1%) and Q3 (3.7%). NZ now reads OECD's SDMX
