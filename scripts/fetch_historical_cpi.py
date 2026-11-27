@@ -1689,6 +1689,9 @@ def fetch_country_data(code: str) -> Optional[Dict]:
         if yoy_data:
             latest = yoy_data[-1]
             print(f"✅ {len(yoy_data)} pts, latest: {latest['date']} = {latest['value']}%")
+            yoy_unavailable = index_months_without_yoy(raw_data or [], latest["date"])
+            for gap in yoy_unavailable:
+                print(f"    ℹ️  {code} {gap['date']}: {gap['reason']}")
             return {
                 "history": yoy_data,
                 "latest": latest,
@@ -1696,7 +1699,7 @@ def fetch_country_data(code: str) -> Optional[Dict]:
                 "fetched_from": "FRED" if via_fred else config["source"],
                 "fred_series_used": fred_series_used if via_fred else None,
                 "history_replace": history_replace,
-                "yoy_unavailable": index_months_without_yoy(raw_data or [], latest["date"]),
+                "yoy_unavailable": yoy_unavailable,
             }
         else:
             print("⚠️ No data")
