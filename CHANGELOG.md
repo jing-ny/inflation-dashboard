@@ -17,6 +17,12 @@ All notable changes to the Inflation Dashboard project are documented here.
   to the note text, so re-curating the note and the page clears the label without touching
   `note_edition`. The newsletter prompt gets `note_edition` too. `scripts/test_imf_edition.py`
   (15 checks, offline).
+- **CB forecast auto-scrape runs again; it had scraped nothing since 2026-10-29 (#127).** The
+  "recent draft" guard measured the draft's age from its mtime, which `actions/checkout` sets to
+  the checkout time, so the committed draft always looked 0.0h old and every scheduled run exited
+  before scraping, while still showing as a success. The age now comes from the draft's own
+  `_metadata.generated` stamp (`draft_age_hours()`). `scripts/test_cb_draft_age.py` covers it,
+  offline.
 - **The prior-year anomaly check no longer blocks real data from structured APIs (#125).** The
   2026-11-23 run fetched UK 2026-10 = 3.6% from ONS. That matched Oct 2025 exactly, so the run
   exited 2 and committed nothing (UK, ZA, JP and SG updates lost), and every later run would have
