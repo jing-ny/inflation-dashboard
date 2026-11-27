@@ -7,6 +7,11 @@ All notable changes to the Inflation Dashboard project are documented here.
 ## [Unreleased]
 
 ### Fixed
+- **SARB forecast scraper runs again (#129).** `_discover_sarb_forecast_pdf()` built its URL from
+  `SARB_DAM_BASE`, which no longer existed, so `scrape_sarb()` raised `NameError` on every run and
+  ZA's curated forecast stayed on the May 2026 report. The constant is restored with the path the
+  curated ZA `source_url` already uses. A dry run found the November 2026 report and parsed
+  2026 4.3, 2027 4.0, 2028 3.2, 2029 3.0, all inside the 1pp gate.
 - **NZ CPI moves to OECD SDMX; the series was stuck at 2026-Q1 (#123).** FRED's `NZLCPIALLQINMEI`
   relay stopped updating, so NZ sat 270 days old — the only red series on the freshness gate —
   while Stats NZ had already published 2026-Q2 (4.1%) and Q3 (3.7%). NZ now reads OECD's SDMX
