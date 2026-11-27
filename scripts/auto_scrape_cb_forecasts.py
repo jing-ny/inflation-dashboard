@@ -829,6 +829,12 @@ def scrape_boj():
         "projections": projections,
     }
 
+# Where SARB keeps each MPC meeting's forecast report
+# (<base>/<year>/<month>/forecast.pdf), as in the curated ZA source_url. The
+# constant had gone missing, so scrape_sarb() raised NameError on every run (#129).
+SARB_DAM_BASE = ("https://www.resbank.co.za/content/dam/sarb/publications/"
+                 "statements/monetary-policy-statements")
+
 # SARB's MPC meets roughly every two months; the forecast report only exists
 # for meeting months, so non-meeting months 404 and are skipped during probing.
 _SARB_MEETING_MONTHS = {1: "january", 3: "march", 5: "may",
