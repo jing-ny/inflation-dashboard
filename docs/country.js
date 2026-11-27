@@ -109,8 +109,8 @@ const DATA_SOURCES = {
         { label: 'Target', value: 'Statement on Conduct of Monetary Policy', url: 'https://www.rba.gov.au/monetary-policy/framework/stmt-conduct-mp.html' }
     ],
     NZ: [
-        { label: 'CPI Data', value: 'Stats NZ via FRED', url: 'https://fred.stlouisfed.org/series/NZLCPIALLQINMEI' },
-        { label: 'Series ID', value: 'NZLCPIALLQINMEI (OECD, Quarterly)', url: 'https://fred.stlouisfed.org/series/NZLCPIALLQINMEI' },
+        { label: 'CPI Data', value: 'Stats NZ, via OECD SDMX (Quarterly)', url: 'https://www.stats.govt.nz/indicators/consumers-price-index-cpi/' },
+        { label: 'Series', value: 'OECD SDMX NZL.Q.N.CPI.PA._T.N.GY', url: 'https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=NZL.Q.N.CPI.PA._T.N.GY' },
         { label: 'Forecasts', value: 'RBNZ Monetary Policy Statement', url: 'https://www.rbnz.govt.nz/monetary-policy/monetary-policy-statement' },
         { label: 'Target', value: 'Remit for the MPC', url: 'https://www.rbnz.govt.nz/monetary-policy/about-monetary-policy/remit-for-the-monetary-policy-committee' }
     ],

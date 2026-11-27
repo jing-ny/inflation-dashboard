@@ -56,7 +56,7 @@ This keeps real staleness visible (CLAUDE.md #4) without false positives on curr
 | 🇬🇧 United Kingdom | FRED (GBRCPIALLMINMEI) | [ONS](https://www.ons.gov.uk/economy/inflationandpriceindices) | Monthly |
 | 🇨🇦 Canada | FRED (CANCPIALLMINMEI) | [StatCan](https://www.statcan.gc.ca/) | Monthly |
 | 🇦🇺 Australia | FRED (AUSCPIALLQINMEI) | [ABS](https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/) | Monthly* |
-| 🇳🇿 New Zealand | FRED (NZLCPIALLQINMEI) | [Stats NZ](https://www.stats.govt.nz/indicators/consumers-price-index-cpi/) | Quarterly |
+| 🇳🇿 New Zealand | OECD SDMX (`NZL.Q.N.CPI.PA._T.N.GY`) | [Stats NZ](https://www.stats.govt.nz/indicators/consumers-price-index-cpi/) via OECD | Quarterly |
 | 🇿🇦 South Africa | FRED (ZAFCPIALLMINMEI) | [Stats SA](https://www.statssa.gov.za/) | Monthly |
 | 🇯🇵 Japan | FRED (JPNCPALTT01IXNBM) | [MIC](https://www.stat.go.jp/english/data/cpi/) | Monthly |
 | 🇨🇳 China | FRED (CHNCPIALLMINMEI) | [NBS](https://www.stats.gov.cn/english/) | Monthly |
@@ -100,16 +100,17 @@ As of February 2026, all CPI values are verified against official government sou
 
 CPI actuals are fetched per country by [`scripts/fetch_historical_cpi.py`](scripts/fetch_historical_cpi.py). Each country's config carries an `api` field that selects the fetch path; the script **merges** (never blindly overwrites) and **only advances a value when the source has a genuinely newer reading**, so a laggy source can't roll a country *backwards*.
 
-**Two classes of source:**
+**Three classes of source:**
 
 - **Direct primary/national API (fresh):** US → BLS, Euro Area → ECB, UK → ONS, Canada → StatCan, Australia → ABS (monthly CPI indicator, #50). These track the national release closely.
-- **FRED's OECD relay (laggy):** the rest (NZ, ZA, JP, CN, IN, KR, BR, MX; SG via World Bank). The OECD aggregates and **re-publishes national CPI with a 1–3 month delay (sometimes 6–12)**, so these rows can sit a release or two behind the national agency *even though the weekly `Update Inflation Data` workflow runs and succeeds.* This — not a broken pipeline — is the usual reason a Current Inflation cell reads amber/red.
+- **OECD SDMX direct (quarterly for NZ):** New Zealand and Korea read the OECD's own SDMX API, which follows the national release closely.
+- **FRED's OECD relay (laggy):** the rest (ZA, JP, CN, IN, BR, MX; SG via World Bank). The OECD aggregates and **re-publishes national CPI with a 1–3 month delay (sometimes 6–12)**, so these rows can sit a release or two behind the national agency *even though the weekly `Update Inflation Data` workflow runs and succeeds.* This — not a broken pipeline — is the usual reason a Current Inflation cell reads amber/red.
 
 | Country | Source path | Typical lag vs national release |
 |---------|-------------|---------------------------------|
 | US, EA, UK, CA, AU | Direct (BLS / ECB / ONS / StatCan / ABS) | ~current |
 | South Africa | FRED-OECD | 6–12 months |
-| New Zealand | FRED-OECD (quarterly) | quarterly cadence |
+| New Zealand | OECD SDMX (quarterly) | quarterly cadence |
 | Japan, Korea | JP direct (e-Stat); KR on OECD SDMX | ~current |
 | China | NBS direct | ~current |
 | Singapore | FRED (World Bank annual — OECD series broken) | coarse |

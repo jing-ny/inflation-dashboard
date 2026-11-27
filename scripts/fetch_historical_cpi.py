@@ -155,11 +155,25 @@ COUNTRIES = {
     "NZ": {
         "name": "New Zealand",
         "flag": "🇳🇿",
-        "source": "Stats NZ",
-        "source_url": "https://www.stats.govt.nz/indicators/consumers-price-index-cpi/",
-        "fred_series": "NZLCPIALLQINMEI",  # OECD quarterly index
+        # OECD, not Stats NZ: same reasoning as KR below. This is OECD's SDMX
+        # endpoint republishing the Stats NZ headline, labelled as such so the
+        # source pill and per-record provenance say where the number came from
+        # (CLAUDE.md #3).
+        "source": "OECD",
+        "source_url": "https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_PRICES%40DF_PRICES_ALL&dq=NZL.Q.N.CPI.PA._T.N.GY",
+        "api": "OECD",  # primary: OECD SDMX, keyless and current — the FRED relay stopped at 2026-Q1
+        "oecd_ref_area": "NZL",
+        "oecd_freq": "Q",  # Stats NZ publishes CPI quarterly only
+        "oecd_start": "2016-Q1",  # matches the stored history's start
+        # The stored NZ history mixes "YYYY-Qn" points with month-shaped
+        # duplicates ("2024-01", "2024-04", ...) that leaked in from the FRED
+        # relay, and has gaps (2025-Q2, 2025-Q3). Rebuild it wholesale from
+        # OECD on each successful fetch, as AU does from ABS (#106/#109).
+        "oecd_history_replace": True,
+        "fred_series": "NZLCPIALLQINMEI",  # OECD quarterly index via FRED — fallback only, stale since 2026-Q1
         "frequency": "quarterly",
-        "data_type": "index",
+        "data_type": "yoy",  # OECD GY is already a YoY rate
+        "notes": "Primary: OECD SDMX headline CPI YoY, quarterly (republishes Stats NZ). FRED relay is fallback only.",
     },
     "ZA": {
         "name": "South Africa",
@@ -417,7 +431,8 @@ def fetch_statcan_series(vector_id: int, latest_n: int = 240) -> List[Dict]:
     return observations
 
 
-def fetch_oecd_cpi_series(ref_area: str, start_period: str = "2016-01") -> List[Dict]:
+def fetch_oecd_cpi_series(ref_area: str, start_period: str = "2016-01",
+                          freq: str = "M") -> List[Dict]:
     """Fetch headline CPI YoY (%) for one country from the OECD SDMX API.
 
     Used for KR (#58). FRED's OECD *relay* is dead for Korea — both
@@ -425,9 +440,13 @@ def fetch_oecd_cpi_series(ref_area: str, start_period: str = "2016-01") -> List[
     late 2023 — but OECD's own SDMX endpoint carries the series through the
     current month. Keyless, so no new repo secret.
 
+    Also used for NZ with freq="Q": Stats NZ publishes CPI quarterly only,
+    and FRED's NZLCPIALLQINMEI relay stopped at 2026-Q1. Quarterly periods
+    come back as "YYYY-Qn", the same shape the stored NZ history uses.
+
     Series key dimensions:
-        {REF_AREA}.M.N.CPI.PA._T.N.GY
-        M   monthly          CPI  headline consumer price index
+        {REF_AREA}.{FREQ}.N.CPI.PA._T.N.GY
+        M/Q monthly/quarterly CPI  headline consumer price index
         N   not adjusted     PA   percent per annum
         _T  all expenditure  GY   growth vs same period previous year
 
@@ -441,8 +460,14 @@ def fetch_oecd_cpi_series(ref_area: str, start_period: str = "2016-01") -> List[
     url = (
         "https://sdmx.oecd.org/public/rest/data/"
         "OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0/"
-        f"{ref_area}.M.N.CPI.PA._T.N.GY"
+        f"{ref_area}.{freq}.N.CPI.PA._T.N.GY"
     )
+    if freq == "M":
+        period_re = r"\d{4}-\d{2}"
+    elif freq == "Q":
+        period_re = r"\d{4}-Q[1-4]"
+    else:
+        raise ValueError(f"Unsupported OECD frequency {freq!r} (expected 'M' or 'Q')")
     resp = requests.get(
         url,
         params={"startPeriod": start_period},
@@ -456,10 +481,11 @@ def fetch_oecd_cpi_series(ref_area: str, start_period: str = "2016-01") -> List[
     for row in reader:
         period = (row.get("TIME_PERIOD") or "").strip()
         raw = (row.get("OBS_VALUE") or "").strip()
-        # Only monthly points: the dataflow can also serve annual/quarterly
-        # rows if the key is ever loosened, and a "2026" or "2026-Q2" period
-        # would sort into the monthly series and corrupt latest/previous.
-        if not re.fullmatch(r"\d{4}-\d{2}", period) or not raw:
+        # Only points of the requested frequency: the dataflow can also serve
+        # other frequencies if the key is ever loosened, and a "2026" or
+        # "2026-Q2" period would sort into a monthly series (or a "2026-06"
+        # into a quarterly one) and corrupt latest/previous.
+        if not re.fullmatch(period_re, period) or not raw:
             continue
         try:
             observations.append({"date": period, "value": float(raw)})
@@ -467,7 +493,7 @@ def fetch_oecd_cpi_series(ref_area: str, start_period: str = "2016-01") -> List[
             continue
 
     if not observations:
-        raise RuntimeError(f"OECD SDMX returned no monthly rows for {ref_area}")
+        raise RuntimeError(f"OECD SDMX returned no {freq} rows for {ref_area}")
 
     observations.sort(key=lambda x: x["date"])
     print(f"  \u2139\ufe0f  OECD SDMX {ref_area}: {len(observations)} pts, "
@@ -1325,13 +1351,16 @@ def fetch_country_data(code: str) -> Optional[Dict]:
     print(f"  Fetching {config['flag']} {config['name']}...", end=" ")
 
     # Tracks the source that actually produced the data, for per-record
-    # provenance (#83): national fetchers can fall back to FRED, and the
-    # NZ/KR rows are FRED-primary even though config["source"] names the
+    # provenance (#83): national fetchers can fall back to FRED, and
+    # some rows are FRED-primary even though config["source"] names the
     # national agency.
     via_fred = False
     # The FRED series that actually produced the data (primary by default;
     # the FRED-primary path below may switch to fred_series_alt).
     fred_series_used = config.get("fred_series")
+    # Set by a fetcher whose source is authoritative for the whole history, so
+    # merge rebuilds the stored series instead of appending to it (NZ, AU).
+    history_replace = False
 
     try:
         if config.get("api") == "ECB":
@@ -1557,11 +1586,15 @@ def fetch_country_data(code: str) -> Optional[Dict]:
             # OECD SDMX direct — already YoY. #58
             try:
                 raw_data = fetch_oecd_cpi_series(
-                    config["oecd_ref_area"], config.get("oecd_start", "2016-01"))
+                    config["oecd_ref_area"], config.get("oecd_start", "2016-01"),
+                    config.get("oecd_freq", "M"))
                 if not raw_data:
                     raise ValueError("No data returned from OECD SDMX")
                 yoy_data = [{"date": obs["date"][:7], "value": round(obs["value"], 2)}
                            for obs in raw_data]
+                # Only on an OECD success: rebuilding from a stale FRED
+                # fallback would throw away the newer OECD points.
+                history_replace = bool(config.get("oecd_history_replace"))
             except Exception as e:
                 if config.get("fred_series"):
                     print(f"(OECD SDMX failed: {e}; falling back to FRED)...", end=" ")
@@ -1633,6 +1666,7 @@ def fetch_country_data(code: str) -> Optional[Dict]:
                 "previous": yoy_data[-2] if len(yoy_data) > 1 else None,
                 "fetched_from": "FRED" if via_fred else config["source"],
                 "fred_series_used": fred_series_used if via_fred else None,
+                "history_replace": history_replace,
             }
         else:
             print("⚠️ No data")
@@ -1738,6 +1772,31 @@ def _log_anomaly(code: str, date: str, value: float, prev_value: Optional[float]
     })
 
 
+def _date_shape(date: str) -> str:
+    """'Q' for 'YYYY-Qn', 'M' for 'YYYY-MM', '' for anything else."""
+    if re.fullmatch(r"\d{4}-Q[1-4]", date or ""):
+        return "Q"
+    if re.fullmatch(r"\d{4}-\d{2}", date or ""):
+        return "M"
+    return ""
+
+
+def _rebuild_covers(incoming: List[Dict], stored_same: List[Dict]) -> bool:
+    """A wholesale rebuild may only replace history it fully covers.
+
+    `incoming` and `stored_same` are date-sorted and share one date shape. A
+    partial or truncated response (fewer points, a later start, or an older
+    end than what we hold) must not wipe the stored archive (#123 review).
+    """
+    if not incoming:
+        return False
+    if not stored_same:
+        return True
+    return (incoming[0]["date"] <= stored_same[0]["date"]
+            and incoming[-1]["date"] >= stored_same[-1]["date"]
+            and len(incoming) >= len(stored_same))
+
+
 def detect_anomalies(code: str, new_point: Dict, prev_point: Optional[Dict], history: List[Dict]):
     """Append to ANOMALY_LOG if the new point looks suspicious."""
     date, value = new_point['date'], new_point['value']
@@ -1823,7 +1882,19 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
 
     # Add new history points from the source
     new_points = 0
+    do_replace = False
     if fetched.get("history_replace"):
+        incoming = sorted(fetched.get("history", []), key=lambda x: x["date"])
+        shape = _date_shape(incoming[-1]["date"]) if incoming else ""
+        stored_same = sorted((h for h in merged.get("history", [])
+                              if _date_shape(h["date"]) == shape),
+                             key=lambda x: x["date"])
+        do_replace = bool(shape) and _rebuild_covers(incoming, stored_same)
+        if not do_replace:
+            print(f"    \u26a0\ufe0f  {code}: response doesn't cover the stored history "
+                  f"({len(incoming)} pts vs {len(stored_same)} stored); "
+                  f"appending instead of rebuilding")
+    if do_replace:
         # AU (#106): the quarterly history is rebuilt wholesale from its
         # authoritative source each run, scrubbing any points appended under a
         # different cadence (e.g. monthly headline values that leaked in before
@@ -1835,8 +1906,30 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
             if hist_source == "FRED" and fred_series_used
             else config.get("source_url", "")
         )
+        # Cutoff and revision baseline come from stored points of the same
+        # date shape only, so a leaked "2027-01" can't push the cutoff past
+        # every "YYYY-Qn" quarter and wave new prints through ungated.
+        stored_values = {h["date"]: h.get("value") for h in stored_same}
+        cutoff = stored_same[-1]["date"] if stored_same else ""
         rebuilt = []
-        for point in sorted(fetched.get("history", []), key=lambda x: x["date"]):
+        for point in incoming:
+            # The archive itself isn't an anomaly, but a period we didn't have
+            # before is a new print and goes through the gate like any other
+            # (CLAUDE.md #5). Judged against the rebuilt series, not the old
+            # stored one, so leaked/mis-shaped old points can't skew it.
+            if cutoff and point["date"] > cutoff:
+                prev = rebuilt[-1] if rebuilt else None
+                detect_anomalies(code, point, prev, rebuilt)
+            # A period we already hold that the source now reports very
+            # differently is a revision worth a human look, not a silent
+            # rewrite of the chart (CLAUDE.md #5).
+            old = stored_values.get(point["date"])
+            if (isinstance(old, (int, float))
+                    and abs(point["value"] - old) > STEP_THRESHOLD_PP):
+                _log_anomaly(code, point["date"], point["value"], old, None,
+                             [f"revision {point['value'] - old:+.2f}pp > "
+                              f"{STEP_THRESHOLD_PP}pp vs stored ({old}% \u2192 "
+                              f"{point['value']}%)"])
             point.setdefault("source", hist_source)
             point.setdefault("source_url", hist_url)
             point.setdefault("fetch_date", fetch_stamp)
