@@ -1895,14 +1895,6 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
     if not fetched:
         return merged
 
-    # Months the source has an index for but no annual rate (US October
-    # 2026, #132). Replaced on every successful fetch, so the note goes away
-    # once a newer month gets a rate; kept as-is when the fetch failed.
-    if fetched.get("yoy_unavailable"):
-        merged["yoy_unavailable"] = fetched["yoy_unavailable"]
-    else:
-        merged.pop("yoy_unavailable", None)
-
     # Get existing dates for quick lookup
     existing_dates = {h["date"] for h in merged.get("history", [])}
     existing_latest_date = max(existing_dates) if existing_dates else ""
@@ -1920,6 +1912,18 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
         if actual_source == "FRED" and fred_series_used
         else config.get("source_url", "")
     )
+
+    # Months the source has an index for but no annual rate (US October
+    # 2026, #132). Replaced on every successful fetch, so the note goes away
+    # once a newer month gets a rate; kept as-is when the fetch failed. Each
+    # entry says which source showed the gap and when (CLAUDE.md #3).
+    if fetched.get("yoy_unavailable"):
+        merged["yoy_unavailable"] = [
+            dict(gap, source=actual_source, source_url=actual_source_url,
+                 fetch_date=fetch_stamp)
+            for gap in fetched["yoy_unavailable"]]
+    else:
+        merged.pop("yoy_unavailable", None)
 
     # Add new history points from the source
     new_points = 0

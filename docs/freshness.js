@@ -199,11 +199,12 @@ function pendingReviewPill(delta, bank) {
  */
 function yoyGapNote(record) {
     const gaps = Array.isArray(record?.yoy_unavailable) ? record.yoy_unavailable : [];
-    const latest = record?.latest?.date || '';
+    const hist = Array.isArray(record?.history) ? record.history : [];
+    const latest = record?.latest?.date || hist[hist.length - 1]?.date || '';
     const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const label = (ym) => {
-        const m = /^(\d{4})-(\d{2})$/.exec(ym || '');
+        const m = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(ym || '');
         return m ? `${MONTHS[parseInt(m[2], 10) - 1]} ${m[1]}` : null;
     };
     const newer = gaps.filter(g => label(g.date) && g.date > latest);

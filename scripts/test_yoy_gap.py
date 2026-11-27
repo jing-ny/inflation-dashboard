@@ -69,6 +69,15 @@ fetched = {"history": [{"date": "2026-08", "value": 3.4}, {"date": "2026-09", "v
            "yoy_unavailable": [{"date": "2026-10", "reason": "no index for 2025-10, so no annual rate"}]}
 m = f.merge_country_data(existing, fetched, "US")
 check("note stored on the record", m.get("yoy_unavailable", [{}])[0].get("date") == "2026-10")
+gap = m["yoy_unavailable"][0]
+check("note carries its source, source_url and fetch_date",
+      gap.get("source") == "BLS" and gap.get("source_url", "").startswith("https://www.bls.gov")
+      and len(gap.get("fetch_date", "")) == 10)
+mf = f.merge_country_data({"US": dict(existing["US"])}, dict(fetched, fetched_from="FRED",
+                          fred_series_used="CPIAUCNS"), "US")
+check("FRED fallback is named as the source",
+      mf["yoy_unavailable"][0]["source"] == "FRED"
+      and mf["yoy_unavailable"][0]["source_url"].endswith("/CPIAUCNS"))
 existing["US"] = m
 m2 = f.merge_country_data(existing, dict(fetched, yoy_unavailable=[]), "US")
 check("note cleared once nothing is unavailable", "yoy_unavailable" not in m2)

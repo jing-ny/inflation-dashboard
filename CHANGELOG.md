@@ -13,7 +13,7 @@ All notable changes to the Inflation Dashboard project are documented here.
   no year-ago index as `yoy_unavailable` on the series, and the overview table and country page show
   "Oct 2026: no annual rate" beside the latest date. No value is filled in (CLAUDE.md #1); the note
   is replaced on every successful fetch, so it clears once November gets a rate.
-  `scripts/test_yoy_gap.py` (12 checks, offline).
+  `scripts/test_yoy_gap.py` (14 checks, offline). Each note carries the `source`, `source_url` and `fetch_date` that showed the gap (CLAUDE.md #3).
 - **NZ CPI moves to OECD SDMX; the series was stuck at 2026-Q1 (#123).** FRED's `NZLCPIALLQINMEI`
   relay stopped updating, so NZ sat 270 days old — the only red series on the freshness gate —
   while Stats NZ had already published 2026-Q2 (4.1%) and Q3 (3.7%). NZ now reads OECD's SDMX
