@@ -6,6 +6,9 @@ All notable changes to the Inflation Dashboard project are documented here.
 
 ## [Unreleased]
 
+### Changed
+- **Claude may merge a PR when the maintainer asks for that merge (#137).** CLAUDE.md #6 still requires an issue and a PR for every change and still bars direct commits and dispatched writes to `main`. Claude can now press Merge only when the maintainer's own message asks for that PR and nothing has been pushed since (other than a clean merge from `main`, or one that only keeps both sides in `CHANGELOG.md`), every check has passed with no conflicts, the PR isn't a draft, the rule 7 review is posted and dispositioned, and the PR touches neither `CLAUDE.md` nor `.github/`, nor any `git`/`gh`/token use in a workflow script. Squash merge only, never auto-merge or an admin bypass.
+
 ### Fixed
 - **SARB forecast scraper runs again (#129).** `_discover_sarb_forecast_pdf()` built its URL from
   `SARB_DAM_BASE`, which no longer existed, so `scrape_sarb()` raised `NameError` on every run and
