@@ -7,6 +7,14 @@ All notable changes to the Inflation Dashboard project are documented here.
 ## [Unreleased]
 
 ### Fixed
+- **BoE forecast scraper reads the November 2026 MPR (#131).** The parser only knew April 2026's
+  "Summary of scenarios" (Scenario A/B/C), so November's Table 3.B, which is back to a central
+  projection with an adverse-inflation and a weaker-demand scenario, parsed 0 paths and UK stayed
+  on April's range. `_parse_boe_table_3b()` reads both layouts and strips the previous Report's
+  values printed in parentheses. With a central projection, UK's forecast is that path (Q4
+  four-quarter CPI: 2026 3.8, 2027 4.0, 2028 2.0, 2029 1.8) and the scenarios stay on the country
+  page for context; the April range is dropped on merge so the pages show the point values.
+  `scripts/test_boe_table_3b.py` (17 checks, offline) uses the November table text itself.
 - **NZ CPI moves to OECD SDMX; the series was stuck at 2026-Q1 (#123).** FRED's `NZLCPIALLQINMEI`
   relay stopped updating, so NZ sat 270 days old — the only red series on the freshness gate —
   while Stats NZ had already published 2026-Q2 (4.1%) and Q3 (3.7%). NZ now reads OECD's SDMX

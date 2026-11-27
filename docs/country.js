@@ -541,7 +541,9 @@ async function renderForecastTable(countryCode) {
                 <table class="forecast-table">
                     <thead><tr><th>Scenario</th>${scenYears.map(y => `<th>${y}</th>`).join('')}</tr></thead>
                     <tbody>
-                        ${Object.keys(scen).sort().map(name => `
+                        ${Object.keys(scen).sort((a, b) =>
+                            (b === cbForecast.central_scenario) - (a === cbForecast.central_scenario)
+                            || a.localeCompare(b)).map(name => `
                             <tr>
                                 <td>${name}</td>
                                 ${scenYears.map(y => {
@@ -552,8 +554,9 @@ async function renderForecastTable(countryCode) {
                     </tbody>
                 </table>
                 <p style="margin-top: 0.5rem; font-size: 0.8125rem; color: #6b7280;">
-                    The Bank of England publishes alternative scenarios rather than a single central projection;
-                    the comparison table above shows the cross-scenario range.
+                    ${cbForecast.central_scenario
+                        ? 'The comparison table above shows the MPC\'s central projection; the scenarios published alongside it are listed here for context.'
+                        : 'The Bank of England publishes alternative scenarios rather than a single central projection; the comparison table above shows the cross-scenario range.'}
                 </p>
             `;
         }
