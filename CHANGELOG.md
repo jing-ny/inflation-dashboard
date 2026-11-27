@@ -13,8 +13,10 @@ All notable changes to the Inflation Dashboard project are documented here.
   and CN's IMF-sourced Outlook row inherited April's page as its `source_url` (CLAUDE.md #3).
   `fetch_imf_forecasts.py` now keeps the edition page only while its `/weo/issues/YYYY/MM/` edition
   matches the data, otherwise links the DataMapper; the note is kept with a `note_edition`, and the
-  Outlook shows "Context (from the April 2026 WEO)" once they differ. Re-curating means updating
-  both. `scripts/test_imf_edition.py` (14 checks, offline).
+  Outlook shows "Context (from the April 2026 WEO)" once they differ. `note_sha` ties that edition
+  to the note text, so re-curating the note and the page clears the label without touching
+  `note_edition`. The newsletter prompt gets `note_edition` too. `scripts/test_imf_edition.py`
+  (15 checks, offline).
 - **NZ CPI moves to OECD SDMX; the series was stuck at 2026-Q1 (#123).** FRED's `NZLCPIALLQINMEI`
   relay stopped updating, so NZ sat 270 days old — the only red series on the freshness gate —
   while Stats NZ had already published 2026-Q2 (4.1%) and Q3 (3.7%). NZ now reads OECD's SDMX

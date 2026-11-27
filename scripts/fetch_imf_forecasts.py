@@ -23,6 +23,7 @@ No API key required.
 import os
 import json
 import re
+import hashlib
 import requests
 from datetime import datetime
 from pathlib import Path
@@ -183,9 +184,18 @@ def fetch_imf_forecasts() -> Dict:
         print(f"  ⚠️  publication_url is the {pub_edition} WEO page but the data is "
               f"{weo_version}; linking the DataMapper instead until it is updated")
     if existing.get("note"):
-        result["note"] = existing["note"]
-        result["note_edition"] = (existing.get("note_edition") or pub_edition
-                                  or existing.get("version"))
+        note = existing["note"]
+        result["note"] = note
+        # note_sha ties the stored edition to the note text it was worked out
+        # for. If someone re-curates the note (and the page) without touching
+        # note_edition, the hash no longer matches and the edition is worked
+        # out again, so a fresh note never keeps an old label.
+        sha = hashlib.sha256(note.encode("utf-8")).hexdigest()[:16]
+        if existing.get("note_edition") and existing.get("note_sha") == sha:
+            result["note_edition"] = existing["note_edition"]
+        else:
+            result["note_edition"] = pub_edition or existing.get("version")
+        result["note_sha"] = sha
     if existing.get("display_order"):
         result["display_order"] = existing["display_order"]
     result["countries"] = {}

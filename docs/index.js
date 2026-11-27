@@ -241,7 +241,9 @@ async function loadOutlookTable() {
         // data moves to a newer edition, say which one it was written for.
         if (imfData.note) {
             const ed = imfData.note_edition;
-            const from = ed && ed !== imfData.version ? ` (from the ${ed} WEO)` : '';
+            const safeEd = String(ed || '').replace(/[&<>"]/g, ch => (
+                { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+            const from = ed && ed !== imfData.version ? ` (from the ${safeEd} WEO)` : '';
             contextDiv.innerHTML = `<strong>⚠ Context${from}:</strong> ${imfData.note}`;
         }
 

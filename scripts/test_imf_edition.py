@@ -92,9 +92,15 @@ data, _ = run({"version": "October 2026", "url": DATAMAPPER, "publication_url": 
 check("matching page kept", data.get("publication_url") == OCTOBER)
 check("matching note marked October", data.get("note_edition") == "October 2026")
 
-data, _ = run({"version": "October 2026", "url": DATAMAPPER, "note": "x",
-               "note_edition": "April 2026"})
-check("stored note_edition is kept, not moved forward", data.get("note_edition") == "April 2026")
+first, _ = run({"version": "October 2026", "url": DATAMAPPER, "publication_url": APRIL,
+                "note": "April context"})
+data, _ = run(first)
+check("second run keeps April: stored edition matches the unchanged note",
+      data.get("note_edition") == "April 2026")
+recurated = dict(first, note="October context", publication_url=OCTOBER)
+data, _ = run(recurated)
+check("re-curated note and page without touching note_edition: label clears",
+      data.get("note_edition") == "October 2026" and data.get("publication_url") == OCTOBER)
 
 data, _ = run({"version": "October 2026", "url": DATAMAPPER})
 check("no note: no note_edition", "note_edition" not in data)
