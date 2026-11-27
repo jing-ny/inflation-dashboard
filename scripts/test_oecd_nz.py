@@ -57,14 +57,23 @@ def csv_body(rows):
     return "\n".join(lines) + "\n"
 
 
-# Quarterly NZ rows as OECD returns them (2026-Q1..Q3 match what the live
-# endpoint served on 2026-11-26: 3.079292, 4.058193, 3.714936), plus a stray
-# monthly and an annual row that the quarterly filter must drop.
-NZ_ROWS = [
-    ("2025-Q1", "2.5"), ("2025-Q2", "2.7"), ("2025-Q3", "3.0"), ("2025-Q4", "3.1"),
-    ("2026-Q1", "3.079292"), ("2026-Q2", "4.058193"), ("2026-Q3", "3.714936"),
-    ("2026-06", "9.9"), ("2026", "9.9"),
+# NZ quarterly rows as the live OECD endpoint served them on 2026-11-27
+# (2016-Q1..2026-Q3, 43 points), plus a stray monthly and an annual row
+# that the quarterly filter must drop.
+NZ_QUARTERS = [
+    ("2016-Q1", "0.4184"), ("2016-Q2", "0.4167"), ("2016-Q3", "0.4153"), ("2016-Q4", "1.3356"),
+    ("2017-Q1", "2.1667"), ("2017-Q2", "1.7427"), ("2017-Q3", "1.9024"), ("2017-Q4", "1.5944"),
+    ("2018-Q1", "1.1000"), ("2018-Q2", "1.5000"), ("2018-Q3", "1.9013"), ("2018-Q4", "1.8887"),
+    ("2019-Q1", "1.4837"), ("2019-Q2", "1.6749"), ("2019-Q3", "1.4648"), ("2019-Q4", "1.8537"),
+    ("2020-Q1", "2.5341"), ("2020-Q2", "1.4535"), ("2020-Q3", "1.4437"), ("2020-Q4", "1.4368"),
+    ("2021-Q1", "1.5209"), ("2021-Q2", "3.3429"), ("2021-Q3", "4.9336"), ("2021-Q4", "5.9490"),
+    ("2022-Q1", "6.9288"), ("2022-Q2", "7.3013"), ("2022-Q3", "7.2333"), ("2022-Q4", "7.2193"),
+    ("2023-Q1", "6.6550"), ("2023-Q2", "6.0293"), ("2023-Q3", "5.6492"), ("2023-Q4", "4.6550"),
+    ("2024-Q1", "4.0230"), ("2024-Q2", "3.3306"), ("2024-Q3", "2.1548"), ("2024-Q4", "2.2240"),
+    ("2025-Q1", "2.5257"), ("2025-Q2", "2.6730"), ("2025-Q3", "3.0469"), ("2025-Q4", "3.1080"),
+    ("2026-Q1", "3.0793"), ("2026-Q2", "4.0582"), ("2026-Q3", "3.7149"),
 ]
+NZ_ROWS = NZ_QUARTERS + [("2026-06", "9.9"), ("2026", "9.9")]
 
 calls = []
 
@@ -83,7 +92,7 @@ finally:
     f.requests.get = orig_get
 
 check("quarterly key requested", calls and calls[-1].endswith("/NZL.Q.N.CPI.PA._T.N.GY"), calls[-1:])
-check("only YYYY-Qn rows kept", [o["date"] for o in obs] == [p for p, _ in NZ_ROWS[:7]],
+check("only YYYY-Qn rows kept", [o["date"] for o in obs] == [p for p, _ in NZ_QUARTERS],
       [o["date"] for o in obs])
 
 calls.clear()
@@ -121,6 +130,7 @@ merged = f.merge_country_data(existing, copy.deepcopy(fetched), "NZ")
 dates = [h["date"] for h in merged["history"]]
 check("history is quarterly-only", all("-Q" in d for d in dates), [d for d in dates if "-Q" not in d])
 check("gaps filled (2025-Q2, 2025-Q3)", "2025-Q2" in dates and "2025-Q3" in dates)
+check("full archive kept (43 quarters from 2016-Q1)", len(dates) == 43 and dates[0] == "2016-Q1", len(dates))
 check("latest is 2026-Q3", merged["latest"]["date"] == "2026-Q3" and merged["latest"]["value"] == 3.71,
       merged["latest"])
 check("previous is 2026-Q2", merged["previous"]["date"] == "2026-Q2", merged["previous"])
@@ -128,7 +138,7 @@ check("provenance on latest", merged["latest"].get("source") == "OECD"
       and "NZL.Q.N.CPI.PA._T.N.GY" in merged["latest"].get("source_url", "")
       and merged["latest"].get("fetch_date"), merged["latest"])
 check("record source label is OECD", merged["source"] == "OECD")
-check("no anomaly on real Q2/Q3 prints", not f.ANOMALY_LOG, f.ANOMALY_LOG)
+check("no anomaly on real data (new quarters or revisions)", not f.ANOMALY_LOG, f.ANOMALY_LOG)
 
 # A new quarter that jumps >1pp still trips the gate.
 f.ANOMALY_LOG.clear()
@@ -155,6 +165,51 @@ finally:
     f.fetch_oecd_cpi_series, f.fetch_fred_series = orig_oecd, orig_fred
 check("FRED fallback does not rebuild history", fb and fb["fetched_from"] == "FRED"
       and not fb.get("history_replace"), fb)
+
+# --- 5. a partial OECD reply must not shrink the stored archive -------------
+f.ANOMALY_LOG.clear()
+partial = copy.deepcopy(fetched)
+partial["history"] = [{"date": "2026-Q1", "value": 3.08}, {"date": "2026-Q2", "value": 4.06}]
+partial["latest"] = {"date": "2026-Q2", "value": 4.06}
+pm = f.merge_country_data(copy.deepcopy(existing), partial, "NZ")
+check("partial reply keeps stored history", len(pm["history"]) >= len(before["history"]),
+      (len(pm["history"]), len(before["history"])))
+check("partial reply still adds the new quarter", "2026-Q2" in [h["date"] for h in pm["history"]])
+f.ANOMALY_LOG.clear()
+
+# --- 6. a same-period response with wildly different values is flagged -------
+wild = copy.deepcopy(fetched)
+wild["history"] = [dict(h, value=41.0) for h in wild["history"]]
+f.merge_country_data(copy.deepcopy(existing), wild, "NZ")
+check("large revisions to stored periods are flagged",
+      any("revision" in r for a in f.ANOMALY_LOG for r in a["reasons"]), f.ANOMALY_LOG[:2])
+f.ANOMALY_LOG.clear()
+
+# --- 7. a leaked month-shaped date can't move the new-period cutoff ----------
+leaky = copy.deepcopy(existing)
+leaky["NZ"]["history"].append({"date": "2027-01", "value": 3.0})
+jump2 = copy.deepcopy(fetched)
+jump2["history"][-1] = {"date": "2026-Q3", "value": 6.0}
+f.merge_country_data(leaky, jump2, "NZ")
+check("cutoff ignores month-shaped leaks", any(a["date"] == "2026-Q3" for a in f.ANOMALY_LOG), f.ANOMALY_LOG)
+f.ANOMALY_LOG.clear()
+
+# --- 8. the monitor won't append FRED's YYYY-MM point to a YYYY-Qn record ----
+import monitor_updates as mu  # noqa: E402
+
+mon = mu.DataMonitor()
+snapshot = copy.deepcopy(existing)
+mon.load_current_data = lambda: snapshot
+saved = []
+mon.save_data = lambda data, name: saved.append(name)
+mon.fetch_fred_latest = lambda sid: {"date": "2027-01", "value": 3.0, "source": "FRED",
+                                     "source_url": "", "fetch_date": "2027-02-01"}
+nz_hist_before = len(snapshot["NZ"]["history"])
+mon.check_cpi_freshness()
+check("monitor skips shape-mismatched FRED point for NZ",
+      snapshot["NZ"]["latest"]["date"] == before["latest"]["date"]
+      and len(snapshot["NZ"]["history"]) == nz_hist_before,
+      snapshot["NZ"]["latest"])
 
 print()
 if FAILURES:

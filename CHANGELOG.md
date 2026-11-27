@@ -14,13 +14,19 @@ All notable changes to the Inflation Dashboard project are documented here.
   monthly from GitHub runners. `fetch_oecd_cpi_series()` takes a `freq` (`M` default, `Q`) and
   keeps only rows of that shape. A successful OECD fetch rebuilds NZ's history wholesale (as AU
   does from ABS), which scrubs the month-shaped duplicates (`2024-01`, `2024-04`, …) that had
-  leaked into a quarterly series and fills the 2025-Q2/Q3 gaps. FRED stays as the fallback and
+  leaked into a quarterly series and fills the 2025-Q2/Q3 gaps. FRED stays as NZ's fallback and
   never triggers a rebuild. Source label and per-record provenance now say OECD (CLAUDE.md #3).
 - **A rebuilt history no longer skips the anomaly gate for new periods.** The `history_replace`
   path (AU, now NZ) stamped every point without calling `detect_anomalies`, so a new quarter that
   arrived through it was never checked. Periods newer than the stored history now go through the
   gate like any appended point (CLAUDE.md #5); the backfilled archive still doesn't.
-  `scripts/test_oecd_nz.py` covers both, offline.
+- **A rebuild can no longer shrink or silently rewrite a history.** The rebuild only runs when the
+  response covers what we hold (same start or earlier, same end or later, at least as many points);
+  a partial reply falls back to appending. A stored period the source now reports more than 1pp
+  differently is logged as a revision anomaly, and the new-period cutoff is taken from stored
+  points of the same date shape. `monitor_updates.py` no longer appends FRED's `YYYY-MM` point to
+  a `YYYY-Qn` record, the source of NZ's month-shaped duplicates. `scripts/test_oecd_nz.py`
+  covers all of the above, offline.
 - **Newsletter compares reference periods, not weekly snapshots, and drafts are verified before
   they land (#117).** `generate_newsletter.py` used `compare_snapshots()`, which diffs the current
   weekly snapshot against the previous one — right for a weekly alert, wrong for a monthly piece,

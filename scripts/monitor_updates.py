@@ -145,6 +145,13 @@ class DataMonitor:
             # the staleness check below still runs.
             record_freq = (current_data[country_code].get('frequency') or '').lower()
             cadence_mismatch = record_freq == 'monthly' and 'ALLQ' in series_id
+            # A quarterly record stored "YYYY-Qn" (NZ, #123) must not take
+            # FRED's month-shaped "YYYY-MM" point: the shapes don't compare
+            # ("2027-01" sorts after "2026-Q4"), and appending it re-creates
+            # the month-shaped duplicates the OECD rebuild scrubbed. The
+            # national/OECD fetch in update-data.yml owns these records.
+            if fred_latest and ('-Q' in current_date) != ('-Q' in fred_latest['date']):
+                cadence_mismatch = True
 
             if fred_latest and fred_latest['date'] > current_date and not cadence_mismatch:
                 # New data available

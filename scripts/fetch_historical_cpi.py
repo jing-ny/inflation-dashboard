@@ -1351,8 +1351,8 @@ def fetch_country_data(code: str) -> Optional[Dict]:
     print(f"  Fetching {config['flag']} {config['name']}...", end=" ")
 
     # Tracks the source that actually produced the data, for per-record
-    # provenance (#83): national fetchers can fall back to FRED, and the
-    # NZ/KR rows are FRED-primary even though config["source"] names the
+    # provenance (#83): national fetchers can fall back to FRED, and
+    # some rows are FRED-primary even though config["source"] names the
     # national agency.
     via_fred = False
     # The FRED series that actually produced the data (primary by default;
@@ -1772,6 +1772,31 @@ def _log_anomaly(code: str, date: str, value: float, prev_value: Optional[float]
     })
 
 
+def _date_shape(date: str) -> str:
+    """'Q' for 'YYYY-Qn', 'M' for 'YYYY-MM', '' for anything else."""
+    if re.fullmatch(r"\d{4}-Q[1-4]", date or ""):
+        return "Q"
+    if re.fullmatch(r"\d{4}-\d{2}", date or ""):
+        return "M"
+    return ""
+
+
+def _rebuild_covers(incoming: List[Dict], stored_same: List[Dict]) -> bool:
+    """A wholesale rebuild may only replace history it fully covers.
+
+    `incoming` and `stored_same` are date-sorted and share one date shape. A
+    partial or truncated response (fewer points, a later start, or an older
+    end than what we hold) must not wipe the stored archive (#123 review).
+    """
+    if not incoming:
+        return False
+    if not stored_same:
+        return True
+    return (incoming[0]["date"] <= stored_same[0]["date"]
+            and incoming[-1]["date"] >= stored_same[-1]["date"]
+            and len(incoming) >= len(stored_same))
+
+
 def detect_anomalies(code: str, new_point: Dict, prev_point: Optional[Dict], history: List[Dict]):
     """Append to ANOMALY_LOG if the new point looks suspicious."""
     date, value = new_point['date'], new_point['value']
@@ -1857,7 +1882,19 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
 
     # Add new history points from the source
     new_points = 0
+    do_replace = False
     if fetched.get("history_replace"):
+        incoming = sorted(fetched.get("history", []), key=lambda x: x["date"])
+        shape = _date_shape(incoming[-1]["date"]) if incoming else ""
+        stored_same = sorted((h for h in merged.get("history", [])
+                              if _date_shape(h["date"]) == shape),
+                             key=lambda x: x["date"])
+        do_replace = bool(shape) and _rebuild_covers(incoming, stored_same)
+        if not do_replace:
+            print(f"    \u26a0\ufe0f  {code}: response doesn't cover the stored history "
+                  f"({len(incoming)} pts vs {len(stored_same)} stored); "
+                  f"appending instead of rebuilding")
+    if do_replace:
         # AU (#106): the quarterly history is rebuilt wholesale from its
         # authoritative source each run, scrubbing any points appended under a
         # different cadence (e.g. monthly headline values that leaked in before
@@ -1869,15 +1906,30 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
             if hist_source == "FRED" and fred_series_used
             else config.get("source_url", "")
         )
+        # Cutoff and revision baseline come from stored points of the same
+        # date shape only, so a leaked "2027-01" can't push the cutoff past
+        # every "YYYY-Qn" quarter and wave new prints through ungated.
+        stored_values = {h["date"]: h.get("value") for h in stored_same}
+        cutoff = stored_same[-1]["date"] if stored_same else ""
         rebuilt = []
-        for point in sorted(fetched.get("history", []), key=lambda x: x["date"]):
+        for point in incoming:
             # The archive itself isn't an anomaly, but a period we didn't have
             # before is a new print and goes through the gate like any other
             # (CLAUDE.md #5). Judged against the rebuilt series, not the old
             # stored one, so leaked/mis-shaped old points can't skew it.
-            if existing_latest_date and point["date"] > existing_latest_date:
+            if cutoff and point["date"] > cutoff:
                 prev = rebuilt[-1] if rebuilt else None
                 detect_anomalies(code, point, prev, rebuilt)
+            # A period we already hold that the source now reports very
+            # differently is a revision worth a human look, not a silent
+            # rewrite of the chart (CLAUDE.md #5).
+            old = stored_values.get(point["date"])
+            if (isinstance(old, (int, float))
+                    and abs(point["value"] - old) > STEP_THRESHOLD_PP):
+                _log_anomaly(code, point["date"], point["value"], old, None,
+                             [f"revision {point['value'] - old:+.2f}pp > "
+                              f"{STEP_THRESHOLD_PP}pp vs stored ({old}% \u2192 "
+                              f"{point['value']}%)"])
             point.setdefault("source", hist_source)
             point.setdefault("source_url", hist_url)
             point.setdefault("fetch_date", fetch_stamp)
