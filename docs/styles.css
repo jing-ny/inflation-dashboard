@@ -690,3 +690,9 @@ a.freshness-paused:hover {
 .nav-back:hover {
     color: #111;
 }
+
+/* Curated commentary older than the projections beside it (commentaryLabel) */
+.commentary-date {
+    color: #b45309;
+    font-style: italic;
+}

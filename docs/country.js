@@ -525,7 +525,7 @@ async function renderForecastTable(countryCode) {
                 </tbody>
             </table>
             <p style="margin-top: 0.75rem; font-size: 0.8125rem; color: #6b7280;">
-                <strong>Central Bank:</strong> ${cbForecast.note}<br>
+                <strong>Central Bank:</strong> ${cbForecast.note}${commentaryLabel(cbForecast)}<br>
                 <strong>IMF:</strong> World Economic Outlook${imfData.version ? ' (' + imfData.version + ')' : ''}${imfData.retrieved ? ', retrieved ' + imfData.retrieved : ''}
             </p>
         `;
@@ -598,7 +598,7 @@ async function renderForecastTable(countryCode) {
         html += `
                 </tbody>
             </table>
-            <p style="margin-top: 0.75rem; font-size: 0.8125rem; color: #6b7280;">${cbForecast.note}</p>
+            <p style="margin-top: 0.75rem; font-size: 0.8125rem; color: #6b7280;">${cbForecast.note}${commentaryLabel(cbForecast)}</p>
         `;
     } else if (imfForecast && imfForecast.forecasts) {
         // Only IMF forecast available

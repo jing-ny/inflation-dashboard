@@ -10,6 +10,18 @@ All notable changes to the Inflation Dashboard project are documented here.
 - **Claude may merge a PR when the maintainer asks for that merge (#137).** CLAUDE.md #6 still requires an issue and a PR for every change and still bars direct commits and dispatched writes to `main`. Claude can now press Merge only when the maintainer's own message asks for that PR and nothing has been pushed since (other than a clean merge from `main`, or one that only keeps both sides in `CHANGELOG.md`), every check has passed with no conflicts, the PR isn't a draft, the rule 7 review is posted and dispositioned, and the PR touches neither `CLAUDE.md` nor `.github/`, nor any `git`/`gh`/token use in a workflow script. Squash merge only, never auto-merge or an admin bypass.
 
 ### Fixed
+- **SARB forecast scraper runs again (#129).** `_discover_sarb_forecast_pdf()` built its URL from
+  `SARB_DAM_BASE`, which no longer existed, so `scrape_sarb()` raised `NameError` on every run and
+  ZA's curated forecast stayed on the May 2026 report. The constant is restored with the path the
+  curated ZA `source_url` already uses. A dry run found the November 2026 report and parsed
+  2026 4.3, 2027 4.0, 2028 3.2, 2029 3.0, all inside the 1pp gate.
+- **Curated central-bank commentary is labelled when it is older than the numbers (#129).**
+  `merge_into_main` replaces a row's projections with the scraped report but keeps the hand-written
+  `key_quote` and `note`, so ZA would have shown May's "4.4% in 2026" beside November's 4.3. When
+  the publication changes, the merge now stamps `commentary_date` with the report the text came
+  from, and the outlook table and country pages show "(from the May 2026 report)" after it. The
+  stamp is set once; re-curating the text means updating or removing `commentary_date`.
+  `scripts/test_cb_commentary_date.py` covers it, offline.
 - **CB forecast auto-scrape runs again; it had scraped nothing since 2026-10-29 (#127).** The
   "recent draft" guard measured the draft's age from its mtime, which `actions/checkout` sets to
   the checkout time, so the committed draft always looked 0.0h old and every scheduled run exited
