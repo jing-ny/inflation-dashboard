@@ -700,3 +700,9 @@ a.freshness-paused:hover {
     border-radius: 4px;
     margin-left: 4px;
 }
+
+/* Curated commentary older than the projections beside it (commentaryLabel) */
+.commentary-date {
+    color: #b45309;
+    font-style: italic;
+}

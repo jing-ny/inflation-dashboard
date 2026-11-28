@@ -17,6 +17,39 @@ All notable changes to the Inflation Dashboard project are documented here.
   "Oct 2026: no annual rate" beside the latest date. No value is filled in (CLAUDE.md #1); the note
   is replaced on every successful fetch, so it clears once November gets a rate.
   `scripts/test_yoy_gap.py` (14 checks, offline). Each note carries the `source`, `source_url` and `fetch_date` that showed the gap (CLAUDE.md #3).
+- **IMF edition link and context note follow the data's WEO edition (#135).** The curated
+  `publication_url` and `note` in `imf_forecasts.json` were still April 2026's while the data had
+  rolled to October 2026, so the Outlook legend linked April's page under an "October 2026" label
+  and CN's IMF-sourced Outlook row inherited April's page as its `source_url` (CLAUDE.md #3).
+  `fetch_imf_forecasts.py` now keeps the edition page only while its `/weo/issues/YYYY/MM/` edition
+  matches the data, otherwise links the DataMapper; the note is kept with a `note_edition`, and the
+  Outlook shows "Context (from the April 2026 WEO)" once they differ. `note_sha` ties that edition
+  to the note text, so re-curating the note and the page clears the label without touching
+  `note_edition`. The newsletter prompt gets `note_edition` too. `scripts/test_imf_edition.py`
+  (15 checks, offline).
+- **BoE forecast scraper reads the November 2026 MPR (#131).** The parser only knew April 2026's
+  "Summary of scenarios" (Scenario A/B/C), so November's Table 3.B, which is back to a central
+  projection with an adverse-inflation and a weaker-demand scenario, parsed 0 paths and UK stayed
+  on April's range. `_parse_boe_table_3b()` reads both layouts and strips the previous Report's
+  values printed in parentheses. With a central projection, UK's forecast is that path (Q4
+  four-quarter CPI: 2026 3.8, 2027 4.0, 2028 2.0, 2029 1.8) and the scenarios stay on the country
+  page for context; the April range is dropped on merge so the pages show the point values.
+  If the table shows a central projection but its CPI row can't be read, nothing is merged rather
+  than falling back to a range over the scenarios alone. The merge logs a change of forecast basis
+  (here Q2 scenario midpoints → Q4 central projection), since the 1pp gate compared the two.
+  `scripts/test_boe_table_3b.py` (22 checks, offline) uses the November table text itself.
+- **SARB forecast scraper runs again (#129).** `_discover_sarb_forecast_pdf()` built its URL from
+  `SARB_DAM_BASE`, which no longer existed, so `scrape_sarb()` raised `NameError` on every run and
+  ZA's curated forecast stayed on the May 2026 report. The constant is restored with the path the
+  curated ZA `source_url` already uses. A dry run found the November 2026 report and parsed
+  2026 4.3, 2027 4.0, 2028 3.2, 2029 3.0, all inside the 1pp gate.
+- **Curated central-bank commentary is labelled when it is older than the numbers (#129).**
+  `merge_into_main` replaces a row's projections with the scraped report but keeps the hand-written
+  `key_quote` and `note`, so ZA would have shown May's "4.4% in 2026" beside November's 4.3. When
+  the publication changes, the merge now stamps `commentary_date` with the report the text came
+  from, and the outlook table and country pages show "(from the May 2026 report)" after it. The
+  stamp is set once; re-curating the text means updating or removing `commentary_date`.
+  `scripts/test_cb_commentary_date.py` covers it, offline.
 - **CB forecast auto-scrape runs again; it had scraped nothing since 2026-10-29 (#127).** The
   "recent draft" guard measured the draft's age from its mtime, which `actions/checkout` sets to
   the checkout time, so the committed draft always looked 0.0h old and every scheduled run exited
