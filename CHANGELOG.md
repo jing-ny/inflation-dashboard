@@ -10,6 +10,17 @@ All notable changes to the Inflation Dashboard project are documented here.
 - **Claude may merge a PR when the maintainer asks for that merge (#137).** CLAUDE.md #6 still requires an issue and a PR for every change and still bars direct commits and dispatched writes to `main`. Claude can now press Merge only when the maintainer's own message asks for that PR and nothing has been pushed since (other than a clean merge from `main`, or one that only keeps both sides in `CHANGELOG.md`), every check has passed with no conflicts, the PR isn't a draft, the rule 7 review is posted and dispositioned, and the PR touches neither `CLAUDE.md` nor `.github/`, nor any `git`/`gh`/token use in a workflow script. Squash merge only, never auto-merge or an admin bypass.
 
 ### Fixed
+- **BoE forecast scraper reads the November 2026 MPR (#131).** The parser only knew April 2026's
+  "Summary of scenarios" (Scenario A/B/C), so November's Table 3.B, which is back to a central
+  projection with an adverse-inflation and a weaker-demand scenario, parsed 0 paths and UK stayed
+  on April's range. `_parse_boe_table_3b()` reads both layouts and strips the previous Report's
+  values printed in parentheses. With a central projection, UK's forecast is that path (Q4
+  four-quarter CPI: 2026 3.8, 2027 4.0, 2028 2.0, 2029 1.8) and the scenarios stay on the country
+  page for context; the April range is dropped on merge so the pages show the point values.
+  If the table shows a central projection but its CPI row can't be read, nothing is merged rather
+  than falling back to a range over the scenarios alone. The merge logs a change of forecast basis
+  (here Q2 scenario midpoints → Q4 central projection), since the 1pp gate compared the two.
+  `scripts/test_boe_table_3b.py` (22 checks, offline) uses the November table text itself.
 - **SARB forecast scraper runs again (#129).** `_discover_sarb_forecast_pdf()` built its URL from
   `SARB_DAM_BASE`, which no longer existed, so `scrape_sarb()` raised `NameError` on every run and
   ZA's curated forecast stayed on the May 2026 report. The constant is restored with the path the
