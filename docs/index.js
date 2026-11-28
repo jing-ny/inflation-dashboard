@@ -347,7 +347,7 @@ async function loadOutlookTable() {
                     <td>${imfCell}</td>
                     <td>${fmtCb(nextYearStr)}</td>
                     <td>${freshnessCell}</td>
-                    <td class="assessment-cell">"${forecast.key_quote}"</td>
+                    <td class="assessment-cell">"${forecast.key_quote}"${commentaryLabel(forecast)}</td>
                 </tr>
             `;
         }
