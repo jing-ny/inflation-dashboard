@@ -10,6 +10,16 @@ All notable changes to the Inflation Dashboard project are documented here.
 - **Claude may merge a PR when the maintainer asks for that merge (#137).** CLAUDE.md #6 still requires an issue and a PR for every change and still bars direct commits and dispatched writes to `main`. Claude can now press Merge only when the maintainer's own message asks for that PR and nothing has been pushed since (other than a clean merge from `main`, or one that only keeps both sides in `CHANGELOG.md`), every check has passed with no conflicts, the PR isn't a draft, the rule 7 review is posted and dispositioned, and the PR touches neither `CLAUDE.md` nor `.github/`, nor any `git`/`gh`/token use in a workflow script. Squash merge only, never auto-merge or an admin bypass.
 
 ### Fixed
+- **IMF edition link and context note follow the data's WEO edition (#135).** The curated
+  `publication_url` and `note` in `imf_forecasts.json` were still April 2026's while the data had
+  rolled to October 2026, so the Outlook legend linked April's page under an "October 2026" label
+  and CN's IMF-sourced Outlook row inherited April's page as its `source_url` (CLAUDE.md #3).
+  `fetch_imf_forecasts.py` now keeps the edition page only while its `/weo/issues/YYYY/MM/` edition
+  matches the data, otherwise links the DataMapper; the note is kept with a `note_edition`, and the
+  Outlook shows "Context (from the April 2026 WEO)" once they differ. `note_sha` ties that edition
+  to the note text, so re-curating the note and the page clears the label without touching
+  `note_edition`. The newsletter prompt gets `note_edition` too. `scripts/test_imf_edition.py`
+  (15 checks, offline).
 - **BoE forecast scraper reads the November 2026 MPR (#131).** The parser only knew April 2026's
   "Summary of scenarios" (Scenario A/B/C), so November's Table 3.B, which is back to a central
   projection with an adverse-inflation and a weaker-demand scenario, parsed 0 paths and UK stayed

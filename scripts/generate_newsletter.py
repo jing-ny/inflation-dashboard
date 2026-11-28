@@ -136,6 +136,9 @@ def build_prompt(changes: list, cb_forecasts: dict, imf_forecasts: dict) -> str:
         "version": imf_forecasts.get("version"),
         "retrieved": imf_forecasts.get("retrieved"),
         "note": imf_forecasts.get("note"),
+        # The WEO edition the curated note was written for; when it differs
+        # from "version", the note is older context, not this edition's (#135).
+        "note_edition": imf_forecasts.get("note_edition"),
     }
 
     # Compact forecast summaries

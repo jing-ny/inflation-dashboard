@@ -237,8 +237,14 @@ async function loadOutlookTable() {
         }
 
         // Show geopolitical context note
+        // The note is curated for one WEO edition (note_edition); once the
+        // data moves to a newer edition, say which one it was written for.
         if (imfData.note) {
-            contextDiv.innerHTML = `<strong>⚠ Context:</strong> ${imfData.note}`;
+            const ed = imfData.note_edition;
+            const safeEd = String(ed || '').replace(/[&<>"]/g, ch => (
+                { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+            const from = ed && ed !== imfData.version ? ` (from the ${safeEd} WEO)` : '';
+            contextDiv.innerHTML = `<strong>⚠ Context${from}:</strong> ${imfData.note}`;
         }
 
         // Render the source legend with the IMF link derived from the
