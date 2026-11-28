@@ -246,7 +246,8 @@ function updateMetrics(countryCode, data, targetDef) {
               + ' style="font-size:0.75rem;color:#b45309;background:#fef3c7;'
               + 'padding:1px 6px;border-radius:4px;margin-left:6px;">flash estimate</span>'
             : '';
-        currentDateEl.innerHTML = (pill ? `${dateText} ${pill}` : dateText) + flash;
+        const gap = typeof yoyGapNote === 'function' ? yoyGapNote(data) : '';
+        currentDateEl.innerHTML = (pill ? `${dateText} ${pill}` : dateText) + flash + gap;
     }
 
     // Previous

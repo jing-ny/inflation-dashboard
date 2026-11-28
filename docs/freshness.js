@@ -190,6 +190,34 @@ function pendingReviewPill(delta, bank) {
 }
 
 /**
+ * Say why a series hasn't moved on when the source has a newer month that
+ * cannot have an annual rate (record.yoy_unavailable, written by
+ * fetch_historical_cpi.py). Example: the US has no October 2025 CPI, so BLS
+ * published no 12-month change for October 2026 and the row stays on
+ * September. Without this the row just looks late (CLAUDE.md #4).
+ * Returns '' when there is nothing newer than the latest value.
+ */
+function yoyGapNote(record) {
+    const gaps = Array.isArray(record?.yoy_unavailable) ? record.yoy_unavailable : [];
+    const hist = Array.isArray(record?.history) ? record.history : [];
+    const latest = record?.latest?.date || hist[hist.length - 1]?.date || '';
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const label = (ym) => {
+        const m = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(ym || '');
+        return m ? `${MONTHS[parseInt(m[2], 10) - 1]} ${m[1]}` : null;
+    };
+    const newer = gaps.filter(g => label(g.date) && g.date > latest);
+    if (!newer.length) return '';
+    return newer.map(g => {
+        const ago = label(`${parseInt(g.date.slice(0, 4), 10) - 1}${g.date.slice(4)}`);
+        const title = `The source has an index for ${label(g.date)} but none for ${ago}, `
+            + `so it has no annual rate for ${label(g.date)}.`;
+        return ` <span class="yoy-gap" title="${title}">${label(g.date)}: no annual rate</span>`;
+    }).join('');
+}
+
+/**
  * Label curated central-bank commentary that predates the numbers beside it.
  *
  * The scraper replaces a row's projections with a newer report's figures but

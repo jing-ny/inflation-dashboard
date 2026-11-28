@@ -1336,6 +1336,34 @@ def calculate_yoy_from_index(observations: List[Dict], frequency: str = "monthly
     return yoy_data
 
 
+def index_months_without_yoy(observations: List[Dict], latest_yoy_date: str) -> List[Dict]:
+    """Monthly index points newer than the latest YoY that can't get a YoY.
+
+    A month's annual rate needs the index for the same month a year earlier.
+    When that month was never collected (the US has no October 2025 CPI, so
+    BLS published no 12-month change for October 2026), the newer month is
+    dropped by calculate_yoy_from_index and the series looks like it simply
+    hasn't updated. Returning those months lets the record say why, instead
+    of leaving a silent gap (CLAUDE.md #4). Never fills in a value (#1).
+
+    Only monthly "YYYY-MM-DD" index observations newer than ``latest_yoy_date``
+    ("YYYY-MM") count, so a source that publishes the YoY rate directly (its
+    observations end where its YoY does) always returns [].
+    """
+    if not observations or not re.fullmatch(r"\d{4}-\d{2}", latest_yoy_date or ""):
+        return []
+    have = {obs["date"][:7] for obs in observations if obs.get("date")}
+    out = []
+    for month in sorted(have):
+        if month <= latest_yoy_date or not re.fullmatch(r"\d{4}-\d{2}", month):
+            continue
+        year_ago = f"{int(month[:4]) - 1}{month[4:]}"
+        if year_ago not in have:
+            out.append({"date": month,
+                        "reason": f"no index for {year_ago}, so no annual rate"})
+    return out
+
+
 # -----------------------------------------------------------------------------
 # Data Fetching and Merging
 # -----------------------------------------------------------------------------
@@ -1361,6 +1389,7 @@ def fetch_country_data(code: str) -> Optional[Dict]:
     # Set by a fetcher whose source is authoritative for the whole history, so
     # merge rebuilds the stored series instead of appending to it (NZ, AU).
     history_replace = False
+    raw_data = None
 
     try:
         if config.get("api") == "ECB":
@@ -1660,6 +1689,9 @@ def fetch_country_data(code: str) -> Optional[Dict]:
         if yoy_data:
             latest = yoy_data[-1]
             print(f"✅ {len(yoy_data)} pts, latest: {latest['date']} = {latest['value']}%")
+            yoy_unavailable = index_months_without_yoy(raw_data or [], latest["date"])
+            for gap in yoy_unavailable:
+                print(f"    ℹ️  {code} {gap['date']}: {gap['reason']}")
             return {
                 "history": yoy_data,
                 "latest": latest,
@@ -1667,6 +1699,7 @@ def fetch_country_data(code: str) -> Optional[Dict]:
                 "fetched_from": "FRED" if via_fred else config["source"],
                 "fred_series_used": fred_series_used if via_fred else None,
                 "history_replace": history_replace,
+                "yoy_unavailable": yoy_unavailable,
             }
         else:
             print("⚠️ No data")
@@ -1877,7 +1910,7 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
 
     if not fetched:
         return merged
-    
+
     # Get existing dates for quick lookup
     existing_dates = {h["date"] for h in merged.get("history", [])}
     existing_latest_date = max(existing_dates) if existing_dates else ""
@@ -1898,6 +1931,18 @@ def merge_country_data(existing: Dict, fetched: Dict, code: str) -> Dict:
         if actual_source == "FRED" and fred_series_used
         else config.get("source_url", "")
     )
+
+    # Months the source has an index for but no annual rate (US October
+    # 2026, #132). Replaced on every successful fetch, so the note goes away
+    # once a newer month gets a rate; kept as-is when the fetch failed. Each
+    # entry says which source showed the gap and when (CLAUDE.md #3).
+    if fetched.get("yoy_unavailable"):
+        merged["yoy_unavailable"] = [
+            dict(gap, source=actual_source, source_url=actual_source_url,
+                 fetch_date=fetch_stamp)
+            for gap in fetched["yoy_unavailable"]]
+    else:
+        merged.pop("yoy_unavailable", None)
 
     # Add new history points from the source
     new_points = 0

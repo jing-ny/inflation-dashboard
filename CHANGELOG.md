@@ -10,6 +10,13 @@ All notable changes to the Inflation Dashboard project are documented here.
 - **Claude may merge a PR when the maintainer asks for that merge (#137).** CLAUDE.md #6 still requires an issue and a PR for every change and still bars direct commits and dispatched writes to `main`. Claude can now press Merge only when the maintainer's own message asks for that PR and nothing has been pushed since (other than a clean merge from `main`, or one that only keeps both sides in `CHANGELOG.md`), every check has passed with no conflicts, the PR isn't a draft, the rule 7 review is posted and dispositioned, and the PR touches neither `CLAUDE.md` nor `.github/`, nor any `git`/`gh`/token use in a workflow script. Squash merge only, never auto-merge or an admin bypass.
 
 ### Fixed
+- **US says why it stays on September 2026 (#132).** BLS has no October 2025 CPI, so it published
+  no 12-month change for October 2026 and `calculate_yoy_from_index()` dropped the month; the row
+  just looked late. `index_months_without_yoy()` now records each newer month that has an index but
+  no year-ago index as `yoy_unavailable` on the series, and the overview table and country page show
+  "Oct 2026: no annual rate" beside the latest date. No value is filled in (CLAUDE.md #1); the note
+  is replaced on every successful fetch, so it clears once November gets a rate.
+  `scripts/test_yoy_gap.py` (14 checks, offline). Each note carries the `source`, `source_url` and `fetch_date` that showed the gap (CLAUDE.md #3).
 - **IMF edition link and context note follow the data's WEO edition (#135).** The curated
   `publication_url` and `note` in `imf_forecasts.json` were still April 2026's while the data had
   rolled to October 2026, so the Outlook legend linked April's page under an "October 2026" label

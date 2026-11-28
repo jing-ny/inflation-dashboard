@@ -135,7 +135,7 @@ async function loadInflationTable() {
                     <td class="${changeClass}">${changeStr}</td>
                     <td>${targetDisplay}</td>
                     <td><span class="${statusClass}">${statusText}</span></td>
-                    <td>${formatDate(currentDate)}${flashBadge}</td>
+                    <td>${formatDate(currentDate)}${flashBadge}${yoyGapNote(data)}</td>
                     <td>${freshnessCell}</td>
                 </tr>
             `;
