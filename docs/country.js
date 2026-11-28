@@ -525,7 +525,7 @@ async function renderForecastTable(countryCode) {
                 </tbody>
             </table>
             <p style="margin-top: 0.75rem; font-size: 0.8125rem; color: #6b7280;">
-                <strong>Central Bank:</strong> ${cbForecast.note}<br>
+                <strong>Central Bank:</strong> ${cbForecast.note}${commentaryLabel(cbForecast)}<br>
                 <strong>IMF:</strong> World Economic Outlook${imfData.version ? ' (' + imfData.version + ')' : ''}${imfData.retrieved ? ', retrieved ' + imfData.retrieved : ''}
             </p>
         `;
@@ -537,11 +537,13 @@ async function renderForecastTable(countryCode) {
             const scenYears = Array.from(new Set(
                 Object.values(scen).flatMap(p => Object.keys(p || {})))).sort();
             html += `
-                <p style="margin-top: 1rem; margin-bottom: 0.5rem; font-weight: 600;">Scenario projections (CPI inflation, %)</p>
+                <p style="margin-top: 1rem; margin-bottom: 0.5rem; font-weight: 600;">${cbForecast.central_scenario ? 'Central projection and scenarios' : 'Scenario projections'} (CPI inflation, %)</p>
                 <table class="forecast-table">
                     <thead><tr><th>Scenario</th>${scenYears.map(y => `<th>${y}</th>`).join('')}</tr></thead>
                     <tbody>
-                        ${Object.keys(scen).sort().map(name => `
+                        ${Object.keys(scen).sort((a, b) =>
+                            (b === cbForecast.central_scenario) - (a === cbForecast.central_scenario)
+                            || a.localeCompare(b)).map(name => `
                             <tr>
                                 <td>${name}</td>
                                 ${scenYears.map(y => {
@@ -552,8 +554,9 @@ async function renderForecastTable(countryCode) {
                     </tbody>
                 </table>
                 <p style="margin-top: 0.5rem; font-size: 0.8125rem; color: #6b7280;">
-                    The Bank of England publishes alternative scenarios rather than a single central projection;
-                    the comparison table above shows the cross-scenario range.
+                    ${cbForecast.central_scenario
+                        ? 'The comparison table above shows the MPC\'s central projection; the scenarios published alongside it are listed here for context.'
+                        : 'The Bank of England publishes alternative scenarios rather than a single central projection; the comparison table above shows the cross-scenario range.'}
                 </p>
             `;
         }
@@ -598,7 +601,7 @@ async function renderForecastTable(countryCode) {
         html += `
                 </tbody>
             </table>
-            <p style="margin-top: 0.75rem; font-size: 0.8125rem; color: #6b7280;">${cbForecast.note}</p>
+            <p style="margin-top: 0.75rem; font-size: 0.8125rem; color: #6b7280;">${cbForecast.note}${commentaryLabel(cbForecast)}</p>
         `;
     } else if (imfForecast && imfForecast.forecasts) {
         // Only IMF forecast available

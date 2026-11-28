@@ -256,21 +256,18 @@ def _discover_boe_mpr_pdf():
 
 
 def scrape_boe():
-    """Scrape Bank of England Monetary Policy Report.
+    """Scrape the Bank of England Monetary Policy Report's Table 3.B.
 
-    Note: HTML prose extraction is currently disabled. The MPR mentions
-    headline CPI, services inflation, food price inflation, AWE wage
-    growth, world GDP, etc. all in the same paragraph style — regex over
-    prose cannot reliably distinguish them and was silently overwriting
-    curated forecasts with values like "food price inflation 4.6% by
-    September 2026" reinterpreted as headline CPI.
+    Prose extraction stays off: the MPR mentions headline CPI, services, food
+    and energy inflation in the same sentence style, and regex over prose once
+    overwrote curated forecasts with "food price inflation 4.6%" read as
+    headline CPI. Only the structured Table 3.B is read (#10).
 
-    The URL-discovery half still runs so that:
-      - the workflow no longer fails on a 404 index page, and
-      - we surface a clear log line pointing at the MPR for human review.
+    November 2026 and later: the central projection is the forecast, and the
+    scenarios published alongside it are kept for the country page. April
+    2026 (scenarios only): the cross-scenario range, as before.
 
-    Returning None keeps the existing curated UK entry intact.
-    Proper structured-table extraction tracked in #10.
+    Returns None, keeping the curated UK entry, when the table can't be read.
     """
     print("📊 Scraping BoE...")
 
@@ -297,81 +294,141 @@ def scrape_boe():
         print(f"  ⚠️  pdfplumber failed to parse MPR PDF: {type(e).__name__}: {e}")
         return None
 
-    # The April 2026 MPR no longer publishes a single modal/central projection;
-    # it presents alternative scenarios in "Table 3.B: Summary of scenarios"
-    # (#10). Each scenario block has a "CPI inflation (x)" row with one value
-    # per year-column ("2026 Q2 2027 Q2 2028 Q2 2029 Q2"). We capture every
-    # scenario's CPI path and expose the cross-scenario range — picking any one
-    # scenario as "the" forecast would be editorialising (CLAUDE.md #2; "just
-    # the data"). Anchored on the scenario table so we never pick up the
-    # services/food/energy-contribution rows that share the prose.
     lines = text.splitlines()
+    years, paths, central = _parse_boe_table_3b(lines)
 
-    def _parse_scenarios(region):
+    if not central and len(paths) < 2:
+        print(f"  ⏸️  scrape_boe: parsed {len(paths)} path(s) and no central projection; "
+              "expected a central projection or ≥2 scenarios — preserving curated UK forecast")
+        return None
+
+    result = {
+        "bank": "Bank of England",
+        "country": "UK",
+        "source_url": pdf_url,
+        "source_date": pub_date,
+        "scenarios": paths,
+    }
+    if central:
+        # November 2026 onwards: the MPC is back to a central projection, with
+        # scenarios alongside it. The central path is the forecast; the
+        # scenarios are context, shown on the country page (CLAUDE.md #2: the
+        # Bank's own headline number, not one we derive).
+        result.update({
+            "metric": "CPI inflation, Q4 four-quarter rate (MPC central projection)",
+            "central_scenario": central,
+            "projections": [{"year": y, "value": paths[central][y]}
+                            for y in years if y in paths[central]],
+        })
+        print(f"  ✅ BoE central projection: {paths[central]}")
+    else:
+        # April 2026: alternative scenarios only (#10). Picking one would be
+        # editorialising, so expose the cross-scenario range; the midpoint
+        # feeds the anomaly gate and single-value consumers.
+        projection_range, midpoints = {}, []
+        for y in years:
+            vals = [pth[y] for pth in paths.values() if y in pth]
+            if vals:
+                lo, hi = min(vals), max(vals)
+                projection_range[y] = [lo, hi]
+                midpoints.append({"year": y, "value": round((lo + hi) / 2, 2)})
+        result.update({
+            "metric": "CPI inflation (MPC scenario range)",
+            "projection_range": projection_range,
+            "projections": midpoints,
+        })
+        print(f"  ✅ CPI range by year: {projection_range}")
+    print(f"  ✅ BoE paths { {k: paths[k] for k in paths} }")
+    return result
+
+
+# A block label inside Table 3.B: "Central projection", "Scenario A" (April
+# 2026), or "<Something> scenario" (November 2026: "Adverse inflation
+# scenario", "Weaker demand scenario"). Whole line only, so prose that merely
+# mentions a scenario never starts a block.
+_BOE_BLOCK_RE = re.compile(
+    r'^\s*(Central projection|Scenario\s+[A-Z]\b[^0-9]*|[A-Z][A-Za-z\- ]{2,40}\sscenario)\s*$')
+_BOE_CPI_RE = re.compile(r'^\s*CPI inflation \([a-z]\)\s+(.+)$')
+_BOE_PAREN_RE = re.compile(r'\(\s*-?\d+(?:\.\d+)?\s*\)')
+
+
+def _parse_boe_table_3b(lines):
+    """Parse the MPR's Table 3.B into per-path CPI projections.
+
+    Handles both layouts seen so far:
+
+    - April 2026, "Table 3.B: Summary of scenarios": blocks "Scenario A/B/C",
+      no central projection.
+    - November 2026, "Table 3.B: Summary of outputs of the central projection
+      and scenarios": blocks "Central projection", "Adverse inflation
+      scenario", "Weaker demand scenario". The central rows interleave the
+      previous Report's values in parentheses ("3.8 (3.2) 4.0 (2.1) …"),
+      which are stripped before reading the numbers.
+
+    Each block's "CPI inflation (x)" row gives one value per year column
+    ("2026 Q4 2027 Q4 …"). Other rows that mention CPI ("Energy prices –
+    direct contribution to CPI inflation") never match, because the row must
+    start with "CPI inflation (".
+
+    Returns (years, paths, central_name). ``paths`` maps a block name ("A",
+    "Central projection", …) to {year: value}; ``central_name`` is the
+    central block's name or None. Several lines name the table (contents,
+    prose, the table itself), so the first region that yields a central
+    projection or ≥2 paths wins.
+    """
+    for i, line in enumerate(lines):
+        if not re.search(r'Table 3\.B:\s*Summary of|Summary of scenarios', line):
+            continue
+        region = []
+        for l in lines[i + 1:i + 90]:
+            # Stop at the next table, but not at this one's continuation
+            # header after a page break ("Table 3.B (continued)").
+            if re.match(r'\s*Table \d', l) and not re.match(r'\s*Table 3\.B\b', l):
+                break
+            region.append(l)
         years = []
         for l in region:
-            if re.search(r'20\d{2}\s*Q[1-4]', l):
-                ys = re.findall(r'(20\d{2})\s*Q[1-4]', l)
-                if len(ys) >= 2:
-                    years = ys
-                    break
+            ys = re.findall(r'(20\d{2})\s*Q[1-4]', l)
+            if len(ys) >= 2:
+                years = ys
+                break
         if not years:
-            return None, {}
-        scen, current = {}, None
+            continue
+        # rows[name]: table rows ("GDP (c) 2.2 …") seen under each block label.
+        # A label with none under it is a prose heading, not a table block.
+        paths, current, block, rows = {}, None, None, {}
         for l in region:
-            sm = re.match(r'\s*Scenario\s+([A-Z])\b', l)
-            if sm:
-                current = sm.group(1)
+            bm = _BOE_BLOCK_RE.match(l)
+            if bm:
+                label = bm.group(1).strip()
+                block = label
+                rows.setdefault(label, 0)
+                sm = re.match(r'Scenario\s+([A-Z])\b', label)
+                current = sm.group(1) if sm else label
                 continue
-            cm = re.match(r'\s*CPI inflation \([a-z]\)\s+(.+)', l)
+            if block and re.search(r'\([a-z]\)\s+-?\d+\.\d', l):
+                rows[block] += 1
+            cm = _BOE_CPI_RE.match(l)
             if cm and current:
-                nums = re.findall(r'-?\d+\.\d+', cm.group(1))
+                nums = re.findall(r'-?\d+\.\d+', _BOE_PAREN_RE.sub(' ', cm.group(1)))
                 if len(nums) >= len(years):
                     vals = {years[k]: round(float(nums[k]), 2) for k in range(len(years))
                             if -5.0 <= float(nums[k]) <= 20.0}
                     if vals:
-                        scen[current] = vals
+                        paths[current] = vals
                 current = None
-        return years, scen
-
-    # There can be several "Summary of scenarios" mentions (chart caption,
-    # contents, the table itself). Use the first region that yields ≥2 scenarios.
-    years, scenarios = [], {}
-    for i, l in enumerate(lines):
-        if 'Summary of scenarios' in l:
-            y, s = _parse_scenarios(lines[i:i + 80])
-            if len(s) >= 2:
-                years, scenarios = y, s
-                break
-
-    if len(scenarios) < 2:
-        print(f"  ⏸️  scrape_boe: parsed {len(scenarios)} scenario(s); expected ≥2 "
-              "— preserving curated UK forecast")
-        return None
-
-    # Cross-scenario range + midpoint per year (midpoint feeds the generic
-    # anomaly gate / single-value consumers; the range is what we display).
-    projection_range, midpoints = {}, []
-    for y in years:
-        vals = [s[y] for s in scenarios.values() if y in s]
-        if vals:
-            lo, hi = min(vals), max(vals)
-            projection_range[y] = [lo, hi]
-            midpoints.append({"year": y, "value": round((lo + hi) / 2, 2)})
-
-    print(f"  ✅ BoE scenarios { {k: scenarios[k] for k in sorted(scenarios)} }")
-    print(f"  ✅ CPI range by year: {projection_range}")
-    return {
-        "bank": "Bank of England",
-        "country": "UK",
-        "metric": "CPI inflation (MPC scenario range)",
-        "source": "BoE Monetary Policy Report — Summary of scenarios (Table 3.B)",
-        "source_url": pdf_url,
-        "source_date": pub_date,
-        "scenarios": {k: scenarios[k] for k in sorted(scenarios)},
-        "projection_range": projection_range,
-        "projections": midpoints,
-    }
+        if rows.get("Central projection") and "Central projection" not in paths:
+            # The table has a central-projection block but its CPI row didn't
+            # parse (wrapped or reformatted). Falling back to a range over the
+            # scenarios alone would publish the wrong thing, so skip this
+            # region; if no other region reads, the curated entry stays.
+            print("  ⚠️  BoE Table 3.B: central projection found but its CPI row "
+                  "didn't parse — not falling back to the scenarios")
+            continue
+        central = "Central projection" if "Central projection" in paths else None
+        if central or len(paths) >= 2:
+            return years, paths, central
+    return [], {}, None
 
 
 def scrape_rba():
@@ -830,6 +887,12 @@ def scrape_boj():
         "projections": projections,
     }
 
+# Where SARB keeps each MPC meeting's forecast report
+# (<base>/<year>/<month>/forecast.pdf), as in the curated ZA source_url. The
+# constant had gone missing, so scrape_sarb() raised NameError on every run (#129).
+SARB_DAM_BASE = ("https://www.resbank.co.za/content/dam/sarb/publications/"
+                 "statements/monetary-policy-statements")
+
 # SARB's MPC meets roughly every two months; the forecast report only exists
 # for meeting months, so non-meeting months 404 and are skipped during probing.
 _SARB_MEETING_MONTHS = {1: "january", 3: "march", 5: "may",
@@ -1196,7 +1259,10 @@ def merge_into_main(new_forecasts, dry_run=False):
     """Merge scraped forecasts directly into cb_forecasts.json.
 
     Preserves all curated fields (flag, note, key_quote, policy_rate, etc.);
-    only rewrites projections, source_url, and publication_date.
+    only rewrites projections, source_url, and publication_date. When the
+    publication changes, stamps ``commentary_date`` with the old one so the
+    dashboard can say the curated text is from an earlier report. Re-curating
+    the text means updating or deleting ``commentary_date`` by hand.
 
     Anomaly gate: if any year's delta exceeds MERGE_THRESHOLD_PP, that country
     is SKIPPED (not merged) and reported so a human can verify.
@@ -1245,14 +1311,43 @@ def merge_into_main(new_forecasts, dry_run=False):
         if fc.get("source_url"):
             entry["source_url"] = fc["source_url"]
         if fc.get("source_date"):
-            entry["publication_date"] = _normalise_publication_date(fc["source_date"])
+            new_pub = _normalise_publication_date(fc["source_date"])
+            old_pub = entry.get("publication_date")
+            # The curated key_quote / note describe the report they were written
+            # from. When a newer report's numbers replace the projections, that
+            # text no longer matches them (e.g. ZA's May quote "4.4% in 2026"
+            # beside November's 4.3). We can't write new commentary (CLAUDE.md
+            # #1), so pin the text to the report it came from and let the
+            # front end label it (CLAUDE.md #4). Set once: a later merge must
+            # not move the stamp forward over text nobody has re-curated.
+            if (old_pub and old_pub != new_pub and "commentary_date" not in entry
+                    and (entry.get("key_quote") or entry.get("note"))):
+                entry["commentary_date"] = old_pub
+            entry["publication_date"] = new_pub
         # Scenario-based sources (BoE, #10) carry a cross-scenario range and the
         # full per-scenario paths. Persist them and flip the row to "enabled"
         # (clear the disabled scraper_status), since the scraper now produces it.
         if fc.get("scenarios"):
             entry["scenarios"] = fc["scenarios"]
-            entry["projection_range"] = fc.get("projection_range", {})
-            entry["forecast_type"] = fc.get("metric", entry.get("forecast_type"))
+            new_type = fc.get("metric", entry.get("forecast_type"))
+            if new_type != entry.get("forecast_type"):
+                # The 1pp gate just compared figures on two different bases
+                # (e.g. April's Q2 scenario midpoints vs November's Q4 central
+                # projection), so say so in the run log for the human review.
+                print(f"  ℹ️  {country}: forecast basis changed: "
+                      f"{entry.get('forecast_type')!r} → {new_type!r}")
+            entry["forecast_type"] = new_type
+            # A range is shown in place of the point projection, so it must
+            # go when the source is back to a central projection, or the
+            # page would keep showing April's band over November's numbers.
+            if fc.get("projection_range"):
+                entry["projection_range"] = fc["projection_range"]
+            else:
+                entry.pop("projection_range", None)
+            if fc.get("central_scenario"):
+                entry["central_scenario"] = fc["central_scenario"]
+            else:
+                entry.pop("central_scenario", None)
             for k in ("scraper_status", "scraper_status_issue", "scraper_status_reason"):
                 entry.pop(k, None)
         merged.append({

@@ -20,6 +20,29 @@ All notable changes to the Inflation Dashboard project are documented here.
   to the note text, so re-curating the note and the page clears the label without touching
   `note_edition`. The newsletter prompt gets `note_edition` too. `scripts/test_imf_edition.py`
   (15 checks, offline).
+- **BoE forecast scraper reads the November 2026 MPR (#131).** The parser only knew April 2026's
+  "Summary of scenarios" (Scenario A/B/C), so November's Table 3.B, which is back to a central
+  projection with an adverse-inflation and a weaker-demand scenario, parsed 0 paths and UK stayed
+  on April's range. `_parse_boe_table_3b()` reads both layouts and strips the previous Report's
+  values printed in parentheses. With a central projection, UK's forecast is that path (Q4
+  four-quarter CPI: 2026 3.8, 2027 4.0, 2028 2.0, 2029 1.8) and the scenarios stay on the country
+  page for context; the April range is dropped on merge so the pages show the point values.
+  If the table shows a central projection but its CPI row can't be read, nothing is merged rather
+  than falling back to a range over the scenarios alone. The merge logs a change of forecast basis
+  (here Q2 scenario midpoints → Q4 central projection), since the 1pp gate compared the two.
+  `scripts/test_boe_table_3b.py` (22 checks, offline) uses the November table text itself.
+- **SARB forecast scraper runs again (#129).** `_discover_sarb_forecast_pdf()` built its URL from
+  `SARB_DAM_BASE`, which no longer existed, so `scrape_sarb()` raised `NameError` on every run and
+  ZA's curated forecast stayed on the May 2026 report. The constant is restored with the path the
+  curated ZA `source_url` already uses. A dry run found the November 2026 report and parsed
+  2026 4.3, 2027 4.0, 2028 3.2, 2029 3.0, all inside the 1pp gate.
+- **Curated central-bank commentary is labelled when it is older than the numbers (#129).**
+  `merge_into_main` replaces a row's projections with the scraped report but keeps the hand-written
+  `key_quote` and `note`, so ZA would have shown May's "4.4% in 2026" beside November's 4.3. When
+  the publication changes, the merge now stamps `commentary_date` with the report the text came
+  from, and the outlook table and country pages show "(from the May 2026 report)" after it. The
+  stamp is set once; re-curating the text means updating or removing `commentary_date`.
+  `scripts/test_cb_commentary_date.py` covers it, offline.
 - **CB forecast auto-scrape runs again; it had scraped nothing since 2026-10-29 (#127).** The
   "recent draft" guard measured the draft's age from its mtime, which `actions/checkout` sets to
   the checkout time, so the committed draft always looked 0.0h old and every scheduled run exited
